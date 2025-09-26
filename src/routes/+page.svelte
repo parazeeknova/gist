@@ -10,6 +10,8 @@
 	let mainContainer: HTMLDivElement;
 	let isMobile = false;
 	let portfolioLink: HTMLAnchorElement;
+	let zephyrLink: HTMLAnchorElement;
+	let singularityLink: HTMLAnchorElement;
 	let githubLink: HTMLAnchorElement;
 	let linkedinLink: HTMLAnchorElement;
 	let twitterLink: HTMLAnchorElement;
@@ -41,7 +43,14 @@
 	});
 
 	function initLinkAnimations() {
-		const links = [portfolioLink, githubLink, linkedinLink, twitterLink].filter(Boolean);
+		const links = [
+			portfolioLink,
+			zephyrLink,
+			singularityLink,
+			githubLink,
+			linkedinLink,
+			twitterLink
+		].filter(Boolean);
 
 		links.forEach((link) => {
 			if (!link) return;
@@ -111,7 +120,7 @@
 >
 	<div
 		bind:this={leftPanel}
-		class="relative z-10 p-4 font-mono sm:p-6 lg:p-8 {isDarkMode
+		class="relative z-10 cursor-default p-4 font-mono select-none sm:p-6 lg:p-8 {isDarkMode
 			? 'bg-black text-white'
 			: 'bg-[hsl(0,0%,95%)] text-black'}"
 	>
@@ -165,11 +174,21 @@
 				</a>
 			</p>
 			<p class="text-sm leading-relaxed sm:text-base">
-				Third-year CS undergrad · Fullstack & DevOps Engineer. President of the Mozilla Firefox
-				Club. Building Zephyr a social aggregator with 18K+ views since its dev preview and founder
-				of Singularity Works, a freelance design & dev studio. Previously a Fullstack Intern in
-				Musqat, Oman. Active in open-source, national hackathon winner, and published research
-				author (CICBA '25, AI).
+				Engineer and founder, building web platforms, infrastructure, and tools. Creator of <a
+					bind:this={zephyrLink}
+					href="https://zephyyrr.in"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="link-underline">Zephyr</a
+				>. Runs
+				<a
+					bind:this={singularityLink}
+					href="https://singularityworks.xyz"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="link-underline">Singularity Works</a
+				>, a freelance design and development studio. CS undergrad, active in open-source and
+				hackathons.
 			</p>
 		</div>
 
@@ -211,7 +230,7 @@
 			</a>
 			<a
 				bind:this={linkedinLink}
-				href="https://linkedin.com/in/hashkharshsahu"
+				href="https://www.linkedin.com/in/hashk"
 				target="_blank"
 				rel="noopener noreferrer"
 				class="link-underline text-xs sm:text-sm"

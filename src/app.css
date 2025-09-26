@@ -36,5 +36,19 @@
 @layer base {
 	html {
 		font-family: 'Ubuntu Mono', monospace;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
 	}
+
+	html::-webkit-scrollbar {
+		display: none;
+	}
+}
+
+.link-underline {
+	cursor: pointer !important;
+}
+
+button {
+	cursor: pointer !important;
 }
