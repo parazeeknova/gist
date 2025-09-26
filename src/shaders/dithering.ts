@@ -9,7 +9,13 @@ import {
 	defaultObjectSizing,
 	ShaderFitOptions
 } from './shader-sizing';
-import { simplexNoise, declarePI, proceduralHash11, proceduralHash21, getShaderColorFromString } from './shader-utils';
+import {
+	simplexNoise,
+	declarePI,
+	proceduralHash11,
+	proceduralHash21,
+	getShaderColorFromString
+} from './shader-utils';
 
 /**
  * 2-color dithering effect over animated abstract shapes
