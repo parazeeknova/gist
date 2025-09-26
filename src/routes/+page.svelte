@@ -15,10 +15,13 @@
 	let githubLink: HTMLAnchorElement;
 	let linkedinLink: HTMLAnchorElement;
 	let twitterLink: HTMLAnchorElement;
+	let ditheringColorBack = isDarkMode ? 'hsl(0, 0%, 0%)' : 'hsl(0, 0%, 95%)';
+	let ditheringColorFront = isDarkMode ? 'hsl(360, 0%, 76%)' : 'hsl(220, 100%, 70%)';
 
 	function toggleTheme() {
 		isDarkMode = !isDarkMode;
 	}
+
 
 	function checkMobile() {
 		if (typeof window !== 'undefined') {
@@ -79,8 +82,7 @@
 			ease: 'power2.in'
 		});
 
-		tl.to(
-			leftPanel,
+		tl.to(leftPanel,
 			{
 				backgroundColor: isDarkMode ? '#000000' : 'hsl(0, 0%, 95%)',
 				color: isDarkMode ? '#ffffff' : '#000000',
@@ -89,6 +91,28 @@
 			},
 			0.1
 		);
+
+		tl.to({}, {
+			duration: 0.8,
+			ease: 'power2.inOut',
+			onUpdate: function() {
+				const progress = this.progress();
+				const startBack = isDarkMode ? [0, 0, 95] : [0, 0, 0];
+				const endBack = isDarkMode ? [0, 0, 0] : [0, 0, 95];
+				const startFront = isDarkMode ? [220, 100, 70] : [360, 0, 76];
+				const endFront = isDarkMode ? [360, 0, 76] : [220, 100, 70];
+
+				const currentBack = startBack.map((start, i) =>
+					Math.round(start + (endBack[i] - start) * progress)
+				);
+				const currentFront = startFront.map((start, i) =>
+					Math.round(start + (endFront[i] - start) * progress)
+				);
+
+				ditheringColorBack = `hsl(${currentBack[0]}, ${currentBack[1]}%, ${currentBack[2]}%)`;
+				ditheringColorFront = `hsl(${currentFront[0]}, ${currentFront[1]}%, ${currentFront[2]}%)`;
+			}
+		}, 0.1);
 
 		tl.to(
 			mainContainer,
@@ -256,8 +280,8 @@
 			width="100%"
 			height="100%"
 			fit="cover"
-			colorBack={isDarkMode ? 'hsl(0, 0%, 0%)' : 'hsl(0, 0%, 95%)'}
-			colorFront={isDarkMode ? 'hsl(360, 0%, 76%)' : 'hsl(220, 100%, 70%)'}
+			colorBack={ditheringColorBack}
+			colorFront={ditheringColorFront}
 			shape={isMobile ? 'wave' : 'simplex'}
 			type="4x4"
 			pxSize={3}
