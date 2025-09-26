@@ -38,6 +38,7 @@
 		font-family: 'Ubuntu Mono', monospace;
 		scrollbar-width: none;
 		-ms-overflow-style: none;
+		text-transform: lowercase;
 	}
 
 	html::-webkit-scrollbar {
@@ -47,6 +48,26 @@
 
 .link-underline {
 	cursor: pointer !important;
+	-webkit-user-drag: none;
+	user-drag: none;
+}
+
+.projects-link {
+	position: relative;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.projects-link::after {
+	content: '';
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+	width: var(--underline-width, 0%);
+	height: 1px;
+	background-color: currentColor;
+	transition: none;
+	z-index: 1;
 }
 
 button {
