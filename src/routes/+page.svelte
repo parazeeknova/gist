@@ -1,57 +1,120 @@
 <script lang="ts">
-  import Dithering from '../lib/Dithering.svelte';
-  import gsap from 'gsap';
+	import Dithering from '../lib/Dithering.svelte';
+	import gsap from 'gsap';
+	import { onMount, onDestroy } from 'svelte';
 
-  let isDarkMode = true;
-  let leftPanel: HTMLDivElement;
-  let ditheringContainer: HTMLDivElement;
-  let mainContainer: HTMLDivElement;
+	let isDarkMode = true;
+	let leftPanel: HTMLDivElement;
+	let ditheringContainer: HTMLDivElement;
+	let mainContainer: HTMLDivElement;
+	let isMobile = false;
+	let portfolioLink: HTMLAnchorElement;
+	let githubLink: HTMLAnchorElement;
+	let linkedinLink: HTMLAnchorElement;
+	let twitterLink: HTMLAnchorElement;
 
-  function toggleTheme() {
-    isDarkMode = !isDarkMode;
-  }
+	function toggleTheme() {
+		isDarkMode = !isDarkMode;
+	}
 
-  $: if (mainContainer && leftPanel && ditheringContainer) {
-    const tl = gsap.timeline();
+	function checkMobile() {
+		if (typeof window !== 'undefined') {
+			isMobile = window.innerWidth < 1024;
+		}
+	}
 
-    tl.to([leftPanel, ditheringContainer], {
-      opacity: 0.6,
-      duration: 0.2,
-      ease: 'power2.in'
-    });
+	onMount(() => {
+		checkMobile();
+		initLinkAnimations();
+		if (typeof window !== 'undefined') {
+			window.addEventListener('resize', checkMobile);
+		}
+	});
 
-    tl.to(leftPanel, {
-      backgroundColor: isDarkMode ? '#000000' : '#ffffff',
-      color: isDarkMode ? '#ffffff' : '#000000',
-      duration: 0.8,
-      ease: 'power2.inOut'
-    }, 0.1);
+	onDestroy(() => {
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('resize', checkMobile);
+		}
+	});
 
-    tl.to(mainContainer, {
-      scale: 0.98,
-      duration: 0.4,
-      ease: 'power2.inOut',
-      yoyo: true,
-      repeat: 1
-    }, 0.1);
+	function initLinkAnimations() {
+		const links = [portfolioLink, githubLink, linkedinLink, twitterLink].filter(Boolean);
 
-    tl.to([leftPanel, ditheringContainer], {
-      opacity: 1,
-      duration: 0.3,
-      ease: 'power2.out'
-    }, 0.7);
-  }
+		links.forEach((link) => {
+			if (!link) return;
+			const tl = gsap.timeline({ paused: true });
+			tl.fromTo(
+				link,
+				{ '--underline-width': '0%' },
+				{
+					'--underline-width': '100%',
+					duration: 0.3,
+					ease: 'power2.out'
+				}
+			);
+
+			link.addEventListener('mouseenter', () => tl.play());
+			link.addEventListener('mouseleave', () => tl.reverse());
+		});
+	}
+
+	$: if (mainContainer && leftPanel && ditheringContainer) {
+		const tl = gsap.timeline();
+
+		tl.to([leftPanel, ditheringContainer], {
+			opacity: 0.6,
+			duration: 0.2,
+			ease: 'power2.in'
+		});
+
+		tl.to(
+			leftPanel,
+			{
+				backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+				color: isDarkMode ? '#ffffff' : '#000000',
+				duration: 0.8,
+				ease: 'power2.inOut'
+			},
+			0.1
+		);
+
+		tl.to(
+			mainContainer,
+			{
+				scale: 0.98,
+				duration: 0.4,
+				ease: 'power2.inOut',
+				yoyo: true,
+				repeat: 1
+			},
+			0.1
+		);
+
+		tl.to(
+			[leftPanel, ditheringContainer],
+			{
+				opacity: 1,
+				duration: 0.3,
+				ease: 'power2.out'
+			},
+			0.7
+		);
+	}
 </script>
 
-<div class="relative flex min-h-screen overflow-hidden" bind:this={mainContainer}>
+<div
+	class="relative grid min-h-screen grid-cols-1 overflow-hidden lg:h-screen lg:grid-cols-2"
+	bind:this={mainContainer}
+>
 	<div
 		bind:this={leftPanel}
-		class="relative z-10 w-1/2 p-8 font-mono"
-		style="background-color: #000000; color: #ffffff;"
+		class="relative z-10 p-4 font-mono sm:p-6 lg:p-8 {isDarkMode
+			? 'bg-black text-white'
+			: 'bg-white text-black'}"
 	>
 		<button
 			on:click={toggleTheme}
-			class="absolute top-8 right-8 rounded-full p-2 transition-colors {isDarkMode
+			class="absolute top-4 right-4 rounded-full p-2 transition-colors sm:top-6 sm:right-6 lg:top-8 lg:right-8 {isDarkMode
 				? 'hover:bg-white/10'
 				: 'hover:bg-black/10'}"
 			aria-label="Toggle theme"
@@ -84,66 +147,80 @@
 			{/if}
 		</button>
 
-		<div class="mb-12">
-			<h1 class="text-lg font-normal">Harsh Sahu</h1>
-			<p class="mb-8 text-sm">
+		<div class="mb-8 sm:mb-12">
+			<h1 class="text-xl font-normal sm:text-2xl">Harsh Sahu</h1>
+			<p class="mb-6 text-sm sm:mb-8 sm:text-base">
 				<a
+					bind:this={portfolioLink}
 					href="https://folio.zephyyrr.in"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="hover:underline"
+					class="link-underline"
 				>
-					folio.zephyyrr.in (portfolio)
+					designer portfolio
 				</a>
 			</p>
-			<p class="text-sm leading-relaxed">
-				Third-year CS undergrad at VIT ('27) · Fullstack & DevOps Engineer. President of the Mozilla
-				Firefox Club @ VITB. Building Zephyr a social aggregator with 18K+ views since its dev
-				preview and founder of Singularity Works, a freelance design & dev studio. Previously a
-				Fullstack Intern in Musqat, Oman. Active in open-source, national hackathon winner, and
-				published research author (CICBA '25, AI).
+			<p class="text-sm leading-relaxed sm:text-base">
+				Third-year CS undergrad · Fullstack & DevOps Engineer. President of the Mozilla Firefox
+				Club. Building Zephyr a social aggregator with 18K+ views since its dev preview and founder
+				of Singularity Works, a freelance design & dev studio. Previously a Fullstack Intern in
+				Musqat, Oman. Active in open-source, national hackathon winner, and published research
+				author (CICBA '25, AI).
 			</p>
 		</div>
 
-		<div class="mb-12 space-y-4">
+		<div class="mb-8 space-y-3 sm:mb-12 sm:space-y-4">
 			<div>
-				<h3 class="font-bold">Full Stack Developer Intern -&gt; amasQIS.ai</h3>
-				<p class="text-xs text-gray-500">Remote (Muscat, Oman) | April 2025–Present</p>
+				<h3 class="text-xs font-medium sm:text-sm">
+					Co-Founder <span class="mx-1 text-base font-light opacity-80">⟶</span> Singularity Works
+				</h3>
+				<p class="text-xs text-gray-500 sm:text-sm">
+					On-Site (Bhopal, India) | August 2025–Present
+				</p>
 			</div>
 			<div>
-				<h3 class="font-bold">President -&gt; Mozilla Firefox Club</h3>
-				<p class="text-xs text-gray-500">On-Site (Bhopal, India) | June 2025–Present</p>
+				<h3 class="text-xs font-medium sm:text-sm">
+					Full Stack Developer Intern <span class="mx-1 text-base font-light opacity-80">⟶</span> amasQIS.ai
+				</h3>
+				<p class="text-xs text-gray-500 sm:text-sm">Remote (Muscat, Oman) | April 2025–Present</p>
 			</div>
 			<div>
-				<h3 class="font-bold">Co-Founder -&gt; Singularity Works (Freelance web design agency)</h3>
-				<p class="text-xs text-gray-500">Remote (Bhopal, India) | August 2025–Present</p>
+				<h3 class="text-xs font-medium sm:text-sm">
+					President <span class="mx-1 text-base font-light opacity-80">⟶</span> Mozilla Firefox Club
+				</h3>
+				<p class="text-xs text-gray-500 sm:text-sm">On-Site (Bhopal, India) | June 2025–Present</p>
 			</div>
 		</div>
 
-		<div class="absolute bottom-8 left-8 flex space-x-6">
+		<div
+			class="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8"
+		>
 			<a
+				bind:this={githubLink}
 				href="https://github.com/parazeeknova"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-sm transition-opacity hover:opacity-70"
+				class="link-underline text-xs sm:text-sm"
 				aria-label="GitHub"
 			>
 				GitHub
 			</a>
 			<a
+				bind:this={linkedinLink}
 				href="https://linkedin.com/in/hashkharshsahu"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-sm transition-opacity hover:opacity-70"
+				class="link-underline text-xs sm:text-sm"
 				aria-label="LinkedIn"
 			>
 				LinkedIn
 			</a>
 			<a
+				bind:this={twitterLink}
 				href="https://x.com/hashcodes_"
 				target="_blank"
 				rel="noopener noreferrer"
-				class="text-sm transition-opacity hover:opacity-70"
+				class="link-underline text-xs sm:text-sm"
 				aria-label="X"
 			>
 				X
@@ -151,13 +228,14 @@
 		</div>
 	</div>
 
-  <div class="relative w-1/2" bind:this={ditheringContainer}>
-    <Dithering
+	<div class="relative" bind:this={ditheringContainer}>
+		<Dithering
 			width="100%"
 			height="100%"
+			fit="cover"
 			colorBack={isDarkMode ? 'hsl(0, 0%, 0%)' : 'hsl(0, 0%, 95%)'}
 			colorFront={isDarkMode ? 'hsl(320, 100%, 70%)' : 'hsl(220, 100%, 70%)'}
-			shape="simplex"
+			shape={isMobile ? 'wave' : 'simplex'}
 			type="4x4"
 			pxSize={3}
 			offsetX={0}
@@ -170,135 +248,24 @@
 </div>
 
 <style>
-	.text-gray-500 {
-		color: rgb(107 114 128);
-	}
-
-	.text-sm {
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-	}
-
-	.text-lg {
-		font-size: 1.125rem;
-		line-height: 1.75rem;
-	}
-
-	.font-normal {
-		font-weight: 400;
-	}
-
-	.font-bold {
-		font-weight: 700;
-	}
-
-	.font-mono {
-		font-family:
-			ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-	}
-
-	.leading-relaxed {
-		line-height: 1.625;
-	}
-
-	.space-y-4 > * + * {
-		margin-top: 1rem;
-	}
-
-	.space-x-6 > * + * {
-		margin-left: 1.5rem;
-	}
-
-	.hover\:underline:hover {
-		text-decoration-line: underline;
-	}
-
-	.hover\:opacity-70:hover {
-		opacity: 0.7;
-	}
-
-	.hover\:bg-white\/10:hover {
-		background-color: rgb(255 255 255 / 0.1);
-	}
-
-	.hover\:bg-black\/10:hover {
-		background-color: rgb(0 0 0 / 0.1);
-	}
-
-	.transition-colors {
-		transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
-		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-		transition-duration: 150ms;
-	}
-
-	.transition-opacity {
-		transition-property: opacity;
-		transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-		transition-duration: 150ms;
-	}
-
-	.p-2 {
-		padding: 0.5rem;
-	}
-
-	.p-8 {
-		padding: 2rem;
-	}
-
-	.mb-8 {
-		margin-bottom: 2rem;
-	}
-
-	.mb-12 {
-		margin-bottom: 3rem;
-	}
-
-	.absolute {
-		position: absolute;
-	}
-
-	.relative {
+	.link-underline {
 		position: relative;
+		text-decoration: none;
+		transition: opacity 0.2s ease;
 	}
 
-	.top-8 {
-		top: 2rem;
+	.link-underline::after {
+		content: '';
+		position: absolute;
+		bottom: -2px;
+		left: 0;
+		width: var(--underline-width, 0%);
+		height: 1px;
+		background-color: currentColor;
+		transition: width 0.3s ease;
 	}
 
-	.right-8 {
-		right: 2rem;
+	.link-underline:hover {
+		opacity: 1;
 	}
-
-	.bottom-8 {
-		bottom: 2rem;
-	}
-
-	.left-8 {
-		left: 2rem;
-	}
-
-	.flex {
-		display: flex;
-	}
-
-	.w-1\/2 {
-		width: 50%;
-	}
-
-	.min-h-screen {
-		min-height: 100vh;
-	}
-
-	.overflow-hidden {
-		overflow: hidden;
-	}
-
-	.z-10 {
-		z-index: 10;
-	}
-
-	.rounded-full {
-		border-radius: 9999px;
-	}
-
 </style>

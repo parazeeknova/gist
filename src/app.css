@@ -1,2 +1,40 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+
+@font-face {
+	font-family: 'Ubuntu Mono';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/UbuntuMono-Regular.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Ubuntu Mono';
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/UbuntuMono-Bold.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Ubuntu Mono';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/UbuntuMono-Italic.ttf') format('truetype');
+}
+
+@font-face {
+	font-family: 'Ubuntu Mono';
+	font-style: italic;
+	font-weight: 700;
+	font-display: swap;
+	src: url('/fonts/UbuntuMono-BoldItalic.ttf') format('truetype');
+}
+
+@layer base {
+	html {
+		font-family: 'Ubuntu Mono', monospace;
+	}
+}

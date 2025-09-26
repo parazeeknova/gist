@@ -39,6 +39,7 @@
 	},
 	"dependencies": {
 		"@paper-design/shaders": "^0.0.54",
-		"gsap": "^3.13.0"
+		"gsap": "^3.13.0",
+		"lucide-svelte": "^0.544.0"
 	}
 }
