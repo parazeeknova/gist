@@ -137,6 +137,11 @@
 		} satisfies DitheringUniforms;
 	})();
 
+	// Update uniforms when they change
+	$: if (isInitialized && shaderMount && uniforms) {
+		updateUniforms();
+	}
+
 	async function initShader() {
 		if (!container || shaderMount) return;
 
