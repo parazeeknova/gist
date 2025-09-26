@@ -1,12 +1,15 @@
-import type { ShaderMotionParams } from './shader-mount';
+import type { ShaderMotionParams, ShaderPreset } from './shader-mount';
 import {
 	sizingUniformsDeclaration,
 	type ShaderSizingParams,
 	type ShaderSizingUniforms,
 	sizingUV,
-	drawSizingHelpers
+	drawSizingHelpers,
+	defaultPatternSizing,
+	defaultObjectSizing,
+	ShaderFitOptions
 } from './shader-sizing';
-import { simplexNoise, declarePI, proceduralHash11, proceduralHash21 } from './shader-utils';
+import { simplexNoise, declarePI, proceduralHash11, proceduralHash21, getShaderColorFromString } from './shader-utils';
 
 /**
  * 2-color dithering effect over animated abstract shapes
@@ -260,3 +263,106 @@ export const DitheringTypes = {
 } as const;
 
 export type DitheringType = keyof typeof DitheringTypes;
+
+// Dithering presets
+export type DitheringPreset = ShaderPreset<DitheringParams>;
+
+export const defaultPreset: DitheringPreset = {
+	name: 'Default',
+	params: {
+		...defaultPatternSizing,
+		speed: 1,
+		frame: 0,
+		scale: 0.6,
+		colorBack: '#000000',
+		colorFront: '#00b2ff',
+		shape: 'sphere',
+		type: '4x4',
+		pxSize: 2
+	}
+} as const;
+
+export const sinePreset: DitheringPreset = {
+	name: 'Sine Wave',
+	params: {
+		...defaultPatternSizing,
+		speed: 1,
+		frame: 0,
+		colorBack: '#730d54',
+		colorFront: '#00becc',
+		shape: 'wave',
+		type: '4x4',
+		pxSize: 11,
+		scale: 1.2
+	}
+} as const;
+
+export const bugsPreset: DitheringPreset = {
+	name: 'Bugs',
+	params: {
+		...defaultPatternSizing,
+		speed: 1,
+		frame: 0,
+		colorBack: '#000000',
+		colorFront: '#008000',
+		shape: 'dots',
+		type: 'random',
+		pxSize: 9
+	}
+} as const;
+
+export const ripplePreset: DitheringPreset = {
+	name: 'Ripple',
+	params: {
+		...defaultObjectSizing,
+		speed: 1,
+		frame: 0,
+		colorBack: '#603520',
+		colorFront: '#c67953',
+		shape: 'ripple',
+		type: '2x2',
+		pxSize: 3
+	}
+} as const;
+
+export const swirlPreset: DitheringPreset = {
+	name: 'Swirl',
+	params: {
+		...defaultObjectSizing,
+		speed: 1,
+		frame: 0,
+		colorBack: '#00000000',
+		colorFront: '#47a8e1',
+		shape: 'swirl',
+		type: '8x8',
+		pxSize: 2
+	}
+} as const;
+
+export const warpPreset: DitheringPreset = {
+	name: 'Warp',
+	params: {
+		...defaultObjectSizing,
+		speed: 1,
+		frame: 0,
+		colorBack: '#301c2a',
+		colorFront: '#56ae6c',
+		shape: 'warp',
+		type: '4x4',
+		pxSize: 2.5
+	}
+} as const;
+
+export const ditheringPresets: DitheringPreset[] = [
+	defaultPreset,
+	warpPreset,
+	sinePreset,
+	ripplePreset,
+	bugsPreset,
+	swirlPreset
+];
+
+// Re-export items needed by the Svelte component
+export { getShaderColorFromString } from './shader-utils';
+export { ShaderFitOptions, defaultPatternSizing, defaultObjectSizing } from './shader-sizing';
+export type { ShaderPreset } from './shader-mount';

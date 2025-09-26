@@ -130,3 +130,68 @@ float fiberNoise(vec2 uv, vec2 seedOffset) {
   return length(vec2(n1 - n2, n3 - n4)) / (2.0 * epsilon);
 }
 `;
+
+/**
+ * Converts a CSS color string to an RGBA array for shader uniforms
+ */
+export function getShaderColorFromString(color: string): [number, number, number, number] {
+	// Handle hex colors
+	if (color.startsWith('#')) {
+		const hex = color.slice(1);
+		let r: number,
+			g: number,
+			b: number,
+			a: number = 1;
+
+		if (hex.length === 3) {
+			// #RGB format
+			r = parseInt(hex[0] + hex[0], 16) / 255;
+			g = parseInt(hex[1] + hex[1], 16) / 255;
+			b = parseInt(hex[2] + hex[2], 16) / 255;
+		} else if (hex.length === 6) {
+			// #RRGGBB format
+			r = parseInt(hex.slice(0, 2), 16) / 255;
+			g = parseInt(hex.slice(2, 4), 16) / 255;
+			b = parseInt(hex.slice(4, 6), 16) / 255;
+		} else if (hex.length === 8) {
+			// #RRGGBBAA format
+			r = parseInt(hex.slice(0, 2), 16) / 255;
+			g = parseInt(hex.slice(2, 4), 16) / 255;
+			b = parseInt(hex.slice(4, 6), 16) / 255;
+			a = parseInt(hex.slice(6, 8), 16) / 255;
+		} else {
+			throw new Error(`Invalid hex color format: ${color}`);
+		}
+
+		return [r, g, b, a];
+	}
+
+	// Handle rgb/rgba functions
+	const rgbMatch = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/);
+	if (rgbMatch) {
+		const r = parseInt(rgbMatch[1], 10) / 255;
+		const g = parseInt(rgbMatch[2], 10) / 255;
+		const b = parseInt(rgbMatch[3], 10) / 255;
+		const a = rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1;
+		return [r, g, b, a];
+	}
+
+	// Handle named colors by creating a temporary element to parse them
+	const tempDiv = document.createElement('div');
+	tempDiv.style.color = color;
+	document.body.appendChild(tempDiv);
+	const computedColor = getComputedStyle(tempDiv).color;
+	document.body.removeChild(tempDiv);
+
+	// Parse the computed color (will be in rgb/rgba format)
+	const computedMatch = computedColor.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)$/);
+	if (computedMatch) {
+		const r = parseInt(computedMatch[1], 10) / 255;
+		const g = parseInt(computedMatch[2], 10) / 255;
+		const b = parseInt(computedMatch[3], 10) / 255;
+		const a = computedMatch[4] ? parseFloat(computedMatch[4]) : 1;
+		return [r, g, b, a];
+	}
+
+	throw new Error(`Unable to parse color: ${color}`);
+}
