@@ -38,6 +38,7 @@
 		"vite-plugin-devtools-json": "^1.0.0"
 	},
 	"dependencies": {
-		"@paper-design/shaders": "^0.0.54"
+		"@paper-design/shaders": "^0.0.54",
+		"gsap": "^3.13.0"
 	}
 }

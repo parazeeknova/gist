@@ -1,18 +1,53 @@
 <script lang="ts">
-	import Dithering from '../lib/Dithering.svelte';
+  import Dithering from '../lib/Dithering.svelte';
+  import gsap from 'gsap';
 
-	let isDarkMode = true;
+  let isDarkMode = true;
+  let leftPanel: HTMLDivElement;
+  let ditheringContainer: HTMLDivElement;
+  let mainContainer: HTMLDivElement;
 
-	function toggleTheme() {
-		isDarkMode = !isDarkMode;
-	}
+  function toggleTheme() {
+    isDarkMode = !isDarkMode;
+  }
+
+  $: if (mainContainer && leftPanel && ditheringContainer) {
+    const tl = gsap.timeline();
+
+    tl.to([leftPanel, ditheringContainer], {
+      opacity: 0.6,
+      duration: 0.2,
+      ease: 'power2.in'
+    });
+
+    tl.to(leftPanel, {
+      backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+      color: isDarkMode ? '#ffffff' : '#000000',
+      duration: 0.8,
+      ease: 'power2.inOut'
+    }, 0.1);
+
+    tl.to(mainContainer, {
+      scale: 0.98,
+      duration: 0.4,
+      ease: 'power2.inOut',
+      yoyo: true,
+      repeat: 1
+    }, 0.1);
+
+    tl.to([leftPanel, ditheringContainer], {
+      opacity: 1,
+      duration: 0.3,
+      ease: 'power2.out'
+    }, 0.7);
+  }
 </script>
 
-<div class="relative flex min-h-screen overflow-hidden">
+<div class="relative flex min-h-screen overflow-hidden" bind:this={mainContainer}>
 	<div
-		class="relative z-10 w-1/2 p-8 font-mono {isDarkMode
-			? 'bg-black text-white'
-			: 'bg-white text-black'}"
+		bind:this={leftPanel}
+		class="relative z-10 w-1/2 p-8 font-mono"
+		style="background-color: #000000; color: #ffffff;"
 	>
 		<button
 			on:click={toggleTheme}
@@ -116,8 +151,8 @@
 		</div>
 	</div>
 
-	<div class="relative w-1/2">
-		<Dithering
+  <div class="relative w-1/2" bind:this={ditheringContainer}>
+    <Dithering
 			width="100%"
 			height="100%"
 			colorBack={isDarkMode ? 'hsl(0, 0%, 0%)' : 'hsl(0, 0%, 95%)'}
@@ -266,19 +301,4 @@
 		border-radius: 9999px;
 	}
 
-	.bg-black {
-		background-color: rgb(0 0 0);
-	}
-
-	.bg-white {
-		background-color: rgb(255 255 255);
-	}
-
-	.text-black {
-		color: rgb(0 0 0);
-	}
-
-	.text-white {
-		color: rgb(255 255 255);
-	}
 </style>
