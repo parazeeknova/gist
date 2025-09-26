@@ -2,6 +2,7 @@
 	import Dithering from '../lib/Dithering.svelte';
 	import gsap from 'gsap';
 	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 
 	let isDarkMode = true;
 	let leftPanel: HTMLDivElement;
@@ -25,7 +26,9 @@
 
 	onMount(() => {
 		checkMobile();
-		initLinkAnimations();
+		if (browser) {
+			initLinkAnimations();
+		}
 		if (typeof window !== 'undefined') {
 			window.addEventListener('resize', checkMobile);
 		}
@@ -58,7 +61,7 @@
 		});
 	}
 
-	$: if (mainContainer && leftPanel && ditheringContainer) {
+	$: if (browser && mainContainer && leftPanel && ditheringContainer) {
 		const tl = gsap.timeline();
 
 		tl.to([leftPanel, ditheringContainer], {
@@ -70,7 +73,7 @@
 		tl.to(
 			leftPanel,
 			{
-				backgroundColor: isDarkMode ? '#000000' : '#ffffff',
+				backgroundColor: isDarkMode ? '#000000' : 'hsl(0, 0%, 95%)',
 				color: isDarkMode ? '#ffffff' : '#000000',
 				duration: 0.8,
 				ease: 'power2.inOut'
@@ -110,7 +113,7 @@
 		bind:this={leftPanel}
 		class="relative z-10 p-4 font-mono sm:p-6 lg:p-8 {isDarkMode
 			? 'bg-black text-white'
-			: 'bg-white text-black'}"
+			: 'bg-[hsl(0,0%,95%)] text-black'}"
 	>
 		<button
 			on:click={toggleTheme}
@@ -158,6 +161,7 @@
 					class="link-underline"
 				>
 					designer portfolio
+					<span class="ml-1">↗</span>
 				</a>
 			</p>
 			<p class="text-sm leading-relaxed sm:text-base">
@@ -234,7 +238,7 @@
 			height="100%"
 			fit="cover"
 			colorBack={isDarkMode ? 'hsl(0, 0%, 0%)' : 'hsl(0, 0%, 95%)'}
-			colorFront={isDarkMode ? 'hsl(320, 100%, 70%)' : 'hsl(220, 100%, 70%)'}
+			colorFront={isDarkMode ? 'hsl(360, 0%, 76%)' : 'hsl(220, 100%, 70%)'}
 			shape={isMobile ? 'wave' : 'simplex'}
 			type="4x4"
 			pxSize={3}
