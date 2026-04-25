@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Profile, ExperienceItem } from "../types";
 import { LoadingDots } from "./loading";
 
@@ -7,6 +8,8 @@ interface ProfileSectionProps {
   zephyrRef: React.RefObject<HTMLAnchorElement | null>;
   singularityRef: React.RefObject<HTMLAnchorElement | null>;
   isPending?: boolean;
+  isMobile?: boolean;
+  isDarkMode?: boolean;
 }
 
 export const ProfileSection = ({
@@ -15,62 +18,99 @@ export const ProfileSection = ({
   zephyrRef,
   singularityRef,
   isPending,
-}: ProfileSectionProps) => (
-  <div className="shrink-0">
-    <h1 className="text-xl font-normal sm:text-2xl">
-      {isPending ? <LoadingDots /> : (profile?.name ?? "Harsh Sahu")}
-    </h1>
-    <p className="mb-6 text-sm sm:mb-8 sm:text-base">
-      <a
-        ref={portfolioRef}
-        href={profile?.links.portfolio.url ?? "https://folio.zephyyrr.in"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="link-underline"
-      >
-        {profile?.links.portfolio.label ?? "designer portfolio"}
-        <span className="ml-1">↗</span>
-      </a>
-    </p>
-    <p className="text-sm leading-relaxed sm:text-base">
-      {isPending ? (
-        <LoadingDots />
-      ) : (
+  isMobile,
+  isDarkMode = true,
+}: ProfileSectionProps) => {
+  const panelBg = isDarkMode ? "#000000" : "#ffffff";
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const description = isPending ? (
+    <LoadingDots />
+  ) : (
+    <>
+      {profile?.description ??
+        "Engineer and founder, building web platforms, infrastructure, and tools."}
+      {profile && (
         <>
-          {profile?.description ??
-            "Engineer and founder, building web platforms, infrastructure, and tools."}
-          {profile && (
-            <>
-              {" "}
-              Creator of{" "}
-              <a
-                ref={zephyrRef}
-                href={profile.links.zephyr.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link-underline"
-              >
-                {profile.links.zephyr.label}
-              </a>
-              . Runs{" "}
-              <a
-                ref={singularityRef}
-                href={profile.links.singularity.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link-underline"
-              >
-                {profile.links.singularity.label}
-              </a>
-              , a freelance design and development studio. CS undergrad, active in open-source and
-              hackathons.
-            </>
-          )}
+          {" "}
+          Creator of{" "}
+          <a
+            ref={zephyrRef}
+            href={profile.links.zephyr.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-underline"
+          >
+            {profile.links.zephyr.label}
+          </a>
+          . Runs{" "}
+          <a
+            ref={singularityRef}
+            href={profile.links.singularity.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-underline"
+          >
+            {profile.links.singularity.label}
+          </a>
+          , a freelance design and development studio. CS undergrad, active in open-source and
+          hackathons.
         </>
       )}
-    </p>
-  </div>
-);
+    </>
+  );
+
+  return (
+    <div className="shrink-0">
+      <h1 className="text-xl font-normal sm:text-2xl">
+        {isPending ? <LoadingDots /> : (profile?.name ?? "Harsh Sahu")}
+      </h1>
+      <p className="mb-6 text-sm sm:mb-8 sm:text-base">
+        <a
+          ref={portfolioRef}
+          href={profile?.links.portfolio.url ?? "https://folio.zephyyrr.in"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-underline"
+        >
+          {profile?.links.portfolio.label ?? "designer portfolio"}
+          <span className="ml-1">↗</span>
+        </a>
+      </p>
+
+      {isMobile ? (
+        <div>
+          {isExpanded ? (
+            <>
+              <p className="text-sm leading-relaxed">{description}</p>
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="link-underline mt-1 text-xs text-gray-400"
+              >
+                view less
+              </button>
+            </>
+          ) : (
+            <button className="w-full text-left" onClick={() => setIsExpanded(true)}>
+              <div className="relative max-h-24 overflow-hidden text-sm leading-relaxed">
+                {description}
+                <div
+                  className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
+                  style={{
+                    background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
+                  }}
+                />
+              </div>
+              <span className="link-underline mt-1 block text-xs text-gray-400">view more</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm leading-relaxed sm:text-base">{description}</p>
+      )}
+    </div>
+  );
+};
 
 interface ExperienceSectionProps {
   experience: ExperienceItem[] | undefined;

@@ -4,9 +4,15 @@ import type { ReactNode } from "react";
 interface ScrollContainerProps {
   children: ReactNode;
   className?: string;
+  isDarkMode?: boolean;
 }
 
-export const ScrollContainer = ({ children, className = "" }: ScrollContainerProps) => {
+export const ScrollContainer = ({
+  children,
+  className = "",
+  isDarkMode = true,
+}: ScrollContainerProps) => {
+  const panelBg = isDarkMode ? "#000000" : "#ffffff";
   const ref = useRef<HTMLDivElement>(null);
   const [showTopShadow, setShowTopShadow] = useState(false);
   const [showBottomShadow, setShowBottomShadow] = useState(true);
@@ -45,7 +51,7 @@ export const ScrollContainer = ({ children, className = "" }: ScrollContainerPro
         <div
           className="pointer-events-none absolute top-0 left-0 right-0 h-16"
           style={{
-            background: "linear-gradient(to bottom, var(--panel-bg, #000000) 0%, transparent 100%)",
+            background: `linear-gradient(to bottom, ${panelBg} 0%, transparent 100%)`,
           }}
         />
       )}
@@ -55,7 +61,7 @@ export const ScrollContainer = ({ children, className = "" }: ScrollContainerPro
           <div
             className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
             style={{
-              background: "linear-gradient(to top, var(--panel-bg, #000000) 0%, transparent 100%)",
+              background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
             }}
           />
           <div className="pointer-events-none absolute bottom-1 left-0 right-0 flex items-center justify-center gap-1 text-[10px] text-gray-400">

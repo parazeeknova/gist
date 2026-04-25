@@ -30,21 +30,30 @@ export const GitHubStats = () => {
   const { data, isPending } = useGitHubStats();
 
   const stats = [
-    { label: "commits this month", value: data?.commitsThisMonth ?? 0 },
-    { label: "total commits", value: data?.totalCommits ?? 0 },
-    { label: "pull requests this month", value: data?.prsThisMonth ?? 0 },
+    {
+      desktopLabel: "commits this month",
+      mobileLabel: "this month",
+      value: data?.commitsThisMonth ?? 0,
+    },
+    { desktopLabel: "total commits", mobileLabel: "commits", value: data?.totalCommits ?? 0 },
+    {
+      desktopLabel: "pull requests this month",
+      mobileLabel: "prs this mo",
+      value: data?.prsThisMonth ?? 0,
+    },
   ];
 
   return (
     <div className="mt-4 sm:mt-6">
       <div className="flex space-x-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="flex flex-col">
+          <div key={stat.desktopLabel} className="flex flex-col">
             <span className="text-xs font-medium tabular-nums sm:text-sm">
               {isPending ? "..." : stat.value.toLocaleString()}
             </span>
             <span className="text-[10px] text-gray-500 uppercase tracking-wider sm:text-xs">
-              {stat.label}
+              <span className="sm:hidden">{stat.mobileLabel}</span>
+              <span className="hidden sm:inline">{stat.desktopLabel}</span>
             </span>
           </div>
         ))}

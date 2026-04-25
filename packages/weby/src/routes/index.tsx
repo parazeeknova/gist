@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
-import Projects, { ProjectList } from "../components/projects";
+import { ProjectList, MobileProjectList } from "../components/projects";
 import { GitHubActivity } from "../components/github-calendar";
 import { GitHubStats } from "../components/github-stats";
 import { ProfileSection, ExperienceSection, SocialLinks } from "../components/home-sections";
@@ -217,7 +217,6 @@ const useThemeAnimation = (
 
 const Home = function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
   const isMobile = useIsMobile();
 
   const linkRefs = useAnimatedLinks();
@@ -267,6 +266,8 @@ const Home = function Home() {
           portfolioRef={linkRefs.portfolioRef}
           zephyrRef={linkRefs.zephyrRef}
           singularityRef={linkRefs.singularityRef}
+          isMobile={isMobile}
+          isDarkMode={isDarkMode}
         />
 
         <div className="shrink-0 space-y-2">
@@ -275,13 +276,14 @@ const Home = function Home() {
         </div>
 
         {isMobile ? (
-          <div className="flex-1 min-h-0 overflow-y-auto projects-scroll">
-            <Projects onExpanded={setIsProjectsExpanded} />
+          <div className="shrink-0 space-y-2">
+            <h3 className="text-base font-medium">voo look what i made</h3>
+            <MobileProjectList isDarkMode={isDarkMode} />
           </div>
         ) : (
           <div className="flex flex-col flex-1 min-h-0">
             <h3 className="mb-2 shrink-0 text-base font-medium">voo look what i made</h3>
-            <ScrollContainer className="flex-1 min-h-0">
+            <ScrollContainer className="flex-1 min-h-0" isDarkMode={isDarkMode}>
               <ProjectList />
             </ScrollContainer>
           </div>
@@ -292,10 +294,7 @@ const Home = function Home() {
           <GitHubStats />
         </div>
 
-        <div
-          className="shrink-0 flex space-x-6"
-          style={isMobile && isProjectsExpanded ? { display: "none" } : undefined}
-        >
+        <div className="shrink-0 flex space-x-6">
           <SocialLinks
             profile={profile}
             githubRef={linkRefs.githubRef}

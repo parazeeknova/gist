@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import { gsap } from "gsap";
 import { useProjects } from "../hooks/use-data";
 import { LoadingDots } from "./loading";
@@ -23,18 +23,80 @@ export const ProjectList = () => {
   );
 };
 
+interface MobileProjectListProps {
+  isDarkMode?: boolean;
+}
+
+export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { data: projectData, isPending } = useProjects();
+  const panelBg = isDarkMode ? "#000000" : "#ffffff";
+
+  const visibleProjects = isExpanded ? projectData : projectData?.slice(0, 3);
+
+  return (
+    <div>
+      {isExpanded ? (
+        <>
+          <div className="space-y-3 sm:space-y-4">
+            {isPending ? (
+              <LoadingDots />
+            ) : (
+              visibleProjects?.map((project) => (
+                <div key={project.title}>
+                  <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
+                  <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
+                  <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
+                </div>
+              ))
+            )}
+          </div>
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="link-underline mt-1 text-xs text-gray-400"
+          >
+            view less
+          </button>
+        </>
+      ) : (
+        <button className="w-full text-left" onClick={() => setIsExpanded(true)}>
+          <div className="relative space-y-3 sm:space-y-4">
+            {isPending ? (
+              <LoadingDots />
+            ) : (
+              visibleProjects?.map((project) => (
+                <div key={project.title}>
+                  <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
+                  <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
+                  <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
+                </div>
+              ))
+            )}
+            <div
+              className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
+              style={{
+                background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
+              }}
+            />
+          </div>
+          <span className="link-underline mt-1 block text-xs text-gray-400">view more</span>
+        </button>
+      )}
+    </div>
+  );
+};
+
 interface ProjectsProps {
   onExpanded?: (expanded: boolean) => void;
 }
 
 export default function Projects({ onExpanded }: ProjectsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const projectsButtonRef = useRef<HTMLButtonElement>(null);
   const projectsContentRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
-  const initProjectsAnimation = useCallback(() => {
+  useEffect(() => {
     const btn = projectsButtonRef.current;
     if (!btn || timelineRef.current) {
       return;
@@ -48,18 +110,6 @@ export default function Projects({ onExpanded }: ProjectsProps) {
     );
     timelineRef.current = tl;
   }, []);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      setIsExpanded(!mobile);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    initProjectsAnimation();
-    return () => window.removeEventListener("resize", checkMobile);
-  }, [initProjectsAnimation]);
 
   useEffect(() => {
     if (timelineRef.current && projectsContentRef.current) {
@@ -87,25 +137,16 @@ export default function Projects({ onExpanded }: ProjectsProps) {
   }, [isExpanded, onExpanded]);
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      {isMobile ? (
-        <div>
-          <button
-            ref={projectsButtonRef}
-            className="projects-link text-base font-medium"
-            onClick={() => setIsExpanded((prev) => !prev)}
-          >
-            <span>voo look what i made</span>
-          </button>
-          {isExpanded && (
-            <div ref={projectsContentRef} className="mt-3 space-y-4">
-              <ProjectList />
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <h3 className="mb-2 text-base font-medium">voo look what i made</h3>
+    <div>
+      <button
+        ref={projectsButtonRef}
+        className="projects-link text-base font-medium"
+        onClick={() => setIsExpanded((prev) => !prev)}
+      >
+        <span>voo look what i made</span>
+      </button>
+      {isExpanded && (
+        <div ref={projectsContentRef} className="mt-3 space-y-4">
           <ProjectList />
         </div>
       )}
