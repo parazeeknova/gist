@@ -1,85 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 
-interface GitHubEvent {
-  type: string;
-  created_at: string;
-  payload: {
-    size?: number;
-  };
-}
-
 interface GitHubStats {
   commitsThisMonth: number;
   totalCommits: number;
   prsThisMonth: number;
 }
 
-const fetchGitHubEvents = async (username: string): Promise<GitHubEvent[]> => {
-  const res = await fetch(`https://api.github.com/users/${username}/events/public?per_page=100`, {
-    headers: { Accept: "application/vnd.github.v3+json" },
-  });
-  if (!res.ok) {
-    throw new Error(`GitHub API ${res.status}`);
-  }
-  return res.json() as Promise<GitHubEvent[]>;
-};
-
-const fetchGitHubPRs = async (username: string): Promise<number> => {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const [dateStr] = firstDay.toISOString().split("T");
-
-  const res = await fetch(
-    `https://api.github.com/search/issues?q=author:${username}+type:pr+created:>${dateStr}&per_page=1`,
-    {
-      headers: { Accept: "application/vnd.github.v3+json" },
-    },
-  );
-  if (!res.ok) {
-    throw new Error(`GitHub Search API ${res.status}`);
-  }
-  const data = (await res.json()) as { total_count: number };
-  return data.total_count;
-};
-
-const useGitHubStats = (username: string) =>
+const useGitHubStats = () =>
   useQuery<GitHubStats>({
     queryFn: async () => {
-      const [events, prsThisMonth] = await Promise.all([
-        fetchGitHubEvents(username),
-        fetchGitHubPRs(username),
-      ]);
-
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-
-      let commitsThisMonth = 0;
-      let totalCommits = 0;
-
-      for (const event of events) {
-        if (event.type === "PushEvent") {
-          const count = event.payload.size ?? 0;
-          totalCommits += count;
-
-          const eventDate = new Date(event.created_at);
-          if (eventDate >= firstDay) {
-            commitsThisMonth += count;
-          }
-        }
+      const res = await fetch("/api/github/stats");
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
       }
-
-      return { commitsThisMonth, prsThisMonth, totalCommits };
+      return res.json() as Promise<GitHubStats>;
     },
-    queryKey: ["github-stats", username],
+    queryKey: ["github-stats"],
     staleTime: 1000 * 60 * 60,
   });
 
-interface GitHubStatsProps {
-  username: string;
-}
-
-export const GitHubStats = ({ username }: GitHubStatsProps) => {
-  const { data, isPending } = useGitHubStats(username);
+export const GitHubStats = () => {
+  const { data, isPending } = useGitHubStats();
 
   const stats = [
     { label: "commits this month", value: data?.commitsThisMonth ?? 0 },

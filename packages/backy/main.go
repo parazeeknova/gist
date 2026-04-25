@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -37,6 +40,12 @@ type Project struct {
 	Title string `json:"title"`
 	Desc  string `json:"desc"`
 	Stack string `json:"stack"`
+}
+
+type GitHubStats struct {
+	CommitsThisMonth int `json:"commitsThisMonth"`
+	TotalCommits     int `json:"totalCommits"`
+	PRsThisMonth     int `json:"prsThisMonth"`
 }
 
 var profile = Profile{
@@ -93,6 +102,18 @@ var projects = []Project{
 	},
 }
 
+type githubEvent struct {
+	Type      string `json:"type"`
+	CreatedAt string `json:"created_at"`
+	Payload   struct {
+		Size int `json:"size"`
+	} `json:"payload"`
+}
+
+type githubSearchResult struct {
+	TotalCount int `json:"total_count"`
+}
+
 func init() {
 	profile.Links.Portfolio = Link{Label: "designer portfolio", URL: "https://folio.zephyyrr.in"}
 	profile.Links.Zephyr = Link{Label: "Zephyr", URL: "https://zephyyrr.in"}
@@ -102,10 +123,112 @@ func init() {
 	profile.Links.Twitter = Link{Label: "X", URL: "https://x.com/hashcodes_"}
 }
 
+func fetchGitHubEvents(client *http.Client, token, username string) ([]githubEvent, error) {
+	req, err := http.NewRequest("GET",
+		fmt.Sprintf("https://api.github.com/users/%s/events/public?per_page=100", username), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("github events API %d", res.StatusCode)
+	}
+
+	var events []githubEvent
+	if err := json.NewDecoder(res.Body).Decode(&events); err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
+func fetchGitHubPRs(client *http.Client, token, username string) (int, error) {
+	now := time.Now()
+	firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	dateStr := firstDay.Format("2006-01-02")
+
+	url := fmt.Sprintf(
+		"https://api.github.com/search/issues?q=author:%s+type:pr+created:>%s&per_page=1",
+		username, dateStr)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("github search API %d", res.StatusCode)
+	}
+
+	var result githubSearchResult
+	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
+		return 0, err
+	}
+	return result.TotalCount, nil
+}
+
+func computeGitHubStats(token, username string) (GitHubStats, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	events, err := fetchGitHubEvents(client, token, username)
+	if err != nil {
+		return GitHubStats{}, err
+	}
+
+	prs, err := fetchGitHubPRs(client, token, username)
+	if err != nil {
+		return GitHubStats{}, err
+	}
+
+	now := time.Now()
+	firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+
+	var commitsThisMonth, totalCommits int
+	for _, event := range events {
+		if event.Type == "PushEvent" {
+			totalCommits += event.Payload.Size
+			if eventDate, err := time.Parse(time.RFC3339, event.CreatedAt); err == nil && eventDate.After(firstDay) {
+				commitsThisMonth += event.Payload.Size
+			}
+		}
+	}
+
+	return GitHubStats{
+		CommitsThisMonth: commitsThisMonth,
+		TotalCommits:     totalCommits,
+		PRsThisMonth:     prs,
+	}, nil
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
+	}
+
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	githubUsername := os.Getenv("GITHUB_USERNAME")
+	if githubUsername == "" {
+		githubUsername = "parazeeknova"
 	}
 
 	r := gin.Default()
@@ -135,6 +258,15 @@ func main() {
 
 		api.GET("/projects", func(c *gin.Context) {
 			c.JSON(http.StatusOK, projects)
+		})
+
+		api.GET("/github/stats", func(c *gin.Context) {
+			stats, err := computeGitHubStats(githubToken, githubUsername)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, stats)
 		})
 	}
 

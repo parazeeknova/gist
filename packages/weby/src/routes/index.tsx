@@ -278,7 +278,7 @@ const Home = function Home() {
 
         <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />
 
-        <GitHubStats username="parazeeknova" />
+        <GitHubStats />
 
         <div
           className="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8"
