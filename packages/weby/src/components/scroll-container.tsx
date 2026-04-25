@@ -43,7 +43,7 @@ export const ScrollContainer = ({ children, className = "" }: ScrollContainerPro
 
       {showTopShadow && (
         <div
-          className="pointer-events-none absolute top-0 left-0 right-0 h-6 backdrop-blur-[2px]"
+          className="pointer-events-none absolute top-0 left-0 right-0 h-16"
           style={{
             background: "linear-gradient(to bottom, var(--panel-bg, #000000) 0%, transparent 100%)",
           }}
@@ -52,7 +52,7 @@ export const ScrollContainer = ({ children, className = "" }: ScrollContainerPro
 
       {showBottomShadow && (
         <div
-          className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 backdrop-blur-[2px]"
+          className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
           style={{
             background: "linear-gradient(to top, var(--panel-bg, #000000) 0%, transparent 100%)",
           }}
