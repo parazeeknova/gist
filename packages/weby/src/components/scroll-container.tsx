@@ -60,7 +60,6 @@ export const ScrollContainer = ({ children, className = "" }: ScrollContainerPro
           />
           <div className="pointer-events-none absolute bottom-1 left-0 right-0 flex items-center justify-center gap-1 text-[10px] text-gray-400">
             <span>more</span>
-            <span className="block h-2 w-2 rotate-45 border-b border-r border-current" />
           </div>
         </>
       )}

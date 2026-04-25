@@ -270,7 +270,7 @@ const Home = function Home() {
         />
 
         <div className="shrink-0">
-          <h3 className="mb-2 text-base font-medium">work stuff i guess</h3>
+          <h3 className="text-base font-medium">work stuff i guess</h3>
         </div>
 
         <ExperienceSection experience={experience} isPending={isPending} />
