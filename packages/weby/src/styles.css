@@ -1,1 +1,89 @@
 @import "tailwindcss";
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/UbuntuMono-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/UbuntuMono-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/UbuntuMono-Italic.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Ubuntu Mono";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/UbuntuMono-BoldItalic.ttf") format("truetype");
+}
+
+@layer base {
+  html {
+    font-family: "Ubuntu Mono", monospace;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    text-transform: lowercase;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.link-underline {
+  position: relative;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: var(--underline-width, 0%);
+  height: 1px;
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.link-underline:hover {
+  opacity: 1;
+}
+
+.projects-link {
+  position: relative;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.projects-link::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: var(--underline-width, 0%);
+  height: 1px;
+  background-color: currentColor;
+  transition: none;
+  z-index: 1;
+}
+
+button {
+  cursor: pointer !important;
+}
