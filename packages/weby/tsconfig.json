@@ -1,7 +1,7 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
   "compilerOptions": {
-    "target": "ES2024",
+    "target": "ESNext",
     "jsx": "react-jsx",
     "module": "ESNext",
     "rootDir": "./src",
