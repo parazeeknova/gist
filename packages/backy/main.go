@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 type Profile struct {
@@ -42,10 +44,17 @@ type Project struct {
 	Stack string `json:"stack"`
 }
 
+type GitHubOrg struct {
+	Login     string `json:"login"`
+	AvatarURL string `json:"avatar_url"`
+	URL       string `json:"html_url"`
+}
+
 type GitHubStats struct {
-	CommitsThisMonth int `json:"commitsThisMonth"`
-	TotalCommits     int `json:"totalCommits"`
-	PRsThisMonth     int `json:"prsThisMonth"`
+	CommitsThisMonth int         `json:"commitsThisMonth"`
+	TotalCommits     int         `json:"totalCommits"`
+	PRsThisMonth     int         `json:"prsThisMonth"`
+	Orgs             []GitHubOrg `json:"orgs"`
 }
 
 var profile = Profile{
@@ -102,16 +111,23 @@ var projects = []Project{
 	},
 }
 
-type githubEvent struct {
-	Type      string `json:"type"`
-	CreatedAt string `json:"created_at"`
-	Payload   struct {
-		Size int `json:"size"`
-	} `json:"payload"`
+type graphqlRequest struct {
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables"`
 }
 
-type githubSearchResult struct {
-	TotalCount int `json:"total_count"`
+type graphqlResponse struct {
+	Data struct {
+		User *struct {
+			ContributionsCollection struct {
+				TotalCommitContributions      int `json:"totalCommitContributions"`
+				TotalPullRequestContributions int `json:"totalPullRequestContributions"`
+			} `json:"contributionsCollection"`
+		} `json:"user"`
+	} `json:"data"`
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
 }
 
 func init() {
@@ -123,16 +139,13 @@ func init() {
 	profile.Links.Twitter = Link{Label: "X", URL: "https://x.com/hashcodes_"}
 }
 
-func fetchGitHubEvents(client *http.Client, token, username string) ([]githubEvent, error) {
+func fetchGitHubOrgs(client *http.Client, username string) ([]GitHubOrg, error) {
 	req, err := http.NewRequest("GET",
-		fmt.Sprintf("https://api.github.com/users/%s/events/public?per_page=100", username), nil)
+		fmt.Sprintf("https://api.github.com/users/%s/orgs?per_page=100", username), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -141,85 +154,109 @@ func fetchGitHubEvents(client *http.Client, token, username string) ([]githubEve
 	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("github events API %d", res.StatusCode)
+		return nil, fmt.Errorf("github orgs API %d", res.StatusCode)
 	}
 
-	var events []githubEvent
-	if err := json.NewDecoder(res.Body).Decode(&events); err != nil {
+	var orgs []GitHubOrg
+	if err := json.NewDecoder(res.Body).Decode(&orgs); err != nil {
 		return nil, err
 	}
-	return events, nil
+	return orgs, nil
 }
 
-func fetchGitHubPRs(client *http.Client, token, username string) (int, error) {
-	now := time.Now()
-	firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	dateStr := firstDay.Format("2006-01-02")
+func fetchGitHubContributions(token, username string, from, to time.Time) (commits, prs int, err error) {
+	query := `
+		query($login: String!, $from: DateTime!, $to: DateTime!) {
+			user(login: $login) {
+				contributionsCollection(from: $from, to: $to) {
+					totalCommitContributions
+					totalPullRequestContributions
+				}
+			}
+		}
+	`
 
-	url := fmt.Sprintf(
-		"https://api.github.com/search/issues?q=author:%s+type:pr+created:>%s&per_page=1",
-		username, dateStr)
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, err
+	payload := graphqlRequest{
+		Query: query,
+		Variables: map[string]interface{}{
+			"login": username,
+			"from":  from.Format(time.RFC3339),
+			"to":    to.Format(time.RFC3339),
+		},
 	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	if token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return 0, 0, err
 	}
 
-	res, err := client.Do(req)
+	req, err := http.NewRequest("POST", "https://api.github.com/graphql", bytes.NewReader(body))
 	if err != nil {
-		return 0, err
+		return 0, 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, 0, err
 	}
 	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("github search API %d", res.StatusCode)
+		return 0, 0, fmt.Errorf("github graphql %d", res.StatusCode)
 	}
 
-	var result githubSearchResult
+	var result graphqlResponse
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	return result.TotalCount, nil
+
+	if len(result.Errors) > 0 {
+		return 0, 0, fmt.Errorf("graphql: %s", result.Errors[0].Message)
+	}
+
+	if result.Data.User == nil {
+		return 0, 0, fmt.Errorf("user not found")
+	}
+
+	collection := result.Data.User.ContributionsCollection
+	return collection.TotalCommitContributions, collection.TotalPullRequestContributions, nil
 }
 
 func computeGitHubStats(token, username string) (GitHubStats, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	events, err := fetchGitHubEvents(client, token, username)
-	if err != nil {
-		return GitHubStats{}, err
-	}
-
-	prs, err := fetchGitHubPRs(client, token, username)
-	if err != nil {
-		return GitHubStats{}, err
-	}
-
-	now := time.Now()
+	now := time.Now().UTC()
 	firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 
-	var commitsThisMonth, totalCommits int
-	for _, event := range events {
-		if event.Type == "PushEvent" {
-			totalCommits += event.Payload.Size
-			if eventDate, err := time.Parse(time.RFC3339, event.CreatedAt); err == nil && eventDate.After(firstDay) {
-				commitsThisMonth += event.Payload.Size
-			}
-		}
+	commitsThisMonth, prsThisMonth, err := fetchGitHubContributions(token, username, firstDay, now)
+	if err != nil {
+		return GitHubStats{}, err
+	}
+
+	lastYear := now.AddDate(-1, 0, 0)
+	totalCommits, _, err := fetchGitHubContributions(token, username, lastYear, now)
+	if err != nil {
+		return GitHubStats{}, err
+	}
+
+	orgs, err := fetchGitHubOrgs(client, username)
+	if err != nil {
+		orgs = []GitHubOrg{}
 	}
 
 	return GitHubStats{
 		CommitsThisMonth: commitsThisMonth,
 		TotalCommits:     totalCommits,
-		PRsThisMonth:     prs,
+		PRsThisMonth:     prsThisMonth,
+		Orgs:             orgs,
 	}, nil
 }
 
 func main() {
+	_ = godotenv.Load()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -261,6 +298,10 @@ func main() {
 		})
 
 		api.GET("/github/stats", func(c *gin.Context) {
+			if githubToken == "" {
+				c.JSON(http.StatusServiceUnavailable, gin.H{"error": "GITHUB_TOKEN not configured"})
+				return
+			}
 			stats, err := computeGitHubStats(githubToken, githubUsername)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
