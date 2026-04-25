@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import Projects from "../components/projects";
+import { GitHubActivity } from "../components/github-calendar";
 import { ProfileSection, ExperienceSection, SocialLinks } from "../components/home-sections";
 import { useProfile, useExperience, useIsFetchingData } from "../hooks/use-data";
 
@@ -273,6 +274,8 @@ const Home = function Home() {
         <ExperienceSection experience={experience} isPending={isPending} />
 
         <Projects onExpanded={setIsProjectsExpanded} />
+
+        <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />
 
         <div
           className="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8"
