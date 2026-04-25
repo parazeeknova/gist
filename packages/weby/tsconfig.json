@@ -16,7 +16,6 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
     "libReplacement": false,
-    "stableTypeOrdering": true,
     "skipLibCheck": true,
     "strict": true,
     "noUnusedLocals": true,

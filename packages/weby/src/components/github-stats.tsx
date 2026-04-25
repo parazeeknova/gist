@@ -4,7 +4,7 @@ interface GitHubEvent {
   type: string;
   created_at: string;
   payload: {
-    commits?: { sha: string }[];
+    size?: number;
   };
 }
 
@@ -15,7 +15,9 @@ interface GitHubStats {
 }
 
 const fetchGitHubEvents = async (username: string): Promise<GitHubEvent[]> => {
-  const res = await fetch(`https://api.github.com/users/${username}/events?per_page=100`);
+  const res = await fetch(`https://api.github.com/users/${username}/events/public?per_page=100`, {
+    headers: { Accept: "application/vnd.github.v3+json" },
+  });
   if (!res.ok) {
     throw new Error(`GitHub API ${res.status}`);
   }
@@ -29,6 +31,9 @@ const fetchGitHubPRs = async (username: string): Promise<number> => {
 
   const res = await fetch(
     `https://api.github.com/search/issues?q=author:${username}+type:pr+created:>${dateStr}&per_page=1`,
+    {
+      headers: { Accept: "application/vnd.github.v3+json" },
+    },
   );
   if (!res.ok) {
     throw new Error(`GitHub Search API ${res.status}`);
@@ -52,8 +57,8 @@ const useGitHubStats = (username: string) =>
       let totalCommits = 0;
 
       for (const event of events) {
-        if (event.type === "PushEvent" && event.payload.commits) {
-          const count = event.payload.commits.length;
+        if (event.type === "PushEvent") {
+          const count = event.payload.size ?? 0;
           totalCommits += count;
 
           const eventDate = new Date(event.created_at);
