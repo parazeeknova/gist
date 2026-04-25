@@ -7,11 +7,7 @@
   "scripts": {
     "dev": "lerna run dev --parallel",
     "build": "lerna run build",
-    "start": "lerna run start --parallel",
-    "frontend": "lerna run dev --scope frontend",
-    "backend": "lerna run dev --scope backend",
-    "test": "lerna run test",
-    "lint": "lerna run lint"
+    "start": "lerna run start --parallel"
   },
   "devDependencies": {
     "lerna": "^9.0.7"
