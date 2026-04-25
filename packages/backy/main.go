@@ -133,10 +133,10 @@ type graphqlResponse struct {
 func init() {
 	profile.Links.Portfolio = Link{Label: "designer portfolio", URL: "https://folio.zephyyrr.in"}
 	profile.Links.Zephyr = Link{Label: "Zephyr", URL: "https://zephyyrr.in"}
-	profile.Links.Singularity = Link{Label: "Singularity Works", URL: "https://singularityworks.xyz"}
+	profile.Links.Singularity = Link{Label: "Singularity Works", URL: "https://itsingularity.com"}
 	profile.Links.GitHub = Link{Label: "GitHub", URL: "https://github.com/parazeeknova"}
 	profile.Links.LinkedIn = Link{Label: "LinkedIn", URL: "https://www.linkedin.com/in/hashk"}
-	profile.Links.Twitter = Link{Label: "X", URL: "https://x.com/hashcodes_"}
+	profile.Links.Twitter = Link{Label: "X", URL: "https://x.com/parazeeknova"}
 }
 
 func fetchGitHubOrgs(client *http.Client, username string) ([]GitHubOrg, error) {
@@ -161,6 +161,13 @@ func fetchGitHubOrgs(client *http.Client, username string) ([]GitHubOrg, error) 
 	if err := json.NewDecoder(res.Body).Decode(&orgs); err != nil {
 		return nil, err
 	}
+
+	for i := range orgs {
+		if orgs[i].URL == "" {
+			orgs[i].URL = fmt.Sprintf("https://github.com/%s", orgs[i].Login)
+		}
+	}
+
 	return orgs, nil
 }
 
