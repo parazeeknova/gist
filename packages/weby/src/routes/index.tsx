@@ -243,7 +243,7 @@ const Home = function Home() {
     >
       <div
         ref={leftPanelRef}
-        className="relative z-10 cursor-default p-4 font-mono select-none sm:p-6 lg:p-8"
+        className="relative z-10 flex flex-col gap-4 p-4 font-mono select-none sm:gap-6 sm:p-6 lg:h-full lg:gap-8 lg:p-8"
         style={{ backgroundColor: "#000000", color: "#ffffff" }}
       >
         <button
@@ -268,20 +268,23 @@ const Home = function Home() {
           singularityRef={linkRefs.singularityRef}
         />
 
-        <div>
+        <div className="shrink-0">
           <h3 className="mb-2 text-base font-medium">work stuff i guess</h3>
         </div>
 
         <ExperienceSection experience={experience} isPending={isPending} />
 
-        <Projects onExpanded={setIsProjectsExpanded} />
+        <div className="projects-scroll flex-1 min-h-0 overflow-y-auto">
+          <Projects onExpanded={setIsProjectsExpanded} />
+        </div>
 
-        <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />
-
-        <GitHubStats />
+        <div className="shrink-0">
+          <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />
+          <GitHubStats />
+        </div>
 
         <div
-          className="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8"
+          className="shrink-0 flex space-x-6"
           style={isMobile && isProjectsExpanded ? { display: "none" } : undefined}
         >
           <SocialLinks
