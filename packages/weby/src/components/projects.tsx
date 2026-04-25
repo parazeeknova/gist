@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { gsap } from "gsap";
+import { useProjects } from "../hooks/use-data";
+import { LoadingDots } from "./loading";
 
 interface ProjectsProps {
   onExpanded?: (expanded: boolean) => void;
@@ -11,6 +13,8 @@ export default function Projects({ onExpanded }: ProjectsProps) {
   const projectsButtonRef = useRef<HTMLButtonElement>(null);
   const projectsContentRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
+
+  const { data: projectData, isPending } = useProjects();
 
   const initProjectsAnimation = useCallback(() => {
     const btn = projectsButtonRef.current;
@@ -64,43 +68,19 @@ export default function Projects({ onExpanded }: ProjectsProps) {
     onExpanded?.(isExpanded);
   }, [isExpanded, onExpanded]);
 
-  const projectData = [
-    {
-      desc: "Unified feeds from major networks with 10K+ views in beta, optimized API latency 300ms→25ms via self-hosted stack.",
-      stack: "Next.js, TypeScript, PostgreSQL, Redis, MinIO, Docker",
-      title: "Zephyr is a Social media aggregator and platform",
-    },
-    {
-      desc: "Features threads, reactions, edits, media sharing with a modern interface in the Zephyr ecosystem.",
-      stack: "Next.js, TypeScript, Convex, Vercel",
-      title: "Zephara is a Real-time chat platform",
-    },
-    {
-      desc: "Fast TUI with hierarchical notebooks, fuzzy search, syntax highlighting for 25+ languages, and versioned storage.",
-      stack: "Rust, Ratatui",
-      title: "Snix is a Terminal snippet manager",
-    },
-    {
-      desc: "Windows code editor with built-in terminal. Supports 35+ languages, code folding, Lua customization, and QScintilla-based editing.",
-      stack: "Python, PyQt, QScintilla",
-      title: "Nyxtext Zenith is a Keyboard-first code editor",
-    },
-    {
-      desc: "Full-stack travel tracker. Log visited places and visualize journeys on an interactive map.",
-      stack: "Nuxt, Vue.js, TypeScript",
-      title: "Vue-the-World is a Travel tracker",
-    },
-  ];
-
   const renderProjects = () => (
     <div className="space-y-3 sm:space-y-4">
-      {projectData.map((project) => (
-        <div key={project.title}>
-          <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
-          <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
-          <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
-        </div>
-      ))}
+      {isPending ? (
+        <LoadingDots />
+      ) : (
+        projectData?.map((project) => (
+          <div key={project.title}>
+            <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
+            <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
+            <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
+          </div>
+        ))
+      )}
     </div>
   );
 

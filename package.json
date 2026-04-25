@@ -9,7 +9,7 @@
     "dev": "lerna run dev --parallel",
     "build": "lerna run build",
     "start": "lerna run start --parallel",
-    "check": "ultracite fix --unsafe",
+    "check": "ultracite fix --unsafe && lerna run check",
     "check-types": "lerna run check-types",
     "prepare": "lefthook install"
   },

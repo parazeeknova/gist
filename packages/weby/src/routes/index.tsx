@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import Projects from "../components/projects";
+import { ProfileSection, ExperienceSection, SocialLinks } from "../components/home-sections";
+import { useProfile, useExperience, useIsFetchingData } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
   const [isMobile, setIsMobile] = useState(false);
@@ -132,22 +134,13 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
   return { buttonRef, indicatorRef };
 };
 
-const Home = function Home() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
-  const isMobile = useIsMobile();
-
-  const linkRefs = useAnimatedLinks();
-  const themeRefs = useThemeButtonHover();
-
-  const leftPanelRef = useRef<HTMLDivElement>(null);
-  const rightPanelRef = useRef<HTMLDivElement>(null);
-  const mainContainerRef = useRef<HTMLDivElement>(null);
+const useThemeAnimation = (
+  isDarkMode: boolean,
+  leftPanelRef: React.RefObject<HTMLDivElement | null>,
+  rightPanelRef: React.RefObject<HTMLDivElement | null>,
+  mainContainerRef: React.RefObject<HTMLDivElement | null>,
+) => {
   const hasMountedRef = useRef(false);
-
-  const toggleTheme = useCallback(() => {
-    setIsDarkMode((prev) => !prev);
-  }, []);
 
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -216,7 +209,30 @@ const Home = function Home() {
     return () => {
       tl.kill();
     };
-  }, [isDarkMode]);
+  }, [isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef]);
+};
+
+const Home = function Home() {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
+  const isMobile = useIsMobile();
+
+  const linkRefs = useAnimatedLinks();
+  const themeRefs = useThemeButtonHover();
+
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+
+  const { data: profile } = useProfile();
+  const { data: experience } = useExperience();
+  const isPending = useIsFetchingData();
+
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode((prev) => !prev);
+  }, []);
+
+  useThemeAnimation(isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef);
 
   return (
     <div
@@ -242,72 +258,19 @@ const Home = function Home() {
           />
         </button>
 
-        <div className="mb-8 sm:mb-12">
-          <h1 className="text-xl font-normal sm:text-2xl">Harsh Sahu</h1>
-          <p className="mb-6 text-sm sm:mb-8 sm:text-base">
-            <a
-              ref={linkRefs.portfolioRef}
-              href="https://folio.zephyyrr.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline"
-            >
-              designer portfolio
-              <span className="ml-1">↗</span>
-            </a>
-          </p>
-          <p className="text-sm leading-relaxed sm:text-base">
-            Engineer and founder, building web platforms, infrastructure, and tools. Creator of{" "}
-            <a
-              ref={linkRefs.zephyrRef}
-              href="https://zephyyrr.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline"
-            >
-              Zephyr
-            </a>
-            . Runs{" "}
-            <a
-              ref={linkRefs.singularityRef}
-              href="https://singularityworks.xyz"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline"
-            >
-              Singularity Works
-            </a>
-            , a freelance design and development studio. CS undergrad, active in open-source and
-            hackathons.
-          </p>
-        </div>
+        <ProfileSection
+          profile={profile}
+          isPending={isPending}
+          portfolioRef={linkRefs.portfolioRef}
+          zephyrRef={linkRefs.zephyrRef}
+          singularityRef={linkRefs.singularityRef}
+        />
 
         <div>
           <h3 className="mb-2 text-base font-medium">work stuff i guess</h3>
         </div>
 
-        <div className="mb-8 space-y-3 sm:mb-12 sm:space-y-4">
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">Co-Founder — Singularity Works</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              On-Site (Bhopal, India) | August 2025–Present
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">
-              Full Stack Developer Intern — amasQIS.ai
-            </h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              Remote (Muscat, Oman) | April 2025–Present
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">President — Mozilla Firefox Club</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              On-Site (Bhopal, India) | June 2025–Present
-            </p>
-          </div>
-        </div>
+        <ExperienceSection experience={experience} isPending={isPending} />
 
         <Projects onExpanded={setIsProjectsExpanded} />
 
@@ -315,36 +278,12 @@ const Home = function Home() {
           className="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8"
           style={isMobile && isProjectsExpanded ? { display: "none" } : undefined}
         >
-          <a
-            ref={linkRefs.githubRef}
-            href="https://github.com/parazeeknova"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-xs sm:text-sm"
-            aria-label="GitHub"
-          >
-            GitHub
-          </a>
-          <a
-            ref={linkRefs.linkedinRef}
-            href="https://www.linkedin.com/in/hashk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-xs sm:text-sm"
-            aria-label="LinkedIn"
-          >
-            LinkedIn
-          </a>
-          <a
-            ref={linkRefs.twitterRef}
-            href="https://x.com/hashcodes_"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-xs sm:text-sm"
-            aria-label="X"
-          >
-            X
-          </a>
+          <SocialLinks
+            profile={profile}
+            githubRef={linkRefs.githubRef}
+            linkedinRef={linkRefs.linkedinRef}
+            twitterRef={linkRefs.twitterRef}
+          />
         </div>
       </div>
 

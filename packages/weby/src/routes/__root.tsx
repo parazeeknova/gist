@@ -1,8 +1,39 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 
 import appCss from "../styles.css?url";
 
-const RootComponent = () => <Outlet />;
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 1000 * 60 * 60 * 24,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: Number.POSITIVE_INFINITY,
+    },
+  },
+});
+
+const persister = createAsyncStoragePersister({
+  storage: typeof window === "undefined" ? undefined : window.localStorage,
+});
+
+const RootComponent = () => (
+  <PersistQueryClientProvider
+    client={queryClient}
+    persistOptions={{ persister }}
+    onSuccess={async () => {
+      await queryClient.resumePausedMutations();
+      await queryClient.invalidateQueries();
+    }}
+  >
+    <Outlet />
+  </PersistQueryClientProvider>
+);
 
 const RootShell = ({ children }: { children: React.ReactNode }) => (
   <html lang="en">
