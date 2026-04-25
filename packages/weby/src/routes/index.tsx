@@ -269,11 +269,10 @@ const Home = function Home() {
           singularityRef={linkRefs.singularityRef}
         />
 
-        <div className="shrink-0">
+        <div className="shrink-0 space-y-2">
           <h3 className="text-base font-medium">work stuff i guess</h3>
+          <ExperienceSection experience={experience} isPending={isPending} />
         </div>
-
-        <ExperienceSection experience={experience} isPending={isPending} />
 
         {isMobile ? (
           <div className="flex-1 min-h-0 overflow-y-auto projects-scroll">
