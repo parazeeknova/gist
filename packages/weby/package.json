@@ -10,6 +10,7 @@
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
+    "check-types": "tsgo --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
@@ -33,9 +34,9 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@typescript/native-preview": "beta",
     "@vitejs/plugin-react": "^6.0.1",
     "jsdom": "^28.1.0",
-    "typescript": "^5.7.2",
     "vite": "^8.0.0",
     "vitest": "^3.0.5"
   },
