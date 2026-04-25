@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
-import Projects from "../components/projects";
+import Projects, { ProjectList } from "../components/projects";
 import { GitHubActivity } from "../components/github-calendar";
 import { GitHubStats } from "../components/github-stats";
 import { ProfileSection, ExperienceSection, SocialLinks } from "../components/home-sections";
+import { ScrollContainer } from "../components/scroll-container";
 import { useProfile, useExperience, useIsFetchingData } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
@@ -274,9 +275,18 @@ const Home = function Home() {
 
         <ExperienceSection experience={experience} isPending={isPending} />
 
-        <div className="projects-scroll flex-1 min-h-0 overflow-y-auto">
-          <Projects onExpanded={setIsProjectsExpanded} />
-        </div>
+        {isMobile ? (
+          <div className="flex-1 min-h-0 overflow-y-auto projects-scroll">
+            <Projects onExpanded={setIsProjectsExpanded} />
+          </div>
+        ) : (
+          <div className="flex flex-col flex-1 min-h-0">
+            <h3 className="mb-2 shrink-0 text-base font-medium">voo look what i made</h3>
+            <ScrollContainer className="flex-1 min-h-0">
+              <ProjectList />
+            </ScrollContainer>
+          </div>
+        )}
 
         <div className="shrink-0 overflow-x-auto">
           <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />

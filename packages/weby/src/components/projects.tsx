@@ -3,6 +3,26 @@ import { gsap } from "gsap";
 import { useProjects } from "../hooks/use-data";
 import { LoadingDots } from "./loading";
 
+export const ProjectList = () => {
+  const { data: projectData, isPending } = useProjects();
+
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      {isPending ? (
+        <LoadingDots />
+      ) : (
+        projectData?.map((project) => (
+          <div key={project.title}>
+            <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
+            <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
+            <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
 interface ProjectsProps {
   onExpanded?: (expanded: boolean) => void;
 }
@@ -13,8 +33,6 @@ export default function Projects({ onExpanded }: ProjectsProps) {
   const projectsButtonRef = useRef<HTMLButtonElement>(null);
   const projectsContentRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
-
-  const { data: projectData, isPending } = useProjects();
 
   const initProjectsAnimation = useCallback(() => {
     const btn = projectsButtonRef.current;
@@ -68,22 +86,6 @@ export default function Projects({ onExpanded }: ProjectsProps) {
     onExpanded?.(isExpanded);
   }, [isExpanded, onExpanded]);
 
-  const renderProjects = () => (
-    <div className="space-y-3 sm:space-y-4">
-      {isPending ? (
-        <LoadingDots />
-      ) : (
-        projectData?.map((project) => (
-          <div key={project.title}>
-            <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
-            <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
-            <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
-          </div>
-        ))
-      )}
-    </div>
-  );
-
   return (
     <div className="space-y-3 sm:space-y-4">
       {isMobile ? (
@@ -97,14 +99,14 @@ export default function Projects({ onExpanded }: ProjectsProps) {
           </button>
           {isExpanded && (
             <div ref={projectsContentRef} className="mt-3 space-y-4">
-              {renderProjects()}
+              <ProjectList />
             </div>
           )}
         </div>
       ) : (
         <div>
           <h3 className="mb-2 text-base font-medium">voo look what i made</h3>
-          {renderProjects()}
+          <ProjectList />
         </div>
       )}
     </div>
