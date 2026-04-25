@@ -16,7 +16,7 @@ export const ProfileSection = ({
   singularityRef,
   isPending,
 }: ProfileSectionProps) => (
-  <div className="mb-8 sm:mb-12">
+  <div className="shrink-0">
     <h1 className="text-xl font-normal sm:text-2xl">
       {isPending ? <LoadingDots /> : (profile?.name ?? "Harsh Sahu")}
     </h1>
@@ -78,7 +78,7 @@ interface ExperienceSectionProps {
 }
 
 export const ExperienceSection = ({ experience, isPending }: ExperienceSectionProps) => (
-  <div className="mb-8 space-y-3 sm:mb-12 sm:space-y-4">
+  <div className="shrink-0 space-y-3 sm:space-y-4">
     {isPending ? (
       <LoadingDots />
     ) : (
@@ -125,7 +125,7 @@ interface SocialLinksProps {
 }
 
 export const SocialLinks = ({ profile, githubRef, linkedinRef, twitterRef }: SocialLinksProps) => (
-  <div className="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8">
+  <div className="flex space-x-6">
     <a
       ref={githubRef}
       href={profile?.links.github.url ?? "https://github.com/parazeeknova"}

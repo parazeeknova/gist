@@ -243,7 +243,7 @@ const Home = function Home() {
     >
       <div
         ref={leftPanelRef}
-        className="relative z-10 flex flex-col gap-4 p-4 font-mono select-none sm:gap-6 sm:p-6 lg:h-full lg:gap-8 lg:p-8"
+        className="relative z-10 flex flex-col gap-4 overflow-y-auto p-4 font-mono select-none sm:gap-6 sm:p-6 lg:overflow-hidden lg:gap-8 lg:p-8"
         style={{ backgroundColor: "#000000", color: "#ffffff" }}
       >
         <button
@@ -278,7 +278,7 @@ const Home = function Home() {
           <Projects onExpanded={setIsProjectsExpanded} />
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 overflow-x-auto">
           <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />
           <GitHubStats />
         </div>
