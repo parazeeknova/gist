@@ -17,9 +17,8 @@ pre-commit:
         - "packages/backy/**/*.go"
       stage_fixed: true
     autobump:
-      run: go run scripts/autobump.go
+      run: bun run autobump
       stage_fixed: true
-
 pre-push:
   commands:
     monorepo-check:
