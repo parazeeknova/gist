@@ -11,5 +11,5 @@
     "test": "go test ./...",
     "test:coverage": "go test ./... -cover"
   },
-  "version": "0.0.3"
+  "version": "0.0.2"
 }
