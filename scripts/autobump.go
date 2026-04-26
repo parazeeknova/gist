@@ -141,16 +141,16 @@ func main() {
 	if shouldBumpRoot {
 		if state.Root != nil {
 			setRootVersion(state.Root.TargetVersion)
-			stageFiles([]string{"package.json", "lerna.json"})
+			stageFiles([]string{"lerna.json"})
 		} else {
-			sourceVersion := readVersion("package.json")
+			sourceVersion := readVersion("lerna.json")
 			targetVersion := incrementVersion(sourceVersion)
 			setRootVersion(targetVersion)
 			state.Root = &AppliedVersion{
 				SourceVersion: sourceVersion,
 				TargetVersion: targetVersion,
 			}
-			stageFiles([]string{"package.json", "lerna.json"})
+			stageFiles([]string{"lerna.json"})
 		}
 	}
 
@@ -375,13 +375,12 @@ func setVersion(file, version string) {
 }
 
 func setRootVersion(version string) {
-	setVersion("package.json", version)
 	setVersion("lerna.json", version)
 }
 
 func restoreRootVersion(version string) {
 	setRootVersion(version)
-	stageFiles([]string{"package.json", "lerna.json"})
+	stageFiles([]string{"lerna.json"})
 }
 
 func applyVersion(ws *Workspace, version string) {

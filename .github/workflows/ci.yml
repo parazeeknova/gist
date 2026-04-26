@@ -67,4 +67,4 @@ jobs:
         run: bun run check-types
 
       - name: Run tests
-        run: bun nx affected -t test --parallel=3
+        run: bun run test
