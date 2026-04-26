@@ -1,25 +1,26 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/refs/heads/master/src/schemas/json/package.json",
-  "name": "gist",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
-  "type": "module",
-  "scripts": {
-    "dev": "lerna run dev --parallel",
-    "build": "lerna run build",
-    "start": "lerna run start --parallel",
-    "check": "ultracite fix --unsafe && lerna run check",
-    "check-types": "lerna run check-types",
-    "format": "ultracite fix --unsafe && lerna run format",
-    "prepare": "lefthook install"
-  },
   "devDependencies": {
     "lefthook": "^2.1.6",
     "lerna": "^9.0.7",
     "oxfmt": "^0.46.0",
     "oxlint": "^1.61.0",
     "ultracite": "7.6.1"
-  }
+  },
+  "name": "gist",
+  "private": true,
+  "scripts": {
+    "build": "lerna run build",
+    "check": "ultracite fix --unsafe \u0026\u0026 lerna run check",
+    "check-types": "lerna run check-types",
+    "dev": "lerna run dev --parallel",
+    "format": "ultracite fix --unsafe \u0026\u0026 lerna run format",
+    "prepare": "lefthook install",
+    "start": "lerna run start --parallel"
+  },
+  "type": "module",
+  "version": "0.0.2",
+  "workspaces": [
+    "packages/*"
+  ]
 }

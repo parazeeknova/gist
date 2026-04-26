@@ -1,0 +1,63 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+go.work
+
+# Binaries
+bin/
+backy
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Testing
+coverage
+*.cover
+*.coverage
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# CI/CD
+.github
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Scripts
+scripts/
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+
+# Misc
+*.tar.gz
+*.zip

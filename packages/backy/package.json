@@ -1,13 +1,13 @@
 {
   "name": "@gist/backy",
-  "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "go run main.go",
     "build": "go build -o bin/backy",
-    "start": "./bin/backy",
-    "check-types": "go vet ./...",
     "check": "./scripts/check.sh",
-    "format": "./scripts/format.sh"
-  }
+    "check-types": "go vet ./...",
+    "dev": "go run main.go",
+    "format": "./scripts/format.sh",
+    "start": "./bin/backy"
+  },
+  "version": "0.0.3"
 }
