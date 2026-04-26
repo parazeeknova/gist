@@ -213,7 +213,7 @@ export const SocialLinks = ({ profile, githubRef, linkedinRef, twitterRef }: Soc
       </a>
       <a
         ref={twitterRef}
-        href={twitter?.url ?? "https://x.com/hashcodes_"}
+        href={twitter?.url ?? "https://x.com/parazeeknova"}
         target="_blank"
         rel="noopener noreferrer"
         className="link-underline text-xs sm:text-sm"
