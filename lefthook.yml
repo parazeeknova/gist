@@ -18,7 +18,11 @@ pre-commit:
       name: autobump
       glob:
         - "packages/**/package.json"
-        - "packages/**/*.{ts,tsx,js,jsx,go}"
+        - "packages/**/*.ts"
+        - "packages/**/*.tsx"
+        - "packages/**/*.js"
+        - "packages/**/*.jsx"
+        - "packages/**/*.go"
         - "package.json"
         - "lerna.json"
       stage_fixed: true
