@@ -1,5 +1,5 @@
 FROM golang:1.26-alpine AS builder
-RUN apk add --no-cache git ca-certificates file
+RUN apk add --no-cache git ca-certificates
 WORKDIR /build
 ENV CGO_ENABLED=0 \
     GOOS=linux \
@@ -11,15 +11,14 @@ RUN go build -a -installsuffix cgo \
     -ldflags="-w -s -extldflags '-static'" \
     -o bin/backy \
     .
-RUN file bin/backy
 
-FROM alpine:latest AS runtime
+FROM alpine:3.21 AS runtime
 RUN apk add --no-cache ca-certificates && \
     addgroup -g 1000 -S appgroup && \
-    adduser -u 1000 -S appuser -G appgroup
+    adduser -u 1000 -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
 WORKDIR /app
 COPY --from=builder /build/bin/backy .
-RUN chown -R appuser:appgroup /app
 USER appuser
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

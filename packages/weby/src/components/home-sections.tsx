@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Profile, ExperienceItem, Link } from "../types";
+import type { ExperienceItem, Link, Profile } from "../types";
 import { LoadingDots } from "./loading";
 
 // Helper to safely get a link from the flexible links record
@@ -7,13 +7,13 @@ const getLink = (links: Record<string, Link> | undefined, key: string): Link | u
   links?.[key];
 
 interface ProfileSectionProps {
-  profile: Profile | undefined;
-  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
-  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
-  singularityRef: React.RefObject<HTMLAnchorElement | null>;
-  isPending?: boolean;
-  isMobile?: boolean;
   isDarkMode?: boolean;
+  isMobile?: boolean;
+  isPending?: boolean;
+  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
+  profile: Profile | undefined;
+  singularityRef: React.RefObject<HTMLAnchorElement | null>;
+  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
 export const ProfileSection = ({
@@ -43,21 +43,21 @@ export const ProfileSection = ({
           {" "}
           Creator of{" "}
           <a
-            ref={zephyrRef}
-            href={zephyr.url}
-            target="_blank"
-            rel="noopener noreferrer"
             className="link-underline"
+            href={zephyr.url}
+            ref={zephyrRef}
+            rel="noopener noreferrer"
+            target="_blank"
           >
             {zephyr.label}
           </a>
           . Runs{" "}
           <a
-            ref={singularityRef}
-            href={singularity.url}
-            target="_blank"
-            rel="noopener noreferrer"
             className="link-underline"
+            href={singularity.url}
+            ref={singularityRef}
+            rel="noopener noreferrer"
+            target="_blank"
           >
             {singularity.label}
           </a>
@@ -70,16 +70,16 @@ export const ProfileSection = ({
 
   return (
     <div className="shrink-0">
-      <h1 className="text-xl font-normal sm:text-2xl">
+      <h1 className="font-normal text-xl sm:text-2xl">
         {isPending ? <LoadingDots /> : (profile?.name ?? "Harsh Sahu")}
       </h1>
       <p className="mb-6 text-sm sm:mb-8 sm:text-base">
         <a
-          ref={portfolioRef}
-          href={portfolio?.url ?? "https://folio.zephyyrr.in"}
-          target="_blank"
-          rel="noopener noreferrer"
           className="link-underline"
+          href={portfolio?.url ?? "https://folio.zephyyrr.in"}
+          ref={portfolioRef}
+          rel="noopener noreferrer"
+          target="_blank"
         >
           {portfolio?.label ?? "designer portfolio"}
           <span className="ml-1">↗</span>
@@ -92,8 +92,8 @@ export const ProfileSection = ({
             <>
               <p className="text-sm leading-relaxed">{description}</p>
               <button
+                className="link-underline mt-1 text-gray-400 text-xs"
                 onClick={() => setIsExpanded(false)}
-                className="link-underline mt-1 text-xs text-gray-400"
               >
                 view less
               </button>
@@ -103,13 +103,13 @@ export const ProfileSection = ({
               <div className="relative max-h-24 overflow-hidden text-sm leading-relaxed">
                 {description}
                 <div
-                  className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
+                  className="pointer-events-none absolute right-0 bottom-0 left-0 h-16"
                   style={{
                     background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
                   }}
                 />
               </div>
-              <span className="link-underline mt-1 block text-xs text-gray-400">view more</span>
+              <span className="link-underline mt-1 block text-gray-400 text-xs">view more</span>
             </button>
           )}
         </div>
@@ -128,18 +128,18 @@ interface ExperienceSectionProps {
 const ExperienceFallback = () => (
   <>
     <div>
-      <h3 className="text-xs font-medium sm:text-sm">Co-Founder — Singularity Works</h3>
-      <p className="text-xs text-gray-500 sm:text-sm">
+      <h3 className="font-medium text-xs sm:text-sm">Co-Founder — Singularity Works</h3>
+      <p className="text-gray-500 text-xs sm:text-sm">
         On-Site (Bhopal, India) | August 2025–Present
       </p>
     </div>
     <div>
-      <h3 className="text-xs font-medium sm:text-sm">Full Stack Developer Intern — amasQIS.ai</h3>
-      <p className="text-xs text-gray-500 sm:text-sm">Remote (Muscat, Oman) | April 2025–Present</p>
+      <h3 className="font-medium text-xs sm:text-sm">Full Stack Developer Intern — amasQIS.ai</h3>
+      <p className="text-gray-500 text-xs sm:text-sm">Remote (Muscat, Oman) | April 2025–Present</p>
     </div>
     <div>
-      <h3 className="text-xs font-medium sm:text-sm">President — Mozilla Firefox Club</h3>
-      <p className="text-xs text-gray-500 sm:text-sm">
+      <h3 className="font-medium text-xs sm:text-sm">President — Mozilla Firefox Club</h3>
+      <p className="text-gray-500 text-xs sm:text-sm">
         On-Site (Bhopal, India) | June 2025–Present
       </p>
     </div>
@@ -160,8 +160,8 @@ export const ExperienceSection = ({ experience, isPending }: ExperienceSectionPr
       <div className="shrink-0 space-y-3 sm:space-y-4">
         {experience.map((item) => (
           <div key={item.title}>
-            <h3 className="text-xs font-medium sm:text-sm">{item.title}</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
+            <h3 className="font-medium text-xs sm:text-sm">{item.title}</h3>
+            <p className="text-gray-500 text-xs sm:text-sm">
               {item.location} | {item.period}
             </p>
           </div>
@@ -178,9 +178,9 @@ export const ExperienceSection = ({ experience, isPending }: ExperienceSectionPr
 };
 
 interface SocialLinksProps {
-  profile: Profile | undefined;
   githubRef: React.RefObject<HTMLAnchorElement | null>;
   linkedinRef: React.RefObject<HTMLAnchorElement | null>;
+  profile: Profile | undefined;
   twitterRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
@@ -192,32 +192,32 @@ export const SocialLinks = ({ profile, githubRef, linkedinRef, twitterRef }: Soc
   return (
     <div className="flex space-x-6">
       <a
-        ref={githubRef}
-        href={github?.url ?? "https://github.com/parazeeknova"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="link-underline text-xs sm:text-sm"
         aria-label="GitHub"
+        className="link-underline text-xs sm:text-sm"
+        href={github?.url ?? "https://github.com/parazeeknova"}
+        ref={githubRef}
+        rel="noopener noreferrer"
+        target="_blank"
       >
         {github?.label ?? "GitHub"}
       </a>
       <a
-        ref={linkedinRef}
-        href={linkedin?.url ?? "https://www.linkedin.com/in/hashk"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="link-underline text-xs sm:text-sm"
         aria-label="LinkedIn"
+        className="link-underline text-xs sm:text-sm"
+        href={linkedin?.url ?? "https://www.linkedin.com/in/hashk"}
+        ref={linkedinRef}
+        rel="noopener noreferrer"
+        target="_blank"
       >
         {linkedin?.label ?? "LinkedIn"}
       </a>
       <a
-        ref={twitterRef}
-        href={twitter?.url ?? "https://x.com/parazeeknova"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="link-underline text-xs sm:text-sm"
         aria-label="X"
+        className="link-underline text-xs sm:text-sm"
+        href={twitter?.url ?? "https://x.com/parazeeknova"}
+        ref={twitterRef}
+        rel="noopener noreferrer"
+        target="_blank"
       >
         {twitter?.label ?? "X"}
       </a>

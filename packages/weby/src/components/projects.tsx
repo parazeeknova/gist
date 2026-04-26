@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useProjects } from "../hooks/use-data";
-import { LoadingDots } from "./loading";
 import type { Project } from "../types";
+import { LoadingDots } from "./loading";
 
 interface ProjectCardProps {
   project: Project;
@@ -9,9 +9,9 @@ interface ProjectCardProps {
 
 const ProjectCard = ({ project }: ProjectCardProps) => (
   <div>
-    <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
-    <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
-    <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
+    <h3 className="font-medium text-xs sm:text-sm">{project.title}</h3>
+    <p className="mt-1 text-gray-500 text-xs sm:text-sm">{project.desc}</p>
+    <p className="mt-1 text-gray-400 text-xs">{project.stack}</p>
   </div>
 );
 
@@ -54,8 +54,8 @@ export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps)
             )}
           </div>
           <button
+            className="link-underline mt-1 text-gray-400 text-xs"
             onClick={() => setIsExpanded(false)}
-            className="link-underline mt-1 text-xs text-gray-400"
           >
             view less
           </button>
@@ -71,13 +71,13 @@ export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps)
               ))
             )}
             <div
-              className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
+              className="pointer-events-none absolute right-0 bottom-0 left-0 h-16"
               style={{
                 background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
               }}
             />
           </div>
-          <span className="link-underline mt-1 block text-xs text-gray-400">view more</span>
+          <span className="link-underline mt-1 block text-gray-400 text-xs">view more</span>
         </button>
       )}
     </div>

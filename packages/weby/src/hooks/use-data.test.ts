@@ -1,7 +1,7 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
-import { useProfile, useExperience, useProjects, useIsFetchingData } from "./use-data";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../test/utils";
+import { useExperience, useIsFetchingData, useProfile, useProjects } from "./use-data";
 
 // Helper to create mock Response at module level
 const createMockResponse = (data: unknown, ok = true): Response =>

@@ -1,3 +1,3 @@
 export const LoadingDots = () => (
-  <span className="inline-block animate-pulse text-xs text-gray-500 sm:text-sm">loading...</span>
+  <span className="inline-block animate-pulse text-gray-500 text-xs sm:text-sm">loading...</span>
 );

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gist/backy/models"
@@ -14,22 +15,26 @@ import (
 
 // GitHubService provides GitHub API operations
 type GitHubService struct {
-	client  *http.Client
-	baseURL string
+	client     *http.Client
+	baseURL    string
+	graphqlURL string
 }
 
 // NewGitHubService creates a new GitHub service with the given timeout
 func NewGitHubService(timeout time.Duration) *GitHubService {
 	return &GitHubService{
-		client:  &http.Client{Timeout: timeout},
-		baseURL: "https://api.github.com",
+		client:     &http.Client{Timeout: timeout},
+		baseURL:    "https://api.github.com",
+		graphqlURL: "https://api.github.com/graphql",
 	}
 }
 
 // FetchOrgs fetches the organizations a user belongs to
 func (s *GitHubService) FetchOrgs(ctx context.Context, token string, username string) ([]models.GitHubOrg, error) {
+	// URL-encode the username to handle special characters
+	encodedUsername := url.PathEscape(username)
 	req, err := http.NewRequestWithContext(ctx, "GET",
-		fmt.Sprintf("%s/users/%s/orgs?per_page=100", s.baseURL, username), nil)
+		fmt.Sprintf("%s/users/%s/orgs?per_page=100", s.baseURL, encodedUsername), nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
@@ -53,8 +58,8 @@ func (s *GitHubService) FetchOrgs(ctx context.Context, token string, username st
 
 	// Populate URLs if missing
 	for i := range orgs {
-		if orgs[i].HtmlURL == "" {
-			orgs[i].HtmlURL = fmt.Sprintf("https://github.com/%s", orgs[i].Login)
+		if orgs[i].HTMLURL == "" {
+			orgs[i].HTMLURL = fmt.Sprintf("https://github.com/%s", orgs[i].Login)
 		}
 		if orgs[i].URL == "" {
 			orgs[i].URL = fmt.Sprintf("%s/orgs/%s", s.baseURL, orgs[i].Login)
@@ -74,29 +79,29 @@ func (s *GitHubService) FetchContributions(
 ) (commits, prs int, err error) {
 	query := `
 query($login: String!, $from: DateTime!, $to: DateTime!) {
-  user(login: $login) {
-    contributionsCollection(from: $from, to: $to) {
-      totalCommitContributions
-      totalPullRequestContributions
-    }
-  }
+	user(login: $login) {
+		contributionsCollection(from: $from, to: $to) {
+			totalCommitContributions
+			totalPullRequestContributions
+		}
+	}
 }`
 
 	payload := models.GraphQLRequest{
 		Query: query,
-		Variables: map[string]interface{}{
+		Variables: map[string]any{
 			"login": username,
 			"from":  from.Format(time.RFC3339),
 			"to":    to.Format(time.RFC3339),
 		},
 	}
 
-	body, err := json.Marshal(payload)
+	reqBody, err := json.Marshal(payload)
 	if err != nil {
 		return 0, 0, fmt.Errorf("marshaling query: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.github.com/graphql", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", s.graphqlURL, bytes.NewReader(reqBody))
 	if err != nil {
 		return 0, 0, fmt.Errorf("creating request: %w", err)
 	}
@@ -109,18 +114,18 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 	}
 	defer res.Body.Close()
 
-	body, readErr := io.ReadAll(res.Body)
+	respBody, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return 0, 0, fmt.Errorf("reading response: %w", readErr)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return 0, 0, fmt.Errorf("github API returned %d: %s", res.StatusCode, string(body))
+		return 0, 0, fmt.Errorf("github API returned %d: %s", res.StatusCode, string(respBody))
 	}
 
 	var result models.GraphQLResponse
-	if jsonErr := json.Unmarshal(body, &result); jsonErr != nil {
-		return 0, 0, fmt.Errorf("decoding response: %w, body: %s", jsonErr, string(body))
+	if jsonErr := json.Unmarshal(respBody, &result); jsonErr != nil {
+		return 0, 0, fmt.Errorf("decoding response: %w, body: %s", jsonErr, string(respBody))
 	}
 
 	if len(result.Errors) > 0 {
@@ -130,11 +135,6 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 	if result.Data.User == nil {
 		return 0, 0, fmt.Errorf("user not found")
 	}
-
-	fmt.Printf("GraphQL result for %s from %s to %s: commits=%d, prs=%d\n",
-		username, from.Format(time.RFC3339), to.Format(time.RFC3339),
-		result.Data.User.ContributionsCollection.TotalCommitContributions,
-		result.Data.User.ContributionsCollection.TotalPullRequestContributions)
 
 	collection := result.Data.User.ContributionsCollection
 	return collection.TotalCommitContributions, collection.TotalPullRequestContributions, nil
@@ -165,6 +165,7 @@ func (s *GitHubService) ComputeStats(
 	// Organizations
 	orgs, err := s.FetchOrgs(ctx, token, username)
 	if err != nil {
+		// Log error but don't fail - orgs are optional
 		orgs = []models.GitHubOrg{}
 	}
 

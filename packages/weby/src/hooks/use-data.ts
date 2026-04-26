@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Profile, ExperienceItem, Project } from "../types";
+import type { ExperienceItem, Profile, Project } from "../types";
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const res = await fetch(url, init);

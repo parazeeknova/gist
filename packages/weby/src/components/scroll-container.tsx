@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ScrollContainerProps {
   children: ReactNode;
@@ -62,17 +62,17 @@ export const ScrollContainer = ({
     };
 
     updateShadows();
-  }, [children]);
+  }, []);
 
   return (
     <div className={`relative ${className}`}>
-      <div ref={ref} className="h-full overflow-y-auto projects-scroll">
+      <div className="projects-scroll h-full overflow-y-auto" ref={ref}>
         {children}
       </div>
 
       {showTopShadow && (
         <div
-          className="pointer-events-none absolute top-0 left-0 right-0 h-16"
+          className="pointer-events-none absolute top-0 right-0 left-0 h-16"
           style={{
             background: `linear-gradient(to bottom, ${panelBg} 0%, transparent 100%)`,
           }}
@@ -82,12 +82,12 @@ export const ScrollContainer = ({
       {showBottomShadow && (
         <>
           <div
-            className="pointer-events-none absolute bottom-0 left-0 right-0 h-16"
+            className="pointer-events-none absolute right-0 bottom-0 left-0 h-16"
             style={{
               background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
             }}
           />
-          <div className="pointer-events-none absolute bottom-1 left-0 right-0 flex items-center justify-center gap-1 text-[10px] text-gray-400">
+          <div className="pointer-events-none absolute right-0 bottom-1 left-0 flex items-center justify-center gap-1 text-[10px] text-gray-400">
             <span>more</span>
           </div>
         </>

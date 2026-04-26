@@ -1,4 +1,4 @@
-```
+```text
 ⠀⠀⠀⠀⢀⠠⠤⠀⢀⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠐⠀⠐⠀⠀⢀⣾⣿⡇⠀⠀⠀⠀⠀⢀⣼⡇⠀⠀⠀⠀    verso by @parazeeknova
 ⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⣿⠀⠀⠀⠀⣴⣿⣿⠇⠀⠀⠀⠀
@@ -36,7 +36,7 @@ so i built verso. because apparently the solution to "too many tools" is "build 
 ## what it does
 
 - **portfolio panel** — your profile, your projects, your work history, your activity. the whole "here's who i am professionally" side of things, laid out clean.
-- **knowledge base panel** — a full docmost-like wiki. write in markdown, organize into folders, link between pages, publish what you want. your public docs live here.
+- **knowledge base panel** — a full wiki. write in markdown, organize into folders, link between pages, publish what you want. your public docs live here.
 - **real-time collaborative editor** — because even personal projects deserve proper tooling.
 - **spaces & folders** — organize your writing the way your brain actually works, not the way some vc-funded startup thinks you should.
 - **self-hosted, fully** — your data, your server, your rules. no phone home, no "we updated our privacy policy" emails.

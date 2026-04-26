@@ -41,9 +41,10 @@ jobs:
 
       - name: Install Go tools
         run: |
-          go install mvdan.cc/gofumpt@latest
-          go install golang.org/x/tools/cmd/goimports@latest
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          # Pinned versions for reproducible CI
+          go install mvdan.cc/gofumpt@v0.7.0
+          go install golang.org/x/tools/cmd/goimports@v0.31.0
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.0
 
       - name: Cache Bun dependencies
         uses: actions/cache@v5
@@ -112,6 +113,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get version from package.json
+        id: version
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
@@ -122,6 +130,7 @@ jobs:
             type=raw,value=latest
             type=sha,prefix=sha-,format=short
             type=raw,value=${{ github.ref_name }}
+            type=raw,value=${{ steps.version.outputs.tag }}
 
       - name: Build and push
         id: push

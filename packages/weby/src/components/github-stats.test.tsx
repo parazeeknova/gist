@@ -1,8 +1,8 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { GitHubStats } from "./github-stats";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createWrapper } from "../test/utils";
 import type { GitHubStatsData } from "./github-stats";
+import { GitHubStats } from "./github-stats";
 
 // Helper to create mock Response at module level
 const createMockResponse = (data: unknown, ok = true): Response =>

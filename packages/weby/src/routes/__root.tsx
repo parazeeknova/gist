@@ -1,7 +1,7 @@
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { useState } from "react";
 
 import appCss from "../styles.css?url";
@@ -31,12 +31,12 @@ const RootComponent = () => {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister }}
       onSuccess={async () => {
         await queryClient.resumePausedMutations();
         // Only invalidate github-stats after resuming, not all queries
         await queryClient.invalidateQueries({ queryKey: ["github-stats"] });
       }}
+      persistOptions={{ persister }}
     >
       <Outlet />
     </PersistQueryClientProvider>

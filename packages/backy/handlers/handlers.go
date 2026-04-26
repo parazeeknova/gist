@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/gist/backy/models"
 	"github.com/gist/backy/services"
 	"github.com/gist/backy/store"
+	"golang.org/x/sync/singleflight"
 )
 
 // Handlers holds all HTTP handlers
@@ -17,6 +18,7 @@ type Handlers struct {
 	githubService *services.GitHubService
 	statsCache    *cache.StatsCache
 	config        Config
+	statsGroup    singleflight.Group
 }
 
 // Config holds application configuration
@@ -28,7 +30,7 @@ type Config struct {
 // New creates a new handlers instance
 func New(cfg Config) *Handlers {
 	return &Handlers{
-		githubService: services.NewGitHubService(10 * time.Second),
+		githubService: services.NewGitHubService(10 * time.Minute),
 		statsCache:    cache.NewStatsCache(10 * time.Minute),
 		config:        cfg,
 	}
@@ -61,27 +63,32 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 		return
 	}
 
+	username := h.config.GitHubUsername
+
 	// Check cache first
-	if cached, ok := h.statsCache.Get(h.config.GitHubUsername); ok {
+	if cached, ok := h.statsCache.Get(username); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
 
-	stats, err := h.githubService.ComputeStats(c.Request.Context(), h.config.GitHubToken, h.config.GitHubUsername)
+	// Use singleflight to prevent thundering herd
+	result, err, _ := h.statsGroup.Do(username, func() (interface{}, error) {
+		stats, computeErr := h.githubService.ComputeStats(c.Request.Context(), h.config.GitHubToken, username)
+		if computeErr != nil {
+			return nil, computeErr
+		}
+		// Cache the result
+		h.statsCache.Set(username, stats)
+		return stats, nil
+	})
+
 	if err != nil {
-		// Log error server-side with details, return safe defaults to client
-		fmt.Printf("GitHub stats error for user %s: %v\n", h.config.GitHubUsername, err)
-		c.JSON(http.StatusOK, models.GitHubStats{
-			CommitsThisMonth: 0,
-			CommitsLastYear:  0,
-			PRsThisMonth:     0,
-			Orgs:             []models.GitHubOrg{},
-		})
+		// Log error server-side with details, return safe error to client
+		log.Printf("GitHub stats error for user %s: %v", username, err)
+		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to fetch GitHub stats"})
 		return
 	}
-	fmt.Printf("GitHub stats fetched: %+v\n", stats)
 
-	// Cache the result
-	h.statsCache.Set(h.config.GitHubUsername, stats)
+	stats := result.(models.GitHubStats)
 	c.JSON(http.StatusOK, stats)
 }

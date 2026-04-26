@@ -1,6 +1,7 @@
 pre-commit:
-  jobs:
-    - run: bun run check
+  commands:
+    lint-format:
+      run: bun run check
       glob:
         - "**/*.js"
         - "**/*.jsx"
@@ -10,25 +11,23 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
-    - run: cd packages/backy && ./scripts/format.sh
+    go-format:
+      run: cd packages/backy && ./scripts/format.sh
       glob:
         - "packages/backy/**/*.go"
       stage_fixed: true
-    - run: go run scripts/autobump.go
-      name: autobump
+    autobump:
+      run: go run scripts/autobump.go
       glob:
+        - "scripts/autobump.go"
         - "packages/**/package.json"
-        - "packages/**/*.ts"
-        - "packages/**/*.tsx"
-        - "packages/**/*.js"
-        - "packages/**/*.jsx"
         - "packages/**/*.go"
         - "lerna.json"
       stage_fixed: true
 
 pre-push:
-  jobs:
-    - run: bun run check:ci
-      name: monorepo-check
-    - run: bun run check-types
-      name: monorepo-check-types
+  commands:
+    monorepo-check:
+      run: bun run check:ci
+    monorepo-check-types:
+      run: bun run check-types

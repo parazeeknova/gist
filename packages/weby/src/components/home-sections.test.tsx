@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { ProfileSection, ExperienceSection, SocialLinks } from "./home-sections";
-import type { Profile, ExperienceItem } from "../types";
+import { describe, expect, it } from "vitest";
+import type { ExperienceItem, Profile } from "../types";
+import { ExperienceSection, ProfileSection, SocialLinks } from "./home-sections";
 
 // Helper to create mock refs - defined at module level
 const createMockProfileRefs = () => ({
@@ -33,14 +33,14 @@ describe("ProfileSection", () => {
 
   it("renders profile name", () => {
     const refs = createMockProfileRefs();
-    render(<ProfileSection profile={mockProfile} {...refs} isPending={false} isMobile={false} />);
+    render(<ProfileSection profile={mockProfile} {...refs} isMobile={false} isPending={false} />);
 
     expect(screen.getByText("Test User")).toBeDefined();
   });
 
   it("renders loading state", () => {
     const refs = createMockProfileRefs();
-    render(<ProfileSection profile={undefined} {...refs} isPending={true} isMobile={false} />);
+    render(<ProfileSection profile={undefined} {...refs} isMobile={false} isPending={true} />);
 
     // LoadingDots should be rendered
     const heading = screen.getByRole("heading", { level: 1 });
@@ -49,14 +49,14 @@ describe("ProfileSection", () => {
 
   it("renders fallback when no profile", () => {
     const refs = createMockProfileRefs();
-    render(<ProfileSection profile={undefined} {...refs} isPending={false} isMobile={false} />);
+    render(<ProfileSection profile={undefined} {...refs} isMobile={false} isPending={false} />);
 
     expect(screen.getByText("Harsh Sahu")).toBeDefined();
   });
 
   it("renders portfolio link", () => {
     const refs = createMockProfileRefs();
-    render(<ProfileSection profile={mockProfile} {...refs} isPending={false} isMobile={false} />);
+    render(<ProfileSection profile={mockProfile} {...refs} isMobile={false} isPending={false} />);
 
     // Text is split across elements, so use a function matcher
     const portfolioLink = screen.getByText(

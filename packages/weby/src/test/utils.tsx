@@ -14,21 +14,21 @@ export const createTestQueryClient = () =>
     },
   });
 
-// Wrapper for React Query
-// eslint-disable-next-line react/display-name
-export const createWrapper = () => {
+// Named wrapper component for React Query
+interface QueryClientWrapperProps {
+  children: ReactNode;
+}
+
+const QueryClientWrapper = ({ children }: QueryClientWrapperProps) => {
   const testQueryClient = createTestQueryClient();
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
-  );
+  return <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>;
 };
 
+// Factory function that returns the wrapper component
+export const createWrapper = () => QueryClientWrapper;
+
 // Custom render with QueryClient
-export const renderWithQuery = (ui: React.ReactElement) => {
-  const testQueryClient = createTestQueryClient();
-  return render(ui, {
-    wrapper: ({ children }) => (
-      <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>
-    ),
+export const renderWithQuery = (ui: React.ReactElement) =>
+  render(ui, {
+    wrapper: QueryClientWrapper,
   });
-};

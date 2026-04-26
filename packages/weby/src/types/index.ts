@@ -4,20 +4,20 @@ export interface Link {
 }
 
 export interface Profile {
-  name: string;
-  tagline: string;
   description: string;
   links: Record<string, Link>;
+  name: string;
+  tagline: string;
 }
 
 export interface ExperienceItem {
-  title: string;
   location: string;
   period: string;
+  title: string;
 }
 
 export interface Project {
-  title: string;
   desc: string;
   stack: string;
+  title: string;
 }

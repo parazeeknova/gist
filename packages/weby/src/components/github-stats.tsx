@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { LoadingDots } from "./loading";
 
 export interface GitHubOrg {
@@ -13,6 +14,42 @@ export interface GitHubStatsData {
   prsThisMonth: number;
   orgs: GitHubOrg[];
 }
+
+// Create a single NumberFormat instance for consistent formatting
+const numberFormatter = new Intl.NumberFormat("en-US");
+
+// Component for org avatar with error handling
+interface OrgAvatarProps {
+  org: GitHubOrg;
+}
+
+const OrgAvatar = ({ org }: OrgAvatarProps) => {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <a
+      className="flex items-center space-x-1.5"
+      href={org.html_url}
+      rel="noopener noreferrer"
+      target="_blank"
+    >
+      <span className="text-[10px] font-medium sm:text-xs">{org.login}</span>
+      {imgError ? (
+        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-gray-200 text-[8px] text-gray-600 sm:h-5 sm:w-5 sm:text-[10px]">
+          {org.login.slice(0, 1).toUpperCase()}
+        </span>
+      ) : (
+        <img
+          alt={org.login}
+          className="h-4 w-4 rounded-full object-cover sm:h-5 sm:w-5"
+          loading="lazy"
+          onError={() => setImgError(true)}
+          src={org.avatar_url}
+        />
+      )}
+    </a>
+  );
+};
 
 const useGitHubStats = () =>
   useQuery<GitHubStatsData>({
@@ -41,7 +78,7 @@ export const GitHubStats = () => {
   if (isError) {
     return (
       <div className="mt-4 sm:mt-6">
-        <p className="text-xs text-gray-500">
+        <p className="text-gray-500 text-xs">
           Failed to load GitHub stats: {error?.message ?? "Unknown error"}
         </p>
       </div>
@@ -74,9 +111,9 @@ export const GitHubStats = () => {
     <div className="mt-4 sm:mt-6">
       <div className="flex space-x-6">
         {stats.map((stat) => (
-          <div key={stat.desktopLabel} className="flex flex-col">
-            <span className="text-xs font-medium tabular-nums sm:text-sm">
-              {stat.value.toLocaleString()}
+          <div className="flex flex-col" key={stat.desktopLabel}>
+            <span className="font-medium text-xs tabular-nums sm:text-sm">
+              {numberFormatter.format(stat.value)}
             </span>
             <span className="text-[10px] text-gray-500 uppercase tracking-wider sm:text-xs">
               <span className="sm:hidden">{stat.mobileLabel}</span>
@@ -92,21 +129,7 @@ export const GitHubStats = () => {
             orgs
           </span>
           {data.orgs.map((org) => (
-            <a
-              key={org.login}
-              href={org.html_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-1.5"
-            >
-              <span className="text-[10px] font-medium sm:text-xs">{org.login}</span>
-              <img
-                src={org.avatar_url}
-                alt={org.login}
-                className="h-4 w-4 rounded-full object-cover sm:h-5 sm:w-5"
-                loading="lazy"
-              />
-            </a>
+            <OrgAvatar key={org.login} org={org} />
           ))}
         </div>
       )}

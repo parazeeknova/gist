@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"strings"
 
@@ -25,15 +26,28 @@ func main() {
 	if webOrigin != "" {
 		// Support comma-separated origins
 		allowOrigins = strings.Split(webOrigin, ",")
-		for i := range allowOrigins {
-			allowOrigins[i] = strings.TrimSpace(allowOrigins[i])
+		// Filter out empty entries and trim whitespace
+		filtered := make([]string, 0, len(allowOrigins))
+		for _, origin := range allowOrigins {
+			origin = strings.TrimSpace(origin)
+			if origin != "" {
+				filtered = append(filtered, origin)
+			}
 		}
+		allowOrigins = filtered
 	} else {
 		// Default origins for development
 		allowOrigins = []string{
 			"http://localhost:3000",
 			"http://localhost:5173",
 			"http://localhost:8080",
+		}
+	}
+
+	// Reject wildcard when AllowCredentials is true
+	for _, origin := range allowOrigins {
+		if origin == "*" {
+			log.Fatal("CORS wildcard '*' cannot be used with AllowCredentials=true. Please specify explicit origins or set AllowCredentials to false.")
 		}
 	}
 
@@ -59,7 +73,7 @@ func main() {
 		proxyList = strings.Split(trustedProxies, ",")
 	}
 	if err := r.SetTrustedProxies(proxyList); err != nil {
-		panic(err)
+		log.Fatalf("failed to set trusted proxies: %v", err)
 	}
 
 	// Configure CORS
@@ -85,7 +99,7 @@ func main() {
 	}
 
 	if err := r.Run(":" + port); err != nil {
-		panic(err)
+		log.Fatalf("server failed: %v", err)
 	}
 }
 

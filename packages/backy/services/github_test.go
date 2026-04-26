@@ -56,8 +56,8 @@ func TestGitHubService_FetchOrgs_Success(t *testing.T) {
 	}
 
 	// Verify URL was populated
-	if orgs[0].HtmlURL == "" {
-		t.Error("HtmlURL should be populated")
+	if orgs[0].HTMLURL == "" {
+		t.Error("HTMLURL should be populated")
 	}
 }
 

@@ -34,10 +34,10 @@
 
 @layer base {
   html {
-    font-family: "Ubuntu Mono", monospace;
-    scrollbar-width: none;
     -ms-overflow-style: none;
+    font-family: "Ubuntu Mono", monospace;
     text-transform: lowercase;
+    scrollbar-width: none;
   }
 
   html::-webkit-scrollbar {
@@ -52,12 +52,12 @@
 }
 
 .link-underline::after {
-  content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
   width: var(--underline-width, 0%);
   height: 1px;
+  content: "";
   background-color: currentColor;
   transition: width 0.3s ease;
 }
@@ -73,15 +73,15 @@
 }
 
 .projects-link::after {
-  content: "";
   position: absolute;
   bottom: -2px;
   left: 0;
+  z-index: 1;
   width: var(--underline-width, 0%);
   height: 1px;
+  content: "";
   background-color: currentColor;
   transition: none;
-  z-index: 1;
 }
 
 button {
@@ -89,8 +89,8 @@ button {
 }
 
 .projects-scroll {
-  scrollbar-width: thin;
   scrollbar-color: transparent auto;
+  scrollbar-width: thin;
 }
 
 .projects-scroll::-webkit-scrollbar {

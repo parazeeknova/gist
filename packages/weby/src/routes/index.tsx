@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
-import { ProjectList, MobileProjectList } from "../components/projects";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { GitHubActivity } from "../components/github-calendar";
 import { GitHubStats } from "../components/github-stats";
-import { ProfileSection, ExperienceSection, SocialLinks } from "../components/home-sections";
+import { ExperienceSection, ProfileSection, SocialLinks } from "../components/home-sections";
+import { MobileProjectList, ProjectList } from "../components/projects";
 import { ScrollContainer } from "../components/scroll-container";
-import { useProfile, useExperience, useIsFetchingData } from "../hooks/use-data";
+import { useExperience, useIsFetchingData, useProfile } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
   const getSnapshot = useCallback(() => {
@@ -30,12 +30,12 @@ const useIsMobile = (): boolean => {
 };
 
 interface LinkRefs {
-  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
-  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
-  singularityRef: React.RefObject<HTMLAnchorElement | null>;
   githubRef: React.RefObject<HTMLAnchorElement | null>;
   linkedinRef: React.RefObject<HTMLAnchorElement | null>;
+  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
+  singularityRef: React.RefObject<HTMLAnchorElement | null>;
   twitterRef: React.RefObject<HTMLAnchorElement | null>;
+  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
 const useAnimatedLinks = (): LinkRefs => {
@@ -63,7 +63,11 @@ const useAnimatedLinks = (): LinkRefs => {
       tl.fromTo(
         link,
         { "--underline-width": "0%" } as gsap.TweenVars,
-        { "--underline-width": "100%", duration: 0.3, ease: "power2.out" } as gsap.TweenVars,
+        {
+          "--underline-width": "100%",
+          duration: 0.3,
+          ease: "power2.out",
+        } as gsap.TweenVars,
       );
 
       const enter = () => tl.play();
@@ -86,7 +90,14 @@ const useAnimatedLinks = (): LinkRefs => {
     };
   }, []);
 
-  return { githubRef, linkedinRef, portfolioRef, singularityRef, twitterRef, zephyrRef };
+  return {
+    githubRef,
+    linkedinRef,
+    portfolioRef,
+    singularityRef,
+    twitterRef,
+    zephyrRef,
+  };
 };
 
 interface ThemeButtonRefs {
@@ -101,7 +112,7 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
   useEffect(() => {
     const themeButton = buttonRef.current;
     const themeIndicator = indicatorRef.current;
-    if (!themeButton || !themeIndicator) {
+    if (!(themeButton && themeIndicator)) {
       return;
     }
 
@@ -157,7 +168,7 @@ const useThemeAnimation = (
     const leftPanel = leftPanelRef.current;
     const rightPanel = rightPanelRef.current;
     const mainContainer = mainContainerRef.current;
-    if (!leftPanel || !rightPanel || !mainContainer) {
+    if (!(leftPanel && rightPanel && mainContainer)) {
       return;
     }
 
@@ -241,7 +252,7 @@ const Home = function Home() {
 
   // Extract GitHub username from profile or env
   const githubUsername = (() => {
-    const url = profile?.links.github.url;
+    const url = profile?.links?.github?.url;
     if (url) {
       const match = url.match(/github\.com\/([^/]+)/);
       if (match) {
@@ -253,73 +264,73 @@ const Home = function Home() {
 
   return (
     <div
-      ref={mainContainerRef}
       className="relative grid min-h-screen grid-cols-1 overflow-hidden lg:h-screen lg:grid-cols-2"
+      ref={mainContainerRef}
     >
       <div
+        className="relative z-10 flex select-none flex-col gap-4 overflow-y-auto p-4 font-mono sm:gap-6 sm:p-6 lg:gap-8 lg:overflow-hidden lg:p-8"
         ref={leftPanelRef}
-        className="relative z-10 flex flex-col gap-4 overflow-y-auto p-4 font-mono select-none sm:gap-6 sm:p-6 lg:overflow-hidden lg:gap-8 lg:p-8"
         style={{ backgroundColor: "#000000", color: "#ffffff" }}
       >
         <button
-          ref={themeRefs.buttonRef}
-          onClick={toggleTheme}
-          className="absolute top-4 right-4 rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40 sm:top-6 sm:right-6 lg:top-8 lg:right-8"
           aria-label="Toggle theme"
+          className="absolute top-4 right-4 rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40 sm:top-6 sm:right-6 lg:top-8 lg:right-8"
+          onClick={toggleTheme}
+          ref={themeRefs.buttonRef}
         >
           <span className="sr-only">Toggle theme</span>
           <span
-            ref={themeRefs.indicatorRef}
             className="block h-3 w-3 rounded-full border border-current"
+            ref={themeRefs.indicatorRef}
             style={{ backgroundColor: "transparent" }}
           />
         </button>
 
         <ProfileSection
-          profile={profile}
+          isDarkMode={isDarkMode}
+          isMobile={isMobile}
           isPending={isPending}
           portfolioRef={linkRefs.portfolioRef}
-          zephyrRef={linkRefs.zephyrRef}
+          profile={profile}
           singularityRef={linkRefs.singularityRef}
-          isMobile={isMobile}
-          isDarkMode={isDarkMode}
+          zephyrRef={linkRefs.zephyrRef}
         />
 
         <div className="shrink-0 space-y-2">
-          <h3 className="text-base font-medium">work stuff i guess</h3>
+          <h3 className="font-medium text-base">work stuff i guess</h3>
           <ExperienceSection experience={experience} isPending={isPending} />
         </div>
 
         {isMobile ? (
           <div className="shrink-0 space-y-2">
-            <h3 className="text-base font-medium">voo look what i made</h3>
+            <h3 className="font-medium text-base">voo look what i made</h3>
             <MobileProjectList isDarkMode={isDarkMode} />
           </div>
         ) : (
-          <div className="flex flex-col flex-1 min-h-0">
-            <h3 className="mb-2 shrink-0 text-base font-medium">voo look what i made</h3>
-            <ScrollContainer className="flex-1 min-h-0" isDarkMode={isDarkMode}>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <h3 className="mb-2 shrink-0 font-medium text-base">voo look what i made</h3>
+            <ScrollContainer className="min-h-0 flex-1" isDarkMode={isDarkMode}>
               <ProjectList />
             </ScrollContainer>
           </div>
         )}
 
         <div className="shrink-0 overflow-x-auto">
-          <GitHubActivity username={githubUsername} isDarkMode={isDarkMode} />
+          <GitHubActivity isDarkMode={isDarkMode} username={githubUsername} />
           <GitHubStats />
         </div>
 
         <div className="shrink-0">
           <SocialLinks
-            profile={profile}
             githubRef={linkRefs.githubRef}
             linkedinRef={linkRefs.linkedinRef}
+            profile={profile}
             twitterRef={linkRefs.twitterRef}
           />
         </div>
       </div>
 
-      <div ref={rightPanelRef} className="relative" style={{ backgroundColor: "#000000" }} />
+      <div className="relative" ref={rightPanelRef} style={{ backgroundColor: "#000000" }} />
     </div>
   );
 };

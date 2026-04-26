@@ -33,7 +33,7 @@ type GitHubOrg struct {
 	Login     string `json:"login"`
 	AvatarURL string `json:"avatar_url"`
 	URL       string `json:"url"`
-	HtmlURL   string `json:"html_url"`
+	HTMLURL   string `json:"html_url"`
 }
 
 // GitHubStats represents GitHub statistics
@@ -46,8 +46,8 @@ type GitHubStats struct {
 
 // GraphQLRequest represents a GraphQL request payload
 type GraphQLRequest struct {
-	Query     string                 `json:"query"`
-	Variables map[string]interface{} `json:"variables"`
+	Query     string         `json:"query"`
+	Variables map[string]any `json:"variables"`
 }
 
 // GraphQLResponse represents a GraphQL response

@@ -12,7 +12,7 @@
     "check": "ultracite fix --unsafe && lerna run check",
     "check:ci": "ultracite check && lerna run check",
     "check-types": "lerna run check-types",
-    "dev": "lerna run dev --parallel",
+    "dev": "lerna run dev",
     "format": "ultracite fix --unsafe && lerna run format",
     "prepare": "lefthook install",
     "start": "lerna run start --parallel",

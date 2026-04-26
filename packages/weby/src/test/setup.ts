@@ -10,11 +10,5 @@ afterEach(() => {
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-// Mock import.meta.env
-vi.stubGlobal("import", {
-  meta: {
-    env: {
-      VITE_GITHUB_USERNAME: "testuser",
-    },
-  },
-});
+// Mock environment variables
+vi.stubEnv("VITE_GITHUB_USERNAME", "testuser");

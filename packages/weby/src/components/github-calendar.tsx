@@ -3,8 +3,8 @@ import { GitHubCalendar } from "react-github-calendar";
 import { Tooltip } from "react-tooltip";
 
 interface GitHubActivityProps {
-  username: string;
   isDarkMode?: boolean;
+  username: string;
 }
 
 const useIsNarrow = (): boolean => {
@@ -33,17 +33,17 @@ export const GitHubActivity = ({ username, isDarkMode = true }: GitHubActivityPr
 
   return (
     <div className="mt-6 sm:mt-8">
-      <h3 className="mb-3 text-base font-medium">activity overview</h3>
+      <h3 className="mb-3 font-medium text-base">activity overview</h3>
       <GitHubCalendar
-        username={username}
-        colorScheme={isDarkMode ? "dark" : "light"}
-        blockSize={isNarrow ? 5 : 10}
         blockMargin={isNarrow ? 1 : 3}
         blockRadius={2}
+        blockSize={isNarrow ? 5 : 10}
+        colorScheme={isDarkMode ? "dark" : "light"}
         fontSize={isNarrow ? 10 : 12}
         showColorLegend
         showTotalCount
         style={{ color: "inherit" }}
+        username={username}
       />
       <Tooltip id="github-calendar-tooltip" />
     </div>

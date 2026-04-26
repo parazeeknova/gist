@@ -213,8 +213,17 @@ func TestGetGitHubStats_CacheExpiration(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/api/github/stats", nil)
 	r.ServeHTTP(w, req)
 
-	// Should return empty stats since cache expired and token is invalid
-	if w.Code != http.StatusOK {
-		t.Errorf("GetGitHubStats status = %d, want %d", w.Code, http.StatusOK)
+	// Should return an upstream failure once cache is expired and fetch fails
+	if w.Code != http.StatusBadGateway {
+		t.Errorf("GetGitHubStats status = %d, want %d", w.Code, http.StatusBadGateway)
+	}
+
+	var response map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatalf("Failed to unmarshal response: %v", err)
+	}
+
+	if response["error"] != "failed to fetch GitHub stats" {
+		t.Errorf("error = %s, want failed to fetch GitHub stats", response["error"])
 	}
 }
