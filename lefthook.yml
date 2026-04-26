@@ -16,6 +16,11 @@ pre-commit:
       stage_fixed: true
     - run: go run scripts/autobump.go
       name: autobump
+      glob:
+        - "packages/**/package.json"
+        - "packages/**/*.{ts,tsx,js,jsx,go}"
+        - "package.json"
+        - "lerna.json"
       stage_fixed: true
 
 pre-push:

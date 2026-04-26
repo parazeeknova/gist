@@ -32,7 +32,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26.2"
+          go-version: "1.26"
 
       - name: Install Go tools
         run: |
@@ -67,7 +67,6 @@ jobs:
 
       - name: Run tests
         run: bun nx affected -t test --parallel=3
-        continue-on-error: true
 
   build-and-push:
     name: Build and push images
@@ -156,16 +155,16 @@ jobs:
         id: version
         run: |
           VERSION=$(jq -r '.version' package.json)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check if tag exists
         id: check_tag
         run: |
           if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Generate changelog
@@ -177,26 +176,28 @@ jobs:
           if [ -z "$PREV_TAG" ]; then
             COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
           else
-            COMMITS=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
           fi
 
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "## Changes" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          if [ -z "$COMMITS" ]; then
-            echo "No new commits since last release." >> $GITHUB_OUTPUT
-          else
-            echo "$COMMITS" >> $GITHUB_OUTPUT
-          fi
-          echo "" >> $GITHUB_OUTPUT
-          echo "## Container Images" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_WEB }}:${{ steps.version.outputs.tag }}\"" >> $GITHUB_OUTPUT
-          echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_API }}:${{ steps.version.outputs.tag }}\"" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_WEB }}:latest\"" >> $GITHUB_OUTPUT
-          echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_API }}:latest\"" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changes<<CHANGES_EOF"
+            echo "## Changes"
+            echo ""
+            if [ -z "$COMMITS" ]; then
+              echo "No new commits since last release."
+            else
+              echo "$COMMITS"
+            fi
+            echo ""
+            echo "## Container Images"
+            echo ""
+            echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_WEB }}:${{ steps.version.outputs.tag }}\""
+            echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_API }}:${{ steps.version.outputs.tag }}\""
+            echo ""
+            echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_WEB }}:latest\""
+            echo "- \"${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_API }}:latest\""
+            echo "CHANGES_EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create Release
         if: steps.check_tag.outputs.exists == 'false'
@@ -206,11 +207,4 @@ jobs:
           name: Release ${{ steps.version.outputs.tag }}
           body: ${{ steps.changelog.outputs.changes }}
           make_latest: true
-
-      - name: Tag commit as released
-        if: steps.check_tag.outputs.exists == 'false'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a ${{ steps.version.outputs.tag }} -m "Release ${{ steps.version.outputs.tag }}"
-          git push origin ${{ steps.version.outputs.tag }}
+          generate_release_notes: false

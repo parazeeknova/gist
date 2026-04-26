@@ -1,5 +1,5 @@
 FROM golang:1.26-alpine AS builder
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates file
 WORKDIR /build
 ENV CGO_ENABLED=0 \
     GOOS=linux \
@@ -7,10 +7,6 @@ ENV CGO_ENABLED=0 \
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 COPY . .
-# Build the binary with optimizations
-# -ldflags "-w -s" removes debug info and symbols for smaller binary
-# -a ensures all packages are rebuilt
-# -installsuffix cgo helps with static linking
 RUN go build -a -installsuffix cgo \
     -ldflags="-w -s -extldflags '-static'" \
     -o bin/backy \
@@ -18,8 +14,8 @@ RUN go build -a -installsuffix cgo \
 RUN file bin/backy
 
 FROM alpine:latest AS runtime
-RUN apk add --no-cache ca-certificates
-RUN addgroup -g 1000 -S appgroup && \
+RUN apk add --no-cache ca-certificates && \
+    addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /build/bin/backy .

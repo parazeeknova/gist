@@ -14,9 +14,7 @@ COPY packages/weby ./packages/weby
 COPY lerna.json nx.json ./
 RUN bun run build --filter @gist/weby
 
-FROM nginx:slim AS production
-RUN addgroup -g 1000 -S nginx && \
-    adduser -u 1000 -S nginx -G nginx
+FROM nginx:alpine-slim AS production
 COPY packages/weby/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /app/packages/weby/dist /usr/share/nginx/html
 RUN chown -R nginx:nginx /usr/share/nginx/html && \

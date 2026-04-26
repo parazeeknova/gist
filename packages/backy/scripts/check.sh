@@ -1,14 +1,28 @@
 #!/bin/bash
 set -e
 
-# Add Go bin to PATH
-export PATH="$PATH:$(go env GOPATH)/bin"
+# Verify go is installed
+command -v go >/dev/null 2>&1 || { echo "Go is not installed"; exit 1; }
+
+# Add Go bin to PATH safely
+GOPATH_BIN=$(go env GOPATH)/bin
+export PATH="$PATH:$GOPATH_BIN"
 
 echo "Running gofumpt check..."
-gofumpt -l -d .
+GOFUMPT_OUT=$(gofumpt -l -d .) || true
+if [ -n "$GOFUMPT_OUT" ]; then
+    echo "$GOFUMPT_OUT"
+    echo "gofumpt found formatting issues"
+    exit 1
+fi
 
 echo "Running goimports check..."
-goimports -l -d .
+GOIMPORTS_OUT=$(goimports -l -d .) || true
+if [ -n "$GOIMPORTS_OUT" ]; then
+    echo "$GOIMPORTS_OUT"
+    echo "goimports found import issues"
+    exit 1
+fi
 
 echo "Running golangci-lint..."
 golangci-lint run
