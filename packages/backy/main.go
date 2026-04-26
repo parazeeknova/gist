@@ -47,6 +47,21 @@ func main() {
 
 	r := gin.Default()
 
+	// Don't trust all proxies - use environment variable
+	// Empty = don't trust any (safest default)
+	// * = trust all (not recommended for production)
+	// IP1,IP2 = trust specific IPs
+	trustedProxies := os.Getenv("TRUSTED_PROXIES")
+	var proxyList []string
+	if trustedProxies == "*" {
+		proxyList = []string{"*"}
+	} else if trustedProxies != "" {
+		proxyList = strings.Split(trustedProxies, ",")
+	}
+	if err := r.SetTrustedProxies(proxyList); err != nil {
+		panic(err)
+	}
+
 	// Configure CORS
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     allowOrigins,

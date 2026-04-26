@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -107,13 +108,18 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 	}
 	defer res.Body.Close()
 
+	body, readErr := io.ReadAll(res.Body)
+	if readErr != nil {
+		return 0, 0, fmt.Errorf("reading response: %w", readErr)
+	}
+
 	if res.StatusCode != http.StatusOK {
-		return 0, 0, fmt.Errorf("github API returned %d", res.StatusCode)
+		return 0, 0, fmt.Errorf("github API returned %d: %s", res.StatusCode, string(body))
 	}
 
 	var result models.GraphQLResponse
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return 0, 0, fmt.Errorf("decoding response: %w", err)
+	if jsonErr := json.Unmarshal(body, &result); jsonErr != nil {
+		return 0, 0, fmt.Errorf("decoding response: %w, body: %s", jsonErr, string(body))
 	}
 
 	if len(result.Errors) > 0 {
@@ -123,6 +129,11 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 	if result.Data.User == nil {
 		return 0, 0, fmt.Errorf("user not found")
 	}
+
+	fmt.Printf("GraphQL result for %s from %s to %s: commits=%d, prs=%d\n",
+		username, from.Format(time.RFC3339), to.Format(time.RFC3339),
+		result.Data.User.ContributionsCollection.TotalCommitContributions,
+		result.Data.User.ContributionsCollection.TotalPullRequestContributions)
 
 	collection := result.Data.User.ContributionsCollection
 	return collection.TotalCommitContributions, collection.TotalPullRequestContributions, nil

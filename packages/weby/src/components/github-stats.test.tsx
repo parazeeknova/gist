@@ -5,10 +5,11 @@ import { createWrapper } from "../test/utils";
 import type { GitHubStatsData } from "./github-stats";
 
 // Helper to create mock Response at module level
-const createMockResponse = (data: unknown, ok = true): Response => ({
-  json: () => Promise.resolve(data),
-  ok,
-});
+const createMockResponse = (data: unknown, ok = true): Response =>
+  ({
+    json: () => Promise.resolve(data),
+    ok,
+  }) as unknown as Response;
 
 describe("GitHubStats", () => {
   beforeEach(() => {

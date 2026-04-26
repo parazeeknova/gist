@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gist/backy/cache"
@@ -26,8 +28,8 @@ type Config struct {
 // New creates a new handlers instance
 func New(cfg Config) *Handlers {
 	return &Handlers{
-		githubService: services.NewGitHubService(10),
-		statsCache:    cache.NewStatsCache(10),
+		githubService: services.NewGitHubService(10 * time.Second),
+		statsCache:    cache.NewStatsCache(10 * time.Minute),
 		config:        cfg,
 	}
 }
@@ -67,7 +69,8 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 
 	stats, err := h.githubService.ComputeStats(c.Request.Context(), h.config.GitHubToken, h.config.GitHubUsername)
 	if err != nil {
-		// Log error server-side, return safe defaults to client
+		// Log error server-side with details, return safe defaults to client
+		fmt.Printf("GitHub stats error for user %s: %v\n", h.config.GitHubUsername, err)
 		c.JSON(http.StatusOK, models.GitHubStats{
 			CommitsThisMonth: 0,
 			CommitsLastYear:  0,
@@ -76,6 +79,7 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 		})
 		return
 	}
+	fmt.Printf("GitHub stats fetched: %+v\n", stats)
 
 	// Cache the result
 	h.statsCache.Set(h.config.GitHubUsername, stats)
