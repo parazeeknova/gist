@@ -7,6 +7,9 @@
     "oxlint": "^1.61.0",
     "ultracite": "7.6.1"
   },
+  "engines": {
+    "node": "\u003e=24"
+  },
   "name": "gist",
   "private": true,
   "scripts": {
@@ -16,7 +19,8 @@
     "dev": "lerna run dev --parallel",
     "format": "ultracite fix --unsafe \u0026\u0026 lerna run format",
     "prepare": "lefthook install",
-    "start": "lerna run start --parallel"
+    "start": "lerna run start --parallel",
+    "test": "lerna run test"
   },
   "type": "module",
   "version": "0.0.3",

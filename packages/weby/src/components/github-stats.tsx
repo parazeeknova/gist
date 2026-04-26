@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { LoadingDots } from "./loading";
 
-interface GitHubOrg {
+export interface GitHubOrg {
   login: string;
   avatar_url: string;
   html_url: string;
 }
 
-interface GitHubStatsData {
+export interface GitHubStatsData {
   commitsThisMonth: number;
   commitsLastYear: number;
   prsThisMonth: number;

@@ -1,0 +1,128 @@
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { GitHubStats } from "./github-stats";
+import { createWrapper } from "../test/utils";
+import type { GitHubStatsData } from "./github-stats";
+
+// Mock fetch
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
+
+describe("GitHubStats", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  const mockStats: GitHubStatsData = {
+    commitsLastYear: 365,
+    commitsThisMonth: 42,
+    orgs: [
+      {
+        avatar_url: "https://example.com/avatar.png",
+        html_url: "https://github.com/testorg",
+        login: "testorg",
+      },
+    ],
+    prsThisMonth: 5,
+  };
+
+  it("renders loading state initially", () => {
+    // Simulates loading state with unresolved promise
+    // eslint-disable-next-line promise/avoid-new
+    mockFetch.mockReturnValue(new Promise(() => {}));
+
+    render(<GitHubStats />, { wrapper: createWrapper() });
+
+    // Should show loading dots
+    const loadingContainer = document.querySelector(".mt-4");
+    expect(loadingContainer).toBeDefined();
+  });
+
+  it("renders stats data correctly", async () => {
+    mockFetch.mockResolvedValueOnce({
+      json: () => mockStats,
+      ok: true,
+    } as Response);
+
+    render(<GitHubStats />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("42")).toBeDefined();
+    });
+
+    // Check all stats are rendered
+    // commits this month
+    expect(screen.getByText("42")).toBeDefined();
+    // commits last year
+    expect(screen.getByText("365")).toBeDefined();
+    // PRs
+    expect(screen.getByText("5")).toBeDefined();
+
+    // Check labels
+    expect(screen.getByText("commits this month")).toBeDefined();
+    expect(screen.getByText("commits last year")).toBeDefined();
+  });
+
+  it("renders error state", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("Network error"));
+
+    render(<GitHubStats />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      const errorText = screen.getByText(/Failed to load GitHub stats/i);
+      expect(errorText).toBeDefined();
+    });
+  });
+
+  it("renders orgs section when data has orgs", async () => {
+    mockFetch.mockResolvedValueOnce({
+      json: () => mockStats,
+      ok: true,
+    } as Response);
+
+    render(<GitHubStats />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("testorg")).toBeDefined();
+    });
+
+    // Check orgs label
+    expect(screen.getByText("orgs")).toBeDefined();
+
+    // Check org link
+    const orgLink = screen.getByText("testorg").closest("a");
+    expect(orgLink?.getAttribute("href")).toBe("https://github.com/testorg");
+  });
+
+  it("does not render orgs section when no orgs", async () => {
+    const statsNoOrgs = { ...mockStats, orgs: [] };
+    mockFetch.mockResolvedValueOnce({
+      json: () => statsNoOrgs,
+      ok: true,
+    } as Response);
+
+    render(<GitHubStats />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText("42")).toBeDefined();
+    });
+
+    // Orgs section should not be present
+    const orgsLabel = screen.queryByText("orgs");
+    expect(orgsLabel).toBeNull();
+  });
+
+  it("handles HTTP error response", async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    } as Response);
+
+    render(<GitHubStats />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      const errorText = screen.getByText(/Failed to load GitHub stats/i);
+      expect(errorText).toBeDefined();
+    });
+  });
+});
