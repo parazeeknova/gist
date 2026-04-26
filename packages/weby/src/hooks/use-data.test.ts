@@ -3,6 +3,13 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useProfile, useExperience, useProjects, useIsFetchingData } from "./use-data";
 import { createWrapper } from "../test/utils";
 
+// Helper to create mock Response at module level
+const createMockResponse = (data: unknown, ok = true): Response =>
+  ({
+    json: () => Promise.resolve(data),
+    ok,
+  }) as unknown as Response;
+
 describe("useProfile", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -22,10 +29,8 @@ describe("useProfile", () => {
       tagline: "test tagline",
     };
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      json: () => mockProfile,
-      ok: true,
-    } as Response);
+    const mockFetch = vi.fn().mockResolvedValueOnce(createMockResponse(mockProfile));
+    vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useProfile(), {
       wrapper: createWrapper(),
@@ -40,14 +45,12 @@ describe("useProfile", () => {
     });
 
     expect(result.current.data).toEqual(mockProfile);
-    expect(global.fetch).toHaveBeenCalledWith("/api/profile", expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith("/api/profile", expect.any(Object));
   });
 
   it("handles fetch error", async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-    } as Response);
+    const mockFetch = vi.fn().mockResolvedValueOnce(createMockResponse({}, false));
+    vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useProfile(), {
       wrapper: createWrapper(),
@@ -61,10 +64,12 @@ describe("useProfile", () => {
   });
 
   it("throws error on non-ok response", async () => {
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: () => Promise.resolve({}),
       ok: false,
       status: 404,
     } as Response);
+    vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useProfile(), {
       wrapper: createWrapper(),
@@ -92,10 +97,8 @@ describe("useExperience", () => {
       },
     ];
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      json: () => mockExperience,
-      ok: true,
-    } as Response);
+    const mockFetch = vi.fn().mockResolvedValueOnce(createMockResponse(mockExperience));
+    vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useExperience(), {
       wrapper: createWrapper(),
@@ -123,10 +126,8 @@ describe("useProjects", () => {
       },
     ];
 
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      json: () => mockProjects,
-      ok: true,
-    } as Response);
+    const mockFetch = vi.fn().mockResolvedValueOnce(createMockResponse(mockProjects));
+    vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useProjects(), {
       wrapper: createWrapper(),
@@ -147,13 +148,14 @@ describe("useIsFetchingData", () => {
 
   it("returns true when any query is pending", () => {
     // Create a deferred promise that never resolves
-    let resolvePromise: (value: unknown) => void;
+    let resolvePromise: ((value: unknown) => void) | undefined;
     // eslint-disable-next-line promise/avoid-new
     const deferredPromise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
 
-    global.fetch = vi.fn().mockReturnValue(deferredPromise);
+    const mockFetch = vi.fn().mockReturnValue(deferredPromise);
+    vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useIsFetchingData(), {
       wrapper: createWrapper(),
@@ -163,6 +165,8 @@ describe("useIsFetchingData", () => {
     expect(result.current).toBe(true);
 
     // Clean up by resolving (avoid unhandled promise)
-    resolvePromise({ json: () => ({}), ok: true });
+    if (resolvePromise) {
+      resolvePromise({ json: () => Promise.resolve({}), ok: true });
+    }
   });
 });

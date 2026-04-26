@@ -8,16 +8,13 @@ afterEach(() => {
 
 // Mock fetch globally
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+vi.stubGlobal("fetch", mockFetch);
 
 // Mock import.meta.env
-Object.defineProperty(global, "import", {
-  value: {
-    meta: {
-      env: {
-        VITE_GITHUB_USERNAME: "testuser",
-      },
+vi.stubGlobal("import", {
+  meta: {
+    env: {
+      VITE_GITHUB_USERNAME: "testuser",
     },
   },
-  writable: true,
 });

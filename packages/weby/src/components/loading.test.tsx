@@ -13,7 +13,7 @@ describe("LoadingDots", () => {
   it("has correct styling", () => {
     render(<LoadingDots />);
     const container = screen.getByText(
-      (content, element) => element?.classList.contains("flex") ?? false,
+      (_content, element) => element?.classList.contains("flex") ?? false,
     );
     expect(container).toBeDefined();
   });
