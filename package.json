@@ -19,7 +19,7 @@
     "start": "lerna run start --parallel"
   },
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "workspaces": [
     "packages/*"
   ]
