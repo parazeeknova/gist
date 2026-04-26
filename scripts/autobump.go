@@ -19,9 +19,10 @@ const (
 	stateFile      = ".git/autobump-state.json"
 )
 
+var rootVersionFiles = []string{"package.json", "lerna.json"}
+
 var (
 	rootDir         string
-	gitDir          string
 	versionRegex    = regexp.MustCompile(versionPattern)
 	workspaces      []Workspace
 	workspaceByDir  map[string]*Workspace
@@ -57,15 +58,6 @@ func init() {
 		panic(fmt.Sprintf("Failed to get git root: %v", err))
 	}
 	rootDir = strings.TrimSpace(rootDir)
-
-	gitDirRaw, err := git([]string{"rev-parse", "--git-dir"})
-	if err != nil {
-		panic(fmt.Sprintf("Failed to get git dir: %v", err))
-	}
-	gitDir = strings.TrimSpace(gitDirRaw)
-	if !filepath.IsAbs(gitDir) {
-		gitDir = filepath.Join(rootDir, gitDir)
-	}
 }
 
 func main() {
@@ -79,7 +71,7 @@ func main() {
 
 	state := loadState()
 	if state != nil && state.Head != currentHead {
-		restoreAllAppliedVersions(state)
+		clearState()
 		state = nil
 	}
 
@@ -141,16 +133,16 @@ func main() {
 	if shouldBumpRoot {
 		if state.Root != nil {
 			setRootVersion(state.Root.TargetVersion)
-			stageFiles([]string{"lerna.json"})
+			stageFiles(rootVersionFiles)
 		} else {
-			sourceVersion := readVersion("lerna.json")
+			sourceVersion := readVersion("package.json")
 			targetVersion := incrementVersion(sourceVersion)
 			setRootVersion(targetVersion)
 			state.Root = &AppliedVersion{
 				SourceVersion: sourceVersion,
 				TargetVersion: targetVersion,
 			}
-			stageFiles([]string{"lerna.json"})
+			stageFiles(rootVersionFiles)
 		}
 	}
 
@@ -215,7 +207,7 @@ func loadWorkspaces() {
 		}
 
 		workspaces = append(workspaces, ws)
-		workspaceByDir[dir] = &ws
+		workspaceByDir[dir] = &workspaces[len(workspaces)-1]
 		for _, f := range ws.ManagedFiles {
 			managedFiles[f] = true
 		}
@@ -375,7 +367,9 @@ func setVersion(file, version string) {
 }
 
 func setRootVersion(version string) {
-	setVersion("lerna.json", version)
+	for _, file := range rootVersionFiles {
+		setVersion(file, version)
+	}
 }
 
 func restoreRootVersion(version string) {
@@ -457,7 +451,7 @@ func updateBunLockfile() {
 
 // State management
 func loadState() *AutobumpState {
-	path := filepath.Join(gitDir, "autobump-state.json")
+	path := filepath.Join(rootDir, stateFile)
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil
@@ -471,7 +465,7 @@ func loadState() *AutobumpState {
 }
 
 func saveState(state *AutobumpState) {
-	path := filepath.Join(gitDir, "autobump-state.json")
+	path := filepath.Join(rootDir, stateFile)
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		panic(fmt.Sprintf("Failed to marshal state: %v", err))
@@ -482,7 +476,7 @@ func saveState(state *AutobumpState) {
 }
 
 func clearState() {
-	path := filepath.Join(gitDir, "autobump-state.json")
+	path := filepath.Join(rootDir, stateFile)
 	os.Remove(path)
 }
 
