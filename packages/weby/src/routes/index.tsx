@@ -1,33 +1,41 @@
-import { useEffect, useRef, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
-import Projects from "../components/projects";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { GitHubActivity } from "../components/github-calendar";
+import { GitHubStats } from "../components/github-stats";
+import { ExperienceSection, ProfileSection, SocialLinks } from "../components/home-sections";
+import { MobileProjectList, ProjectList } from "../components/projects";
+import { ScrollContainer } from "../components/scroll-container";
+import { useExperience, useIsFetchingData, useProfile } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  const checkMobile = useCallback(() => {
-    if (typeof window !== "undefined") {
-      setIsMobile(window.innerWidth < 1024);
+  const getSnapshot = useCallback(() => {
+    if (typeof window === "undefined") {
+      return false;
     }
+    return window.innerWidth < 1024;
   }, []);
 
-  useEffect(() => {
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, [checkMobile]);
+  const getServerSnapshot = useCallback(() => false, []);
 
-  return isMobile;
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- useSyncExternalStore requires callback pattern
+  const subscribe = useCallback((callback: () => void) => {
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- event handler callback required
+    const handleResize = () => callback();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };
 
 interface LinkRefs {
-  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
-  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
-  singularityRef: React.RefObject<HTMLAnchorElement | null>;
   githubRef: React.RefObject<HTMLAnchorElement | null>;
   linkedinRef: React.RefObject<HTMLAnchorElement | null>;
+  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
+  singularityRef: React.RefObject<HTMLAnchorElement | null>;
   twitterRef: React.RefObject<HTMLAnchorElement | null>;
+  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
 const useAnimatedLinks = (): LinkRefs => {
@@ -55,7 +63,11 @@ const useAnimatedLinks = (): LinkRefs => {
       tl.fromTo(
         link,
         { "--underline-width": "0%" } as gsap.TweenVars,
-        { "--underline-width": "100%", duration: 0.3, ease: "power2.out" } as gsap.TweenVars,
+        {
+          "--underline-width": "100%",
+          duration: 0.3,
+          ease: "power2.out",
+        } as gsap.TweenVars,
       );
 
       const enter = () => tl.play();
@@ -78,7 +90,14 @@ const useAnimatedLinks = (): LinkRefs => {
     };
   }, []);
 
-  return { githubRef, linkedinRef, portfolioRef, singularityRef, twitterRef, zephyrRef };
+  return {
+    githubRef,
+    linkedinRef,
+    portfolioRef,
+    singularityRef,
+    twitterRef,
+    zephyrRef,
+  };
 };
 
 interface ThemeButtonRefs {
@@ -93,7 +112,7 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
   useEffect(() => {
     const themeButton = buttonRef.current;
     const themeIndicator = indicatorRef.current;
-    if (!themeButton || !themeIndicator) {
+    if (!(themeButton && themeIndicator)) {
       return;
     }
 
@@ -132,22 +151,13 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
   return { buttonRef, indicatorRef };
 };
 
-const Home = function Home() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isProjectsExpanded, setIsProjectsExpanded] = useState(false);
-  const isMobile = useIsMobile();
-
-  const linkRefs = useAnimatedLinks();
-  const themeRefs = useThemeButtonHover();
-
-  const leftPanelRef = useRef<HTMLDivElement>(null);
-  const rightPanelRef = useRef<HTMLDivElement>(null);
-  const mainContainerRef = useRef<HTMLDivElement>(null);
+const useThemeAnimation = (
+  isDarkMode: boolean,
+  leftPanelRef: React.RefObject<HTMLDivElement | null>,
+  rightPanelRef: React.RefObject<HTMLDivElement | null>,
+  mainContainerRef: React.RefObject<HTMLDivElement | null>,
+) => {
   const hasMountedRef = useRef(false);
-
-  const toggleTheme = useCallback(() => {
-    setIsDarkMode((prev) => !prev);
-  }, []);
 
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -158,7 +168,7 @@ const Home = function Home() {
     const leftPanel = leftPanelRef.current;
     const rightPanel = rightPanelRef.current;
     const mainContainer = mainContainerRef.current;
-    if (!leftPanel || !rightPanel || !mainContainer) {
+    if (!(leftPanel && rightPanel && mainContainer)) {
       return;
     }
 
@@ -216,139 +226,111 @@ const Home = function Home() {
     return () => {
       tl.kill();
     };
-  }, [isDarkMode]);
+  }, [isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef]);
+};
+
+const Home = function Home() {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const isMobile = useIsMobile();
+
+  const linkRefs = useAnimatedLinks();
+  const themeRefs = useThemeButtonHover();
+
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+  const mainContainerRef = useRef<HTMLDivElement>(null);
+
+  const { data: profile } = useProfile();
+  const { data: experience } = useExperience();
+  const isPending = useIsFetchingData();
+
+  const toggleTheme = useCallback(() => {
+    setIsDarkMode((prev) => !prev);
+  }, []);
+
+  useThemeAnimation(isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef);
+
+  // Extract GitHub username from profile or env
+  const githubUsername = (() => {
+    const url = profile?.links?.github?.url;
+    if (url) {
+      const match = url.match(/github\.com\/([^/]+)/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return import.meta.env.VITE_GITHUB_USERNAME ?? "parazeeknova";
+  })();
 
   return (
     <div
-      ref={mainContainerRef}
       className="relative grid min-h-screen grid-cols-1 overflow-hidden lg:h-screen lg:grid-cols-2"
+      ref={mainContainerRef}
     >
       <div
+        className="relative z-10 flex select-none flex-col gap-4 overflow-y-auto p-4 font-mono sm:gap-6 sm:p-6 lg:gap-8 lg:overflow-hidden lg:p-8"
         ref={leftPanelRef}
-        className="relative z-10 cursor-default p-4 font-mono select-none sm:p-6 lg:p-8"
         style={{ backgroundColor: "#000000", color: "#ffffff" }}
       >
         <button
-          ref={themeRefs.buttonRef}
-          onClick={toggleTheme}
-          className="absolute top-4 right-4 rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40 sm:top-6 sm:right-6 lg:top-8 lg:right-8"
           aria-label="Toggle theme"
+          className="absolute top-4 right-4 rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40 sm:top-6 sm:right-6 lg:top-8 lg:right-8"
+          onClick={toggleTheme}
+          ref={themeRefs.buttonRef}
         >
           <span className="sr-only">Toggle theme</span>
           <span
-            ref={themeRefs.indicatorRef}
             className="block h-3 w-3 rounded-full border border-current"
+            ref={themeRefs.indicatorRef}
             style={{ backgroundColor: "transparent" }}
           />
         </button>
 
-        <div className="mb-8 sm:mb-12">
-          <h1 className="text-xl font-normal sm:text-2xl">Harsh Sahu</h1>
-          <p className="mb-6 text-sm sm:mb-8 sm:text-base">
-            <a
-              ref={linkRefs.portfolioRef}
-              href="https://folio.zephyyrr.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline"
-            >
-              designer portfolio
-              <span className="ml-1">↗</span>
-            </a>
-          </p>
-          <p className="text-sm leading-relaxed sm:text-base">
-            Engineer and founder, building web platforms, infrastructure, and tools. Creator of{" "}
-            <a
-              ref={linkRefs.zephyrRef}
-              href="https://zephyyrr.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline"
-            >
-              Zephyr
-            </a>
-            . Runs{" "}
-            <a
-              ref={linkRefs.singularityRef}
-              href="https://singularityworks.xyz"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="link-underline"
-            >
-              Singularity Works
-            </a>
-            , a freelance design and development studio. CS undergrad, active in open-source and
-            hackathons.
-          </p>
+        <ProfileSection
+          isDarkMode={isDarkMode}
+          isMobile={isMobile}
+          isPending={isPending}
+          portfolioRef={linkRefs.portfolioRef}
+          profile={profile}
+          singularityRef={linkRefs.singularityRef}
+          zephyrRef={linkRefs.zephyrRef}
+        />
+
+        <div className="shrink-0 space-y-2">
+          <h3 className="font-medium text-base">work stuff i guess</h3>
+          <ExperienceSection experience={experience} isPending={isPending} />
         </div>
 
-        <div>
-          <h3 className="mb-2 text-base font-medium">work stuff i guess</h3>
+        {isMobile ? (
+          <div className="shrink-0 space-y-2">
+            <h3 className="font-medium text-base">voo look what i made</h3>
+            <MobileProjectList isDarkMode={isDarkMode} />
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <h3 className="mb-2 shrink-0 font-medium text-base">voo look what i made</h3>
+            <ScrollContainer className="min-h-0 flex-1" isDarkMode={isDarkMode}>
+              <ProjectList />
+            </ScrollContainer>
+          </div>
+        )}
+
+        <div className="shrink-0 overflow-x-auto">
+          <GitHubActivity isDarkMode={isDarkMode} username={githubUsername} />
+          <GitHubStats />
         </div>
 
-        <div className="mb-8 space-y-3 sm:mb-12 sm:space-y-4">
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">Co-Founder — Singularity Works</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              On-Site (Bhopal, India) | August 2025–Present
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">
-              Full Stack Developer Intern — amasQIS.ai
-            </h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              Remote (Muscat, Oman) | April 2025–Present
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">President — Mozilla Firefox Club</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              On-Site (Bhopal, India) | June 2025–Present
-            </p>
-          </div>
-        </div>
-
-        <Projects onExpanded={setIsProjectsExpanded} />
-
-        <div
-          className="absolute bottom-4 left-4 flex space-x-6 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8"
-          style={isMobile && isProjectsExpanded ? { display: "none" } : undefined}
-        >
-          <a
-            ref={linkRefs.githubRef}
-            href="https://github.com/parazeeknova"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-xs sm:text-sm"
-            aria-label="GitHub"
-          >
-            GitHub
-          </a>
-          <a
-            ref={linkRefs.linkedinRef}
-            href="https://www.linkedin.com/in/hashk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-xs sm:text-sm"
-            aria-label="LinkedIn"
-          >
-            LinkedIn
-          </a>
-          <a
-            ref={linkRefs.twitterRef}
-            href="https://x.com/hashcodes_"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link-underline text-xs sm:text-sm"
-            aria-label="X"
-          >
-            X
-          </a>
+        <div className="shrink-0">
+          <SocialLinks
+            githubRef={linkRefs.githubRef}
+            linkedinRef={linkRefs.linkedinRef}
+            profile={profile}
+            twitterRef={linkRefs.twitterRef}
+          />
         </div>
       </div>
 
-      <div ref={rightPanelRef} className="relative" style={{ backgroundColor: "#000000" }} />
+      <div className="relative" ref={rightPanelRef} style={{ backgroundColor: "#000000" }} />
     </div>
   );
 };

@@ -1,0 +1,18 @@
+#!/bin/bash
+set -e
+
+# Change to the script directory (packages/backy root)
+cd "$(dirname "$0")/.." || exit 1
+
+# Verify go is installed
+command -v go >/dev/null 2>&1 || { echo "Go is not installed"; exit 1; }
+
+# Add Go bin to PATH safely - capture GOPATH first, then export
+GOPATH_BIN=$(go env GOPATH)/bin
+export PATH="$PATH:$GOPATH_BIN"
+
+echo "Running gofumpt..."
+gofumpt -w .
+
+echo "Running goimports..."
+goimports -w .

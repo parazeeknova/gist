@@ -1,17 +1,23 @@
 {
+  "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/refs/heads/master/src/schemas/json/package.json",
   "name": "gist",
+  "version": "0.0.4",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "type": "module",
   "scripts": {
-    "dev": "lerna run dev --parallel",
+    "autobump": "go run scripts/autobump.go",
     "build": "lerna run build",
-    "start": "lerna run start --parallel",
-    "check": "ultracite fix --unsafe",
+    "check": "ultracite fix --unsafe && lerna run check",
     "check-types": "lerna run check-types",
-    "prepare": "lefthook install"
+    "check:ci": "ultracite check && lerna run check",
+    "dev": "lerna run dev",
+    "format": "ultracite fix --unsafe && lerna run format",
+    "prepare": "lefthook install",
+    "start": "lerna run start --parallel",
+    "test": "lerna run test"
   },
   "devDependencies": {
     "lefthook": "^2.1.6",
@@ -19,5 +25,8 @@
     "oxfmt": "^0.46.0",
     "oxlint": "^1.61.0",
     "ultracite": "7.6.1"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

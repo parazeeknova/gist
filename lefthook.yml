@@ -1,6 +1,7 @@
 pre-commit:
-  jobs:
-    - run: bun ultracite fix
+  commands:
+    lint-format:
+      run: bun run check
       glob:
         - "**/*.js"
         - "**/*.jsx"
@@ -10,3 +11,17 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
+    go-format:
+      run: cd packages/backy && ./scripts/format.sh
+      glob:
+        - "packages/backy/**/*.go"
+      stage_fixed: true
+    autobump:
+      run: bun run autobump
+      stage_fixed: true
+pre-push:
+  commands:
+    monorepo-check:
+      run: bun run check:ci
+    monorepo-check-types:
+      run: bun run check-types
