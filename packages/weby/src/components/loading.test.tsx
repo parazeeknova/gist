@@ -3,18 +3,15 @@ import { render, screen } from "@testing-library/react";
 import { LoadingDots } from "./loading";
 
 describe("LoadingDots", () => {
-  it("renders loading dots", () => {
+  it("renders loading text", () => {
     render(<LoadingDots />);
-    // The component renders three spans with animate-pulse
-    const spans = document.querySelectorAll("span.animate-pulse");
-    expect(spans.length).toBe(3);
+    expect(screen.getByText("loading...")).toBeDefined();
   });
 
-  it("has correct styling", () => {
+  it("has correct styling classes", () => {
     render(<LoadingDots />);
-    const container = screen.getByText(
-      (_content, element) => element?.classList.contains("flex") ?? false,
-    );
-    expect(container).toBeDefined();
+    const span = screen.getByText("loading...");
+    expect(span.classList.contains("animate-pulse")).toBe(true);
+    expect(span.classList.contains("inline-block")).toBe(true);
   });
 });
