@@ -236,6 +236,18 @@ const Home = function Home() {
 
   useThemeAnimation(isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef);
 
+  // Extract GitHub username from profile or env
+  const githubUsername = (() => {
+    const url = profile?.links.github.url;
+    if (url) {
+      const match = url.match(/github\.com\/([^/]+)/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return import.meta.env.VITE_GITHUB_USERNAME ?? "parazeeknova";
+  })();
+
   return (
     <div
       ref={mainContainerRef}
@@ -290,11 +302,11 @@ const Home = function Home() {
         )}
 
         <div className="shrink-0 overflow-x-auto">
-          <GitHubActivity username="parazeeknova" isDarkMode={isDarkMode} />
+          <GitHubActivity username={githubUsername} isDarkMode={isDarkMode} />
           <GitHubStats />
         </div>
 
-        <div className="shrink-0 flex space-x-6">
+        <div className="shrink-0">
           <SocialLinks
             profile={profile}
             githubRef={linkRefs.githubRef}

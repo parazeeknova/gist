@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { LoadingDots } from "./loading";
 
 interface GitHubOrg {
   login: string;
@@ -6,40 +7,66 @@ interface GitHubOrg {
   html_url: string;
 }
 
-interface GitHubStats {
+interface GitHubStatsData {
   commitsThisMonth: number;
-  totalCommits: number;
+  commitsLastYear: number;
   prsThisMonth: number;
   orgs: GitHubOrg[];
 }
 
 const useGitHubStats = () =>
-  useQuery<GitHubStats>({
-    queryFn: async () => {
-      const res = await fetch("/api/github/stats");
+  useQuery<GitHubStatsData>({
+    queryFn: async ({ signal }) => {
+      const res = await fetch("/api/github/stats", { signal });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      return res.json() as Promise<GitHubStats>;
+      return res.json() as Promise<GitHubStatsData>;
     },
     queryKey: ["github-stats"],
     staleTime: 1000 * 60 * 60,
   });
 
 export const GitHubStats = () => {
-  const { data, isPending } = useGitHubStats();
+  const { data, isPending, isError, error } = useGitHubStats();
+
+  if (isPending) {
+    return (
+      <div className="mt-4 sm:mt-6">
+        <LoadingDots />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="mt-4 sm:mt-6">
+        <p className="text-xs text-gray-500">
+          Failed to load GitHub stats: {error?.message ?? "Unknown error"}
+        </p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
 
   const stats = [
     {
       desktopLabel: "commits this month",
       mobileLabel: "this month",
-      value: data?.commitsThisMonth ?? 0,
+      value: data.commitsThisMonth ?? 0,
     },
-    { desktopLabel: "total commits", mobileLabel: "commits", value: data?.totalCommits ?? 0 },
+    {
+      desktopLabel: "commits last year",
+      mobileLabel: "commits (1y)",
+      value: data.commitsLastYear ?? 0,
+    },
     {
       desktopLabel: "pull requests this month",
       mobileLabel: "prs this mo",
-      value: data?.prsThisMonth ?? 0,
+      value: data.prsThisMonth ?? 0,
     },
   ];
 
@@ -49,7 +76,7 @@ export const GitHubStats = () => {
         {stats.map((stat) => (
           <div key={stat.desktopLabel} className="flex flex-col">
             <span className="text-xs font-medium tabular-nums sm:text-sm">
-              {isPending ? "..." : stat.value.toLocaleString()}
+              {stat.value.toLocaleString()}
             </span>
             <span className="text-[10px] text-gray-500 uppercase tracking-wider sm:text-xs">
               <span className="sm:hidden">{stat.mobileLabel}</span>
@@ -59,7 +86,7 @@ export const GitHubStats = () => {
         ))}
       </div>
 
-      {data?.orgs && data.orgs.length > 0 && (
+      {data.orgs && data.orgs.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1">
           <span className="text-[10px] text-gray-500 uppercase tracking-wider sm:text-xs">
             orgs

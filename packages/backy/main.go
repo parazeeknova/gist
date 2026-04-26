@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -47,12 +50,13 @@ type Project struct {
 type GitHubOrg struct {
 	Login     string `json:"login"`
 	AvatarURL string `json:"avatar_url"`
-	URL       string `json:"html_url"`
+	URL       string `json:"url"`
+	HtmlURL   string `json:"html_url"`
 }
 
 type GitHubStats struct {
 	CommitsThisMonth int         `json:"commitsThisMonth"`
-	TotalCommits     int         `json:"totalCommits"`
+	CommitsLastYear  int         `json:"commitsLastYear"`
 	PRsThisMonth     int         `json:"prsThisMonth"`
 	Orgs             []GitHubOrg `json:"orgs"`
 }
@@ -139,8 +143,20 @@ func init() {
 	profile.Links.Twitter = Link{Label: "X", URL: "https://x.com/parazeeknova"}
 }
 
-func fetchGitHubOrgs(client *http.Client, username string) ([]GitHubOrg, error) {
-	req, err := http.NewRequest("GET",
+// Cached stats for rate limiting
+type cachedStatsEntry struct {
+	stats     GitHubStats
+	expiresAt time.Time
+}
+
+var (
+	statsCache   = make(map[string]cachedStatsEntry)
+	statsCacheMu sync.RWMutex
+	cacheTTL     = 10 * time.Minute
+)
+
+func fetchGitHubOrgs(ctx context.Context, client *http.Client, username string) ([]GitHubOrg, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET",
 		fmt.Sprintf("https://api.github.com/users/%s/orgs?per_page=100", username), nil)
 	if err != nil {
 		return nil, err
@@ -163,25 +179,29 @@ func fetchGitHubOrgs(client *http.Client, username string) ([]GitHubOrg, error) 
 	}
 
 	for i := range orgs {
+		// Compute HTML URL from login if not present
+		if orgs[i].HtmlURL == "" {
+			orgs[i].HtmlURL = fmt.Sprintf("https://github.com/%s", orgs[i].Login)
+		}
 		if orgs[i].URL == "" {
-			orgs[i].URL = fmt.Sprintf("https://github.com/%s", orgs[i].Login)
+			orgs[i].URL = fmt.Sprintf("https://api.github.com/orgs/%s", orgs[i].Login)
 		}
 	}
 
 	return orgs, nil
 }
 
-func fetchGitHubContributions(token, username string, from, to time.Time) (commits, prs int, err error) {
+func fetchGitHubContributions(ctx context.Context, client *http.Client, token, username string, from, to time.Time) (commits, prs int, err error) {
 	query := `
-		query($login: String!, $from: DateTime!, $to: DateTime!) {
-			user(login: $login) {
-				contributionsCollection(from: $from, to: $to) {
-					totalCommitContributions
-					totalPullRequestContributions
-				}
-			}
-		}
-	`
+query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    contributionsCollection(from: $from, to: $to) {
+      totalCommitContributions
+      totalPullRequestContributions
+    }
+  }
+}
+`
 
 	payload := graphqlRequest{
 		Query: query,
@@ -197,14 +217,14 @@ func fetchGitHubContributions(token, username string, from, to time.Time) (commi
 		return 0, 0, err
 	}
 
-	req, err := http.NewRequest("POST", "https://api.github.com/graphql", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.github.com/graphql", bytes.NewReader(body))
 	if err != nil {
 		return 0, 0, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Content-Type", "application/json")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -232,33 +252,53 @@ func fetchGitHubContributions(token, username string, from, to time.Time) (commi
 }
 
 func computeGitHubStats(token, username string) (GitHubStats, error) {
+	// Check cache first
+	statsCacheMu.RLock()
+	if entry, ok := statsCache[username]; ok && time.Now().Before(entry.expiresAt) {
+		statsCacheMu.RUnlock()
+		return entry.stats, nil
+	}
+	statsCacheMu.RUnlock()
+
 	client := &http.Client{Timeout: 10 * time.Second}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
 
 	now := time.Now().UTC()
 	firstDay := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 
-	commitsThisMonth, prsThisMonth, err := fetchGitHubContributions(token, username, firstDay, now)
+	commitsThisMonth, prsThisMonth, err := fetchGitHubContributions(ctx, client, token, username, firstDay, now)
 	if err != nil {
 		return GitHubStats{}, err
 	}
 
 	lastYear := now.AddDate(-1, 0, 0)
-	totalCommits, _, err := fetchGitHubContributions(token, username, lastYear, now)
+	commitsLastYear, _, err := fetchGitHubContributions(ctx, client, token, username, lastYear, now)
 	if err != nil {
 		return GitHubStats{}, err
 	}
 
-	orgs, err := fetchGitHubOrgs(client, username)
+	orgs, err := fetchGitHubOrgs(ctx, client, username)
 	if err != nil {
 		orgs = []GitHubOrg{}
 	}
 
-	return GitHubStats{
+	stats := GitHubStats{
 		CommitsThisMonth: commitsThisMonth,
-		TotalCommits:     totalCommits,
+		CommitsLastYear:  commitsLastYear,
 		PRsThisMonth:     prsThisMonth,
 		Orgs:             orgs,
-	}, nil
+	}
+
+	// Cache the result
+	statsCacheMu.Lock()
+	statsCache[username] = cachedStatsEntry{
+		stats:     stats,
+		expiresAt: time.Now().Add(cacheTTL),
+	}
+	statsCacheMu.Unlock()
+
+	return stats, nil
 }
 
 func main() {
@@ -275,10 +315,28 @@ func main() {
 		githubUsername = "parazeeknova"
 	}
 
+	// Get allowed origins from env
+	webOrigin := os.Getenv("WEB_ORIGIN")
+	var allowOrigins []string
+	if webOrigin != "" {
+		// Support comma-separated origins
+		allowOrigins = strings.Split(webOrigin, ",")
+		for i := range allowOrigins {
+			allowOrigins[i] = strings.TrimSpace(allowOrigins[i])
+		}
+	} else {
+		// Default origins for development
+		allowOrigins = []string{
+			"http://localhost:3000",
+			"http://localhost:5173",
+			"http://localhost:8080",
+		}
+	}
+
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     allowOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -311,7 +369,14 @@ func main() {
 			}
 			stats, err := computeGitHubStats(githubToken, githubUsername)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				// Log error server-side, return generic response to client
+				_, _ = gin.DefaultErrorWriter.Write([]byte(fmt.Sprintf("GitHub stats error: %v\n", err)))
+				c.JSON(http.StatusOK, GitHubStats{
+					CommitsThisMonth: 0,
+					CommitsLastYear:  0,
+					PRsThisMonth:     0,
+					Orgs:             []GitHubOrg{},
+				})
 				return
 			}
 			c.JSON(http.StatusOK, stats)

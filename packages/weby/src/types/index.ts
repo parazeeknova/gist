@@ -7,14 +7,7 @@ export interface Profile {
   name: string;
   tagline: string;
   description: string;
-  links: {
-    portfolio: Link;
-    zephyr: Link;
-    singularity: Link;
-    github: Link;
-    linkedin: Link;
-    twitter: Link;
-  };
+  links: Record<string, Link>;
 }
 
 export interface ExperienceItem {

@@ -7,6 +7,7 @@
     "build": "go build -o bin/backy",
     "start": "./bin/backy",
     "check-types": "go vet ./...",
-    "check": "$HOME/go/bin/gofumpt -w . && $HOME/go/bin/goimports -w . && $HOME/go/bin/golangci-lint run"
+    "check": "./scripts/check.sh",
+    "format": "./scripts/format.sh"
   }
 }

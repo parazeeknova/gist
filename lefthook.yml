@@ -10,17 +10,14 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
-    - run: cd packages/backy && $HOME/go/bin/gofumpt -w . && $HOME/go/bin/goimports -w . && $HOME/go/bin/golangci-lint run
+    - run: cd packages/backy && ./scripts/format.sh
       glob:
         - "packages/backy/**/*.go"
+      stage_fixed: true
 
 pre-push:
   jobs:
     - run: bun run check
-      name: weby-check
+      name: monorepo-check
     - run: bun run check-types
-      name: weby-check-types
-    - run: cd packages/backy && bun run check-types
-      name: backy-check-types
-    - run: cd packages/backy && bun run check
-      name: backy-check
+      name: monorepo-check-types

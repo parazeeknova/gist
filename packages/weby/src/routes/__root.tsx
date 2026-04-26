@@ -2,38 +2,46 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-r
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
+import { useState } from "react";
 
 import appCss from "../styles.css?url";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      gcTime: 1000 * 60 * 60 * 24,
-      refetchOnMount: false,
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: Number.POSITIVE_INFINITY,
+const createQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: {
+        gcTime: 1000 * 60 * 60 * 24,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        refetchOnWindowFocus: false,
+        retry: 1,
+        staleTime: 1000 * 60 * 60,
+      },
     },
-  },
-});
+  });
 
 const persister = createAsyncStoragePersister({
   storage: typeof window === "undefined" ? undefined : window.localStorage,
 });
 
-const RootComponent = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{ persister }}
-    onSuccess={async () => {
-      await queryClient.resumePausedMutations();
-      await queryClient.invalidateQueries();
-    }}
-  >
-    <Outlet />
-  </PersistQueryClientProvider>
-);
+const RootComponent = () => {
+  // Create QueryClient per request/component scope to avoid SSR leaks
+  const [queryClient] = useState(createQueryClient);
+
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister }}
+      onSuccess={async () => {
+        await queryClient.resumePausedMutations();
+        // Only invalidate github-stats after resuming, not all queries
+        await queryClient.invalidateQueries({ queryKey: ["github-stats"] });
+      }}
+    >
+      <Outlet />
+    </PersistQueryClientProvider>
+  );
+};
 
 const RootShell = ({ children }: { children: React.ReactNode }) => (
   <html lang="en">
@@ -170,10 +178,8 @@ export const Route = createRootRoute({
         content: "yes",
         name: "mobile-web-app-capable",
       },
-      {
-        title: "gist - parazeeknova",
-      },
     ],
+    title: "gist - parazeeknova",
   }),
   notFoundComponent: () => <p>Not Found</p>,
   shellComponent: RootShell,

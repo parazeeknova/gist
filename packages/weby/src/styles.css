@@ -88,23 +88,29 @@ button {
   cursor: pointer !important;
 }
 
-.projects-scroll::-webkit-scrollbar {
-  width: 0;
+.projects-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent auto;
 }
 
-.projects-scroll:hover::-webkit-scrollbar {
+.projects-scroll::-webkit-scrollbar {
   width: 4px;
+}
+
+.projects-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.projects-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 2px;
+  transition: background-color 0.15s ease;
+}
+
+.projects-scroll:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.2) auto;
 }
 
 .projects-scroll:hover::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-}
-
-.projects-scroll {
-  scrollbar-width: none;
-}
-
-.projects-scroll:hover {
-  scrollbar-width: thin;
 }

@@ -1,7 +1,19 @@
-import { useRef, useState, useEffect } from "react";
-import { gsap } from "gsap";
+import { useState } from "react";
 import { useProjects } from "../hooks/use-data";
 import { LoadingDots } from "./loading";
+import type { Project } from "../types";
+
+interface ProjectCardProps {
+  project: Project;
+}
+
+const ProjectCard = ({ project }: ProjectCardProps) => (
+  <div>
+    <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
+    <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
+    <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
+  </div>
+);
 
 export const ProjectList = () => {
   const { data: projectData, isPending } = useProjects();
@@ -11,13 +23,7 @@ export const ProjectList = () => {
       {isPending ? (
         <LoadingDots />
       ) : (
-        projectData?.map((project) => (
-          <div key={project.title}>
-            <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
-            <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
-            <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
-          </div>
-        ))
+        projectData?.map((project) => <ProjectCard key={project.title} project={project} />)
       )}
     </div>
   );
@@ -28,9 +34,9 @@ interface MobileProjectListProps {
 }
 
 export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const { data: projectData, isPending } = useProjects();
   const panelBg = isDarkMode ? "#000000" : "#ffffff";
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const visibleProjects = isExpanded ? projectData : projectData?.slice(0, 3);
 
@@ -43,11 +49,7 @@ export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps)
               <LoadingDots />
             ) : (
               visibleProjects?.map((project) => (
-                <div key={project.title}>
-                  <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
-                  <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
-                  <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
-                </div>
+                <ProjectCard key={project.title} project={project} />
               ))
             )}
           </div>
@@ -65,11 +67,7 @@ export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps)
               <LoadingDots />
             ) : (
               visibleProjects?.map((project) => (
-                <div key={project.title}>
-                  <h3 className="text-xs font-medium sm:text-sm">{project.title}</h3>
-                  <p className="mt-1 text-xs text-gray-500 sm:text-sm">{project.desc}</p>
-                  <p className="mt-1 text-xs text-gray-400">{project.stack}</p>
-                </div>
+                <ProjectCard key={project.title} project={project} />
               ))
             )}
             <div
@@ -85,71 +83,3 @@ export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps)
     </div>
   );
 };
-
-interface ProjectsProps {
-  onExpanded?: (expanded: boolean) => void;
-}
-
-export default function Projects({ onExpanded }: ProjectsProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const projectsButtonRef = useRef<HTMLButtonElement>(null);
-  const projectsContentRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<gsap.core.Timeline | null>(null);
-
-  useEffect(() => {
-    const btn = projectsButtonRef.current;
-    if (!btn || timelineRef.current) {
-      return;
-    }
-    gsap.set(btn, { "--underline-width": "0%" } as gsap.TweenVars);
-    const tl = gsap.timeline({ paused: true });
-    tl.fromTo(
-      btn,
-      { "--underline-width": "0%" } as gsap.TweenVars,
-      { "--underline-width": "100%", duration: 0.4, ease: "power2.out" } as gsap.TweenVars,
-    );
-    timelineRef.current = tl;
-  }, []);
-
-  useEffect(() => {
-    if (timelineRef.current && projectsContentRef.current) {
-      if (isExpanded) {
-        timelineRef.current.play();
-        gsap.fromTo(
-          projectsContentRef.current,
-          { opacity: 0, y: -10 },
-          { duration: 0.3, ease: "power2.out", opacity: 1, y: 0 },
-        );
-      } else {
-        timelineRef.current.reverse();
-        gsap.to(projectsContentRef.current, {
-          duration: 0.2,
-          ease: "power2.in",
-          opacity: 0,
-          y: -10,
-        });
-      }
-    }
-  }, [isExpanded]);
-
-  useEffect(() => {
-    onExpanded?.(isExpanded);
-  }, [isExpanded, onExpanded]);
-
-  return (
-    <div>
-      <button
-        ref={projectsButtonRef}
-        className="projects-link text-base font-medium"
-        onClick={() => setIsExpanded((prev) => !prev)}
-      >
-        <span>voo look what i made</span>
-      </button>
-      {isExpanded && (
-        <div ref={projectsContentRef} className="mt-3 space-y-4">
-          <ProjectList />
-        </div>
-      )}
-    </div>
-  );
-}

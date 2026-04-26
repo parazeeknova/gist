@@ -8,7 +8,13 @@ interface GitHubActivityProps {
 }
 
 export const GitHubActivity = ({ username, isDarkMode = true }: GitHubActivityProps) => {
-  const [isNarrow, setIsNarrow] = useState(false);
+  // Initialize with actual window width to avoid layout flash
+  const [isNarrow, setIsNarrow] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.innerWidth < 640;
+  });
 
   useEffect(() => {
     const check = () => setIsNarrow(window.innerWidth < 640);

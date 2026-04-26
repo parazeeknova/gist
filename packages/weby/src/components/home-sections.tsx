@@ -1,6 +1,10 @@
 import { useState } from "react";
-import type { Profile, ExperienceItem } from "../types";
+import type { Profile, ExperienceItem, Link } from "../types";
 import { LoadingDots } from "./loading";
+
+// Helper to safely get a link from the flexible links record
+const getLink = (links: Record<string, Link> | undefined, key: string): Link | undefined =>
+  links?.[key];
 
 interface ProfileSectionProps {
   profile: Profile | undefined;
@@ -24,34 +28,38 @@ export const ProfileSection = ({
   const panelBg = isDarkMode ? "#000000" : "#ffffff";
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const zephyr = getLink(profile?.links, "zephyr");
+  const singularity = getLink(profile?.links, "singularity");
+  const portfolio = getLink(profile?.links, "portfolio");
+
   const description = isPending ? (
     <LoadingDots />
   ) : (
     <>
       {profile?.description ??
         "Engineer and founder, building web platforms, infrastructure, and tools."}
-      {profile && (
+      {zephyr && singularity && (
         <>
           {" "}
           Creator of{" "}
           <a
             ref={zephyrRef}
-            href={profile.links.zephyr.url}
+            href={zephyr.url}
             target="_blank"
             rel="noopener noreferrer"
             className="link-underline"
           >
-            {profile.links.zephyr.label}
+            {zephyr.label}
           </a>
           . Runs{" "}
           <a
             ref={singularityRef}
-            href={profile.links.singularity.url}
+            href={singularity.url}
             target="_blank"
             rel="noopener noreferrer"
             className="link-underline"
           >
-            {profile.links.singularity.label}
+            {singularity.label}
           </a>
           , a freelance design and development studio. CS undergrad, active in open-source and
           hackathons.
@@ -68,12 +76,12 @@ export const ProfileSection = ({
       <p className="mb-6 text-sm sm:mb-8 sm:text-base">
         <a
           ref={portfolioRef}
-          href={profile?.links.portfolio.url ?? "https://folio.zephyyrr.in"}
+          href={portfolio?.url ?? "https://folio.zephyyrr.in"}
           target="_blank"
           rel="noopener noreferrer"
           className="link-underline"
         >
-          {profile?.links.portfolio.label ?? "designer portfolio"}
+          {portfolio?.label ?? "designer portfolio"}
           <span className="ml-1">↗</span>
         </a>
       </p>
@@ -117,45 +125,57 @@ interface ExperienceSectionProps {
   isPending?: boolean;
 }
 
-export const ExperienceSection = ({ experience, isPending }: ExperienceSectionProps) => (
-  <div className="shrink-0 space-y-3 sm:space-y-4">
-    {isPending ? (
-      <LoadingDots />
-    ) : (
-      (experience?.map((item) => (
-        <div key={item.title}>
-          <h3 className="text-xs font-medium sm:text-sm">{item.title}</h3>
-          <p className="text-xs text-gray-500 sm:text-sm">
-            {item.location} | {item.period}
-          </p>
-        </div>
-      )) ?? (
-        <>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">Co-Founder — Singularity Works</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              On-Site (Bhopal, India) | August 2025–Present
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">
-              Full Stack Developer Intern — amasQIS.ai
-            </h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              Remote (Muscat, Oman) | April 2025–Present
-            </p>
-          </div>
-          <div>
-            <h3 className="text-xs font-medium sm:text-sm">President — Mozilla Firefox Club</h3>
-            <p className="text-xs text-gray-500 sm:text-sm">
-              On-Site (Bhopal, India) | June 2025–Present
-            </p>
-          </div>
-        </>
-      ))
-    )}
-  </div>
+const ExperienceFallback = () => (
+  <>
+    <div>
+      <h3 className="text-xs font-medium sm:text-sm">Co-Founder — Singularity Works</h3>
+      <p className="text-xs text-gray-500 sm:text-sm">
+        On-Site (Bhopal, India) | August 2025–Present
+      </p>
+    </div>
+    <div>
+      <h3 className="text-xs font-medium sm:text-sm">Full Stack Developer Intern — amasQIS.ai</h3>
+      <p className="text-xs text-gray-500 sm:text-sm">Remote (Muscat, Oman) | April 2025–Present</p>
+    </div>
+    <div>
+      <h3 className="text-xs font-medium sm:text-sm">President — Mozilla Firefox Club</h3>
+      <p className="text-xs text-gray-500 sm:text-sm">
+        On-Site (Bhopal, India) | June 2025–Present
+      </p>
+    </div>
+  </>
 );
+
+export const ExperienceSection = ({ experience, isPending }: ExperienceSectionProps) => {
+  if (isPending) {
+    return (
+      <div className="shrink-0 space-y-3 sm:space-y-4">
+        <LoadingDots />
+      </div>
+    );
+  }
+
+  if (experience && experience.length > 0) {
+    return (
+      <div className="shrink-0 space-y-3 sm:space-y-4">
+        {experience.map((item) => (
+          <div key={item.title}>
+            <h3 className="text-xs font-medium sm:text-sm">{item.title}</h3>
+            <p className="text-xs text-gray-500 sm:text-sm">
+              {item.location} | {item.period}
+            </p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="shrink-0 space-y-3 sm:space-y-4">
+      <ExperienceFallback />
+    </div>
+  );
+};
 
 interface SocialLinksProps {
   profile: Profile | undefined;
@@ -164,37 +184,43 @@ interface SocialLinksProps {
   twitterRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
-export const SocialLinks = ({ profile, githubRef, linkedinRef, twitterRef }: SocialLinksProps) => (
-  <div className="flex space-x-6">
-    <a
-      ref={githubRef}
-      href={profile?.links.github.url ?? "https://github.com/parazeeknova"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-underline text-xs sm:text-sm"
-      aria-label="GitHub"
-    >
-      {profile?.links.github.label ?? "GitHub"}
-    </a>
-    <a
-      ref={linkedinRef}
-      href={profile?.links.linkedin.url ?? "https://www.linkedin.com/in/hashk"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-underline text-xs sm:text-sm"
-      aria-label="LinkedIn"
-    >
-      {profile?.links.linkedin.label ?? "LinkedIn"}
-    </a>
-    <a
-      ref={twitterRef}
-      href={profile?.links.twitter.url ?? "https://x.com/hashcodes_"}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-underline text-xs sm:text-sm"
-      aria-label="X"
-    >
-      {profile?.links.twitter.label ?? "X"}
-    </a>
-  </div>
-);
+export const SocialLinks = ({ profile, githubRef, linkedinRef, twitterRef }: SocialLinksProps) => {
+  const github = getLink(profile?.links, "github");
+  const linkedin = getLink(profile?.links, "linkedin");
+  const twitter = getLink(profile?.links, "twitter");
+
+  return (
+    <div className="flex space-x-6">
+      <a
+        ref={githubRef}
+        href={github?.url ?? "https://github.com/parazeeknova"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link-underline text-xs sm:text-sm"
+        aria-label="GitHub"
+      >
+        {github?.label ?? "GitHub"}
+      </a>
+      <a
+        ref={linkedinRef}
+        href={linkedin?.url ?? "https://www.linkedin.com/in/hashk"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link-underline text-xs sm:text-sm"
+        aria-label="LinkedIn"
+      >
+        {linkedin?.label ?? "LinkedIn"}
+      </a>
+      <a
+        ref={twitterRef}
+        href={twitter?.url ?? "https://x.com/hashcodes_"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link-underline text-xs sm:text-sm"
+        aria-label="X"
+      >
+        {twitter?.label ?? "X"}
+      </a>
+    </div>
+  );
+};

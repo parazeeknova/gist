@@ -32,14 +32,37 @@ export const ScrollContainer = ({
     updateShadows();
     el.addEventListener("scroll", updateShadows, { passive: true });
 
+    // Observe both the container and its content
     const observer = new ResizeObserver(updateShadows);
     observer.observe(el);
+
+    // Also observe the first child element if it exists
+    const contentChild = el.firstElementChild;
+    if (contentChild) {
+      observer.observe(contentChild);
+    }
 
     return () => {
       el.removeEventListener("scroll", updateShadows);
       observer.disconnect();
     };
   }, []);
+
+  // Re-run effect when children change
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) {
+      return;
+    }
+
+    const updateShadows = () => {
+      const { scrollTop, scrollHeight, clientHeight } = el;
+      setShowTopShadow(scrollTop > 4);
+      setShowBottomShadow(scrollTop + clientHeight < scrollHeight - 4);
+    };
+
+    updateShadows();
+  }, [children]);
 
   return (
     <div className={`relative ${className}`}>

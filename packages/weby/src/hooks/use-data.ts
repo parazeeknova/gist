@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Profile, ExperienceItem, Project } from "../types";
 
-const fetchJson = async <T>(url: string): Promise<T> => {
-  const res = await fetch(url);
+const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
+  const res = await fetch(url, init);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }
@@ -11,19 +11,19 @@ const fetchJson = async <T>(url: string): Promise<T> => {
 
 export const useProfile = () =>
   useQuery<Profile>({
-    queryFn: () => fetchJson<Profile>("/api/profile"),
+    queryFn: ({ signal }) => fetchJson<Profile>("/api/profile", { signal }),
     queryKey: ["profile"],
   });
 
 export const useExperience = () =>
   useQuery<ExperienceItem[]>({
-    queryFn: () => fetchJson<ExperienceItem[]>("/api/experience"),
+    queryFn: ({ signal }) => fetchJson<ExperienceItem[]>("/api/experience", { signal }),
     queryKey: ["experience"],
   });
 
 export const useProjects = () =>
   useQuery<Project[]>({
-    queryFn: () => fetchJson<Project[]>("/api/projects"),
+    queryFn: ({ signal }) => fetchJson<Project[]>("/api/projects", { signal }),
     queryKey: ["projects"],
   });
 
