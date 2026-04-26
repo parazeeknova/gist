@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { GitHubCalendar } from "react-github-calendar";
 import { Tooltip } from "react-tooltip";
 
@@ -7,21 +7,29 @@ interface GitHubActivityProps {
   isDarkMode?: boolean;
 }
 
-export const GitHubActivity = ({ username, isDarkMode = true }: GitHubActivityProps) => {
-  // Initialize with actual window width to avoid layout flash
-  const [isNarrow, setIsNarrow] = useState(() => {
+const useIsNarrow = (): boolean => {
+  const getSnapshot = useCallback(() => {
     if (typeof window === "undefined") {
       return false;
     }
     return window.innerWidth < 640;
-  });
-
-  useEffect(() => {
-    const check = () => setIsNarrow(window.innerWidth < 640);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
   }, []);
+
+  const getServerSnapshot = useCallback(() => false, []);
+
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- useSyncExternalStore requires callback pattern
+  const subscribe = useCallback((callback: () => void) => {
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- event handler callback required
+    const handleResize = () => callback();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+};
+
+export const GitHubActivity = ({ username, isDarkMode = true }: GitHubActivityProps) => {
+  const isNarrow = useIsNarrow();
 
   return (
     <div className="mt-6 sm:mt-8">

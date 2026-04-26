@@ -27,13 +27,14 @@ func NewGitHubService(timeout time.Duration) *GitHubService {
 }
 
 // FetchOrgs fetches the organizations a user belongs to
-func (s *GitHubService) FetchOrgs(ctx context.Context, username string) ([]models.GitHubOrg, error) {
+func (s *GitHubService) FetchOrgs(ctx context.Context, token string, username string) ([]models.GitHubOrg, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET",
 		fmt.Sprintf("%s/users/%s/orgs?per_page=100", s.baseURL, username), nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	res, err := s.client.Do(req)
 	if err != nil {
@@ -162,7 +163,7 @@ func (s *GitHubService) ComputeStats(
 	}
 
 	// Organizations
-	orgs, err := s.FetchOrgs(ctx, username)
+	orgs, err := s.FetchOrgs(ctx, token, username)
 	if err != nil {
 		orgs = []models.GitHubOrg{}
 	}

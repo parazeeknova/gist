@@ -42,7 +42,7 @@ func TestGitHubService_FetchOrgs_Success(t *testing.T) {
 	s := NewGitHubService(10 * time.Second)
 	s.baseURL = server.URL
 
-	orgs, err := s.FetchOrgs(context.Background(), "testuser")
+	orgs, err := s.FetchOrgs(context.Background(), "test-token", "testuser")
 	if err != nil {
 		t.Fatalf("FetchOrgs failed: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestGitHubService_FetchOrgs_NotFound(t *testing.T) {
 	s := NewGitHubService(10 * time.Second)
 	s.baseURL = server.URL
 
-	_, err := s.FetchOrgs(context.Background(), "nonexistent")
+	_, err := s.FetchOrgs(context.Background(), "test-token", "nonexistent")
 	if err == nil {
 		t.Error("expected error for 404 response")
 	}
@@ -150,7 +150,7 @@ func TestGitHubService_FetchOrgs_MakesCorrectRequest(t *testing.T) {
 		baseURL: server.URL,
 	}
 
-	_, _ = s.FetchOrgs(context.Background(), "testuser")
+	_, _ = s.FetchOrgs(context.Background(), "test-token", "testuser")
 	if capturedPath != "/users/testuser/orgs" {
 		t.Errorf("path = %s, want /users/testuser/orgs", capturedPath)
 	}

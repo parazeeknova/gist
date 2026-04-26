@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useSyncExternalStore } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { ProjectList, MobileProjectList } from "../components/projects";
@@ -9,21 +9,24 @@ import { ScrollContainer } from "../components/scroll-container";
 import { useProfile, useExperience, useIsFetchingData } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  const checkMobile = useCallback(() => {
-    if (typeof window !== "undefined") {
-      setIsMobile(window.innerWidth < 1024);
+  const getSnapshot = useCallback(() => {
+    if (typeof window === "undefined") {
+      return false;
     }
+    return window.innerWidth < 1024;
   }, []);
 
-  useEffect(() => {
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, [checkMobile]);
+  const getServerSnapshot = useCallback(() => false, []);
 
-  return isMobile;
+  // eslint-disable-next-line promise/prefer-await-to-callbacks -- useSyncExternalStore requires callback pattern
+  const subscribe = useCallback((callback: () => void) => {
+    // eslint-disable-next-line promise/prefer-await-to-callbacks -- event handler callback required
+    const handleResize = () => callback();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };
 
 interface LinkRefs {
