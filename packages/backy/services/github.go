@@ -30,7 +30,7 @@ func NewGitHubService(timeout time.Duration) *GitHubService {
 }
 
 // FetchOrgs fetches the organizations a user belongs to
-func (s *GitHubService) FetchOrgs(ctx context.Context, token string, username string) ([]models.GitHubOrg, error) {
+func (s *GitHubService) FetchOrgs(ctx context.Context, token string, username string) (orgs []models.GitHubOrg, err error) {
 	// URL-encode the username to handle special characters
 	encodedUsername := url.PathEscape(username)
 	req, err := http.NewRequestWithContext(ctx, "GET",
@@ -45,13 +45,16 @@ func (s *GitHubService) FetchOrgs(ctx context.Context, token string, username st
 	if err != nil {
 		return nil, fmt.Errorf("executing request: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() {
+		if closeErr := res.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("closing response body: %w", closeErr)
+		}
+	}()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("github API returned %d", res.StatusCode)
 	}
 
-	var orgs []models.GitHubOrg
 	if err := json.NewDecoder(res.Body).Decode(&orgs); err != nil {
 		return nil, fmt.Errorf("decoding response: %w", err)
 	}
@@ -112,7 +115,11 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 	if err != nil {
 		return 0, 0, fmt.Errorf("executing request: %w", err)
 	}
-	defer res.Body.Close()
+	defer func() {
+		if closeErr := res.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("closing response body: %w", closeErr)
+		}
+	}()
 
 	respBody, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
