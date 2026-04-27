@@ -1,6 +1,6 @@
 {
   "name": "@verso/weby",
-  "version": "0.0.22",
+  "version": "0.0.25",
   "private": true,
   "type": "module",
   "imports": {
@@ -10,7 +10,7 @@
     "build": "vite build",
     "check-types": "tsgo --noEmit",
     "cf-typegen": "wrangler types",
-    "deploy": "bun run build && wrangler deploy",
+    "deploy": "CLOUDFLARE=1 bun run build && wrangler deploy",
     "dev": "vite dev --port 3000",
     "preview": "vite preview",
     "test": "vitest run"
