@@ -28,3 +28,5 @@ export const getProfile = () => fetchBacky<Profile>("profile");
 export const getExperience = () => fetchBacky<ExperienceItem[]>("experience");
 
 export const getProjects = () => fetchBacky<Project[]>("projects");
+
+export const getGitHubStats = () => fetchBacky<unknown>("github/stats");

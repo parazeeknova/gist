@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from "./routes/index";
 import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
 import { Route as ApiProfileRouteImport } from "./routes/api/profile";
 import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
+import { Route as ApiGithubStatsRouteImport } from "./routes/api/github/stats";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -34,18 +35,25 @@ const ApiExperienceRoute = ApiExperienceRouteImport.update({
   path: "/api/experience",
   getParentRoute: () => rootRouteImport,
 } as any);
+const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
+  id: "/api/github/stats",
+  path: "/api/github/stats",
+  getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/api/experience" | "/api/profile" | "/api/projects";
+  fullPaths: "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/api/experience" | "/api/profile" | "/api/projects";
-  id: "__root__" | "/" | "/api/experience" | "/api/profile" | "/api/projects";
+  to: "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
+  id: "__root__" | "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   ApiExperienceRoute: typeof ApiExperienceRoute;
   ApiProfileRoute: typeof ApiProfileRoute;
   ApiProjectsRoute: typeof ApiProjectsRoute;
+  ApiGithubStatsRoute: typeof ApiGithubStatsRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -99,6 +109,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiExperienceRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/api/github/stats": {
+      id: "/api/github/stats";
+      path: "/api/github/stats";
+      fullPath: "/api/github/stats";
+      preLoaderRoute: typeof ApiGithubStatsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,
+  ApiGithubStatsRoute: ApiGithubStatsRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
