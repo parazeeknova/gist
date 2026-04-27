@@ -11,7 +11,13 @@ const config = defineConfig(({ mode }) => {
   const port = env.PORT || env.BACKEND_PORT || "8080";
 
   return {
-    plugins: [devtools(), tailwindcss(), tanstackStart(), nitro(), viteReact()],
+    plugins: [
+      devtools(),
+      tailwindcss(),
+      tanstackStart(),
+      nitro({ preset: "node-server" }),
+      viteReact(),
+    ],
     resolve: { tsconfigPaths: true },
     server: {
       proxy: {
