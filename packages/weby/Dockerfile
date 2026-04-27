@@ -8,7 +8,6 @@ RUN bun install --frozen-lockfile --filter @verso/weby
 FROM oven/bun:slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/weby/node_modules ./packages/weby/node_modules
 COPY package.json bun.lock* ./
 COPY packages/weby ./packages/weby
 COPY lerna.json nx.json ./
