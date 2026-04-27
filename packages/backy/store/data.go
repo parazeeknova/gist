@@ -1,6 +1,6 @@
 package store
 
-import "github.com/gist/backy/models"
+import "github.com/verso/backy/models"
 
 // Static data stores
 

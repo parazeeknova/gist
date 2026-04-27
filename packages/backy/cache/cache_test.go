@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gist/backy/models"
+	"github.com/verso/backy/models"
 )
 
 func TestStatsCache_Get_NotFound(t *testing.T) {

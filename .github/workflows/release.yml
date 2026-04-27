@@ -7,8 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_WEB: gist-web
-  IMAGE_NAME_API: gist-serve
+  IMAGE_NAME_WEB: verso-web
+  IMAGE_NAME_API: verso-serve
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -38,13 +38,8 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-
-      - name: Install Go tools
-        run: |
-          # Pinned versions for reproducible CI
-          go install mvdan.cc/gofumpt@v0.7.0
-          go install golang.org/x/tools/cmd/goimports@v0.31.0
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.1.0
+          cache: true
+          cache-dependency-path: packages/backy/go.sum
 
       - name: Cache Bun dependencies
         uses: actions/cache@v5
@@ -54,13 +49,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - name: Cache Go modules
-        uses: actions/cache@v5
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
+      - name: Install Go tools
+        run: |
+          # Pinned versions for reproducible CI
+          go install mvdan.cc/gofumpt@v0.7.0
+          go install golang.org/x/tools/cmd/goimports@v0.31.0
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.4
 
       - name: Install dependencies
         run: bun install
@@ -87,11 +81,11 @@ jobs:
       matrix:
         include:
           - package: weby
-            image-name: gist-web
+            image-name: verso-web
             dockerfile: ./packages/weby/Dockerfile
             context: ./packages/weby
           - package: backy
-            image-name: gist-serve
+            image-name: verso-serve
             dockerfile: ./packages/backy/Dockerfile
             context: ./packages/backy
     steps:

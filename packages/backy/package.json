@@ -1,6 +1,6 @@
 {
-  "name": "@gist/backy",
-  "version": "0.0.4",
+  "name": "@verso/backy",
+  "version": "0.0.7",
   "private": true,
   "scripts": {
     "build": "go build -o bin/backy",

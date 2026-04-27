@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json bun.lock* ./
 COPY packages/weby/package.json ./packages/weby/
 COPY packages/backy/package.json ./packages/backy/
-RUN bun install --frozen-lockfile --filter @gist/weby
+RUN bun install --frozen-lockfile --filter @verso/weby
 
 FROM oven/bun:slim AS build
 WORKDIR /app
@@ -12,7 +12,7 @@ COPY --from=deps /app/packages/weby/node_modules ./packages/weby/node_modules
 COPY package.json bun.lock* ./
 COPY packages/weby ./packages/weby
 COPY lerna.json nx.json ./
-RUN bun run build --filter @gist/weby
+RUN bun run build --filter @verso/weby
 
 FROM nginx:alpine-slim AS production
 COPY packages/weby/nginx.conf /etc/nginx/nginx.conf
