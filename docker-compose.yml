@@ -1,8 +1,6 @@
 services:
   web:
     image: ghcr.io/parazeeknova/verso-web:latest
-    container_name: verso-web
-    pull_policy: always
     depends_on:
       backy:
         condition: service_healthy
@@ -11,17 +9,14 @@ services:
       HOST: "0.0.0.0"
       BACKY_HOST: backy
       BACKY_PORT: "8080"
-    ports:
-      - "8081:8080"
+    expose:
+      - "8080"
     networks:
-      - edge
+      - dokploy-network
       - private
     restart: unless-stopped
-
   backy:
     image: ghcr.io/parazeeknova/verso-serve:latest
-    container_name: verso-backy
-    pull_policy: always
     environment:
       PORT: "8080"
       GITHUB_TOKEN: ${GITHUB_TOKEN}
@@ -34,16 +29,18 @@ services:
       - private
     restart: unless-stopped
     healthcheck:
-      test:
-        ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1"]
+      test: [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:8080/health
+          || exit 1",
+        ]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 10s
-
 networks:
-  edge:
-    driver: bridge
+  dokploy-network:
+    external: true
   private:
     driver: bridge
     internal: true

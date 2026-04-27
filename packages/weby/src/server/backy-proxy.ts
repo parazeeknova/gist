@@ -44,7 +44,7 @@ export const resolveBackyUrl = (request: Request, splat: string | undefined): st
   const normalizedOrigin = getBackyOrigin().endsWith("/")
     ? getBackyOrigin()
     : `${getBackyOrigin()}/`;
-  const targetUrl = new URL(splat ?? "", normalizedOrigin);
+  const targetUrl = new URL(`api/${splat ?? ""}`, normalizedOrigin);
   targetUrl.search = requestUrl.search;
   return targetUrl.toString();
 };

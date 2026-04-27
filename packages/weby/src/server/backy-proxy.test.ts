@@ -12,7 +12,7 @@ describe("backy proxy helpers", () => {
     const request = new Request("https://weby.test/api/github/stats?month=current");
     const url = resolveBackyUrl(request, "github/stats");
 
-    expect(url).toBe("http://backy:8080/base/github/stats?month=current");
+    expect(url).toBe("http://backy:8080/base/api/github/stats?month=current");
   });
 
   it("resolves target URL from BACKY_HOST and BACKY_PORT", () => {
@@ -22,7 +22,7 @@ describe("backy proxy helpers", () => {
     const request = new Request("https://weby.test/api/profile?lang=en");
     const url = resolveBackyUrl(request, "profile");
 
-    expect(url).toBe("http://internal-backy:9000/profile?lang=en");
+    expect(url).toBe("http://internal-backy:9000/api/profile?lang=en");
   });
 
   it("builds request init for POST and strips hop-by-hop headers", async () => {
