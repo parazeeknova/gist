@@ -2,6 +2,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
 import { defineConfig, loadEnv } from "vite";
 
 const config = defineConfig(({ mode }) => {
@@ -10,7 +11,7 @@ const config = defineConfig(({ mode }) => {
   const port = env.PORT || env.BACKEND_PORT || "8080";
 
   return {
-    plugins: [devtools(), tailwindcss(), tanstackStart(), viteReact()],
+    plugins: [devtools(), tailwindcss(), tanstackStart(), nitro(), viteReact()],
     resolve: { tsconfigPaths: true },
     server: {
       proxy: {

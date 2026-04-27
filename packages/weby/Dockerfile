@@ -13,17 +13,14 @@ COPY packages/weby ./packages/weby
 COPY lerna.json nx.json ./
 RUN bun run --cwd packages/weby build
 
-FROM nginx:alpine-slim AS production
-COPY packages/weby/nginx.conf /etc/nginx/nginx.conf
-COPY --from=build /app/packages/weby/dist /usr/share/nginx/html
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R nginx:nginx /var/run/nginx.pid
-USER nginx
+FROM node:25-alpine AS production
+WORKDIR /app
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=8080
+COPY --from=build /app/packages/weby/.output ./.output
+USER node
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
-CMD ["nginx", "-g", "daemon off;"]
+  CMD node -e "fetch('http://127.0.0.1:8080/').then((r)=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+CMD ["node", ".output/server/index.mjs"]
