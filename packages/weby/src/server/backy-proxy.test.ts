@@ -7,12 +7,12 @@ describe("backy proxy helpers", () => {
   });
 
   it("resolves target URL from explicit BACKY_ORIGIN", () => {
-    vi.stubEnv("BACKY_ORIGIN", "http://backy:8080/base");
+    vi.stubEnv("BACKY_ORIGIN", "http://backy:7000/base");
 
     const request = new Request("https://weby.test/api/github/stats?month=current");
     const url = resolveBackyUrl(request, "github/stats");
 
-    expect(url).toBe("http://backy:8080/base/api/github/stats?month=current");
+    expect(url).toBe("http://backy:7000/base/api/github/stats?month=current");
   });
 
   it("resolves target URL from BACKY_HOST and BACKY_PORT", () => {

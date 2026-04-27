@@ -16,7 +16,7 @@ const getBackyOrigin = (): string => {
   }
 
   const host = process.env.BACKY_HOST ?? "localhost";
-  const port = process.env.BACKY_PORT ?? "8080";
+  const port = process.env.BACKY_PORT ?? "7000";
   return `http://${host}:${port}`;
 };
 

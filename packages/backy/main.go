@@ -17,7 +17,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "7000"
 	}
 
 	// Get allowed origins from env
@@ -40,7 +40,7 @@ func main() {
 		allowOrigins = []string{
 			"http://localhost:3000",
 			"http://localhost:5173",
-			"http://localhost:8080",
+			"http://localhost:7000",
 		}
 	}
 

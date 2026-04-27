@@ -8,39 +8,28 @@ services:
       PORT: "8080"
       HOST: "0.0.0.0"
       BACKY_HOST: backy
-      BACKY_PORT: "8080"
+      BACKY_PORT: "7000"
     ports:
       - "8080:8080"
-    networks:
-      - dokploy-network
-      - private
     restart: unless-stopped
+
   backy:
     image: ghcr.io/parazeeknova/verso-serve:latest
     environment:
-      PORT: "8080"
+      PORT: "7000"
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_USERNAME: ${GITHUB_USERNAME}
       WEB_ORIGIN: ${WEB_ORIGIN}
-      TRUSTED_PROXIES: ${TRUSTED_PROXIES}
     expose:
-      - "8080"
-    networks:
-      - private
+      - "7000"
     restart: unless-stopped
     healthcheck:
       test: [
           "CMD-SHELL",
-          "wget --no-verbose --tries=1 --spider http://localhost:8080/health
+          "wget --no-verbose --tries=1 --spider http://localhost:7000/health
           || exit 1",
         ]
       interval: 30s
       timeout: 3s
       retries: 3
       start_period: 10s
-networks:
-  dokploy-network:
-    external: true
-  private:
-    driver: bridge
-    internal: true
