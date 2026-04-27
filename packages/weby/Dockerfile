@@ -11,7 +11,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY package.json bun.lock* ./
 COPY packages/weby ./packages/weby
 COPY lerna.json nx.json ./
-RUN bun --cwd packages/weby run build
+RUN bun run --cwd packages/weby build
 
 FROM nginx:alpine-slim AS production
 COPY packages/weby/nginx.conf /etc/nginx/nginx.conf
