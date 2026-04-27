@@ -259,7 +259,7 @@ const Home = function Home() {
         return match[1];
       }
     }
-    return import.meta.env.VITE_GITHUB_USERNAME ?? "parazeeknova";
+    return "parazeeknova";
   })();
 
   return (

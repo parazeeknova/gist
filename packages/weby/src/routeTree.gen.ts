@@ -10,43 +10,63 @@
 
 import { Route as rootRouteImport } from "./routes/__root";
 import { Route as IndexRouteImport } from "./routes/index";
-import { Route as ApiSplatRouteImport } from "./routes/api/$";
+import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
+import { Route as ApiProfileRouteImport } from "./routes/api/profile";
+import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
   getParentRoute: () => rootRouteImport,
 } as any);
-const ApiSplatRoute = ApiSplatRouteImport.update({
-  id: "/api/$",
-  path: "/api/$",
+const ApiProjectsRoute = ApiProjectsRouteImport.update({
+  id: "/api/projects",
+  path: "/api/projects",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiProfileRoute = ApiProfileRouteImport.update({
+  id: "/api/profile",
+  path: "/api/profile",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiExperienceRoute = ApiExperienceRouteImport.update({
+  id: "/api/experience",
+  path: "/api/experience",
   getParentRoute: () => rootRouteImport,
 } as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
-  "/api/$": typeof ApiSplatRoute;
+  "/api/experience": typeof ApiExperienceRoute;
+  "/api/profile": typeof ApiProfileRoute;
+  "/api/projects": typeof ApiProjectsRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
-  "/api/$": typeof ApiSplatRoute;
+  "/api/experience": typeof ApiExperienceRoute;
+  "/api/profile": typeof ApiProfileRoute;
+  "/api/projects": typeof ApiProjectsRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
-  "/api/$": typeof ApiSplatRoute;
+  "/api/experience": typeof ApiExperienceRoute;
+  "/api/profile": typeof ApiProfileRoute;
+  "/api/projects": typeof ApiProjectsRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/api/$";
+  fullPaths: "/" | "/api/experience" | "/api/profile" | "/api/projects";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/api/$";
-  id: "__root__" | "/" | "/api/$";
+  to: "/" | "/api/experience" | "/api/profile" | "/api/projects";
+  id: "__root__" | "/" | "/api/experience" | "/api/profile" | "/api/projects";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
-  ApiSplatRoute: typeof ApiSplatRoute;
+  ApiExperienceRoute: typeof ApiExperienceRoute;
+  ApiProfileRoute: typeof ApiProfileRoute;
+  ApiProjectsRoute: typeof ApiProjectsRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -58,11 +78,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof IndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    "/api/$": {
-      id: "/api/$";
-      path: "/api/$";
-      fullPath: "/api/$";
-      preLoaderRoute: typeof ApiSplatRouteImport;
+    "/api/projects": {
+      id: "/api/projects";
+      path: "/api/projects";
+      fullPath: "/api/projects";
+      preLoaderRoute: typeof ApiProjectsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/profile": {
+      id: "/api/profile";
+      path: "/api/profile";
+      fullPath: "/api/profile";
+      preLoaderRoute: typeof ApiProfileRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/experience": {
+      id: "/api/experience";
+      path: "/api/experience";
+      fullPath: "/api/experience";
+      preLoaderRoute: typeof ApiExperienceRouteImport;
       parentRoute: typeof rootRouteImport;
     };
   }
@@ -70,7 +104,9 @@ declare module "@tanstack/react-router" {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ApiSplatRoute: ApiSplatRoute,
+  ApiExperienceRoute: ApiExperienceRoute,
+  ApiProfileRoute: ApiProfileRoute,
+  ApiProjectsRoute: ApiProjectsRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
