@@ -83,7 +83,7 @@ jobs:
           - package: weby
             image-name: verso-web
             dockerfile: ./packages/weby/Dockerfile
-            context: ./packages/weby
+            context: .
           - package: backy
             image-name: verso-serve
             dockerfile: ./packages/backy/Dockerfile

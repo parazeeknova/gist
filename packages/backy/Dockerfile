@@ -15,10 +15,10 @@ RUN go build -a -installsuffix cgo \
 FROM alpine:3.21 AS runtime
 RUN apk add --no-cache ca-certificates && \
     addgroup -g 1000 -S appgroup && \
-    adduser -u 1000 -S appuser -G appgroup && \
-    chown -R appuser:appgroup /app
+    adduser -u 1000 -S appuser -G appgroup
 WORKDIR /app
 COPY --from=builder /build/bin/backy .
+RUN chown -R appuser:appgroup /app
 USER appuser
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
