@@ -48,12 +48,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-
 
+      - name: Cache Go tools
+        uses: actions/cache@v5
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('packages/backy/go.sum') }}
+
       - name: Install Go tools
         run: |
           # Pinned versions for reproducible CI
-          go install mvdan.cc/gofumpt@v0.7.0
-          go install golang.org/x/tools/cmd/goimports@v0.31.0
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.4
+          [ -f $(go env GOPATH)/bin/gofumpt ] || go install mvdan.cc/gofumpt@v0.7.0
+          [ -f $(go env GOPATH)/bin/goimports ] || go install golang.org/x/tools/cmd/goimports@v0.31.0
+          [ -f $(go env GOPATH)/bin/golangci-lint ] || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.11.4
 
       - name: Install dependencies
         run: bun install

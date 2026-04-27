@@ -2,9 +2,6 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "verso",
   "placement": { "mode": "smart" },
-  "build": {
-    "command": "CLOUDFLARE=1 bun run build",
-  },
   "compatibility_date": "2026-04-21",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
