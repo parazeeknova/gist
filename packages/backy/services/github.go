@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gist/backy/models"
+	"github.com/verso/backy/models"
 )
 
 // GitHubService provides GitHub API operations

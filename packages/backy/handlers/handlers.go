@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gist/backy/cache"
-	"github.com/gist/backy/models"
-	"github.com/gist/backy/services"
-	"github.com/gist/backy/store"
+	"github.com/verso/backy/cache"
+	"github.com/verso/backy/models"
+	"github.com/verso/backy/services"
+	"github.com/verso/backy/store"
 	"golang.org/x/sync/singleflight"
 )
 

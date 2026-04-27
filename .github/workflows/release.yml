@@ -7,8 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_WEB: gist-web
-  IMAGE_NAME_API: gist-serve
+  IMAGE_NAME_WEB: verso-web
+  IMAGE_NAME_API: verso-serve
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -87,11 +87,11 @@ jobs:
       matrix:
         include:
           - package: weby
-            image-name: gist-web
+            image-name: verso-web
             dockerfile: ./packages/weby/Dockerfile
             context: ./packages/weby
           - package: backy
-            image-name: gist-serve
+            image-name: verso-serve
             dockerfile: ./packages/backy/Dockerfile
             context: ./packages/backy
     steps:

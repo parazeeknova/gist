@@ -1,6 +1,6 @@
 {
-  "name": "gist - parazeeknova",
-  "short_name": "gist",
+  "name": "verso - parazeeknova",
+  "short_name": "verso",
   "description": "third year undergrad, fullstack & devops engineer",
   "start_url": "/",
   "display": "standalone",
@@ -31,6 +31,6 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["portfolio", "gist", "linktree"],
+  "categories": ["portfolio", "verso", "gist"],
   "lang": "en-US"
 }

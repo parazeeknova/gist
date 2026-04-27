@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/refs/heads/master/src/schemas/json/package.json",
-  "name": "gist",
-  "version": "0.0.4",
+  "name": "verso",
+  "version": "0.0.5",
   "private": true,
   "workspaces": [
     "packages/*"
