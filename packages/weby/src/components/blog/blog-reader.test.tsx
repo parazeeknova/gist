@@ -1,0 +1,62 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { BlogPost } from "../../types";
+import { BlogReader } from "./blog-reader";
+import { BlogReaderPanel } from "./blog-reader-panel";
+import { renderWithQuery } from "../../test/utils";
+
+const mockPost: BlogPost = {
+  description:
+    "Conflict-free Replicated Data Types (CRDTs) are a class of data structures that allow replicated data to be merged automatically, without conflicts. They are the backbone of many modern distributed systems.",
+  format: "markdown",
+  markdown: "# why crdts?\n\n## core properties\n\n## types of crdts",
+  publishedAt: "2025-08-28",
+  readTimeMinutes: 8,
+  section: "distributed-systems",
+  slug: "crdts-101-a-primer",
+  tags: ["distributed-systems", "crdt", "consistency"],
+  title: "CRDTs 101: A Primer",
+};
+
+describe("BlogReader", () => {
+  it("renders the article shell controls and metadata", () => {
+    render(<BlogReader post={mockPost} />);
+
+    expect(screen.getByText("CRDTs 101: A Primer")).toBeDefined();
+    expect(screen.getByText(/all blogs/i)).toBeDefined();
+    expect(screen.getByText(/prev post/i)).toBeDefined();
+    expect(screen.getByText(/next post/i)).toBeDefined();
+    // Tag section has the distributed-systems tag
+    expect(screen.getAllByText("distributed-systems").length).toBeGreaterThan(0);
+    expect(screen.getByText("crdt")).toBeDefined();
+    expect(screen.getByText("consistency")).toBeDefined();
+    expect(screen.getByText("on this page")).toBeDefined();
+    expect(screen.getByText("more posts")).toBeDefined();
+  });
+});
+
+it("renders fetched article data through the panel wrapper", async () => {
+  const mockFetch = vi.fn().mockResolvedValueOnce({
+    json: () =>
+      Promise.resolve({
+        description: "test description",
+        format: "markdown",
+        markdown: "# why crdts?",
+        publishedAt: "2025-08-28",
+        readTimeMinutes: 8,
+        section: "distributed-systems",
+        slug: "crdts-101-a-primer",
+        tags: ["distributed-systems", "crdt", "consistency"],
+        title: "CRDTs 101: A Primer",
+      }),
+    ok: true,
+  } as Response);
+
+  vi.stubGlobal("fetch", mockFetch);
+
+  renderWithQuery(<BlogReaderPanel slug="crdts-101-a-primer" />);
+
+  await waitFor(() => {
+    expect(screen.getByText("CRDTs 101: A Primer")).toBeDefined();
+  });
+});

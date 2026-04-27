@@ -21,3 +21,22 @@ export interface Project {
   stack: string;
   title: string;
 }
+
+export interface BlogHeading {
+  id: string;
+  label: string;
+  level: number;
+}
+
+export interface BlogPost {
+  description: string;
+  format: "markdown";
+  headings?: BlogHeading[];
+  markdown: string;
+  publishedAt: string;
+  readTimeMinutes: number;
+  section: string;
+  slug: string;
+  tags: string[];
+  title: string;
+}

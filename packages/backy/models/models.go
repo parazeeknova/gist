@@ -64,3 +64,24 @@ type GraphQLResponse struct {
 		Message string `json:"message"`
 	} `json:"errors"`
 }
+
+// BlogHeading represents a heading in a blog post
+type BlogHeading struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Level int    `json:"level"`
+}
+
+// BlogPost represents a blog post response
+type BlogPost struct {
+	Description     string        `json:"description"`
+	Format          string        `json:"format"`
+	Headings        []BlogHeading `json:"headings"`
+	Markdown        string        `json:"markdown"`
+	PublishedAt     string        `json:"publishedAt"`
+	ReadTimeMinutes int           `json:"readTimeMinutes"`
+	Section         string        `json:"section"`
+	Slug            string        `json:"slug"`
+	Tags            []string      `json:"tags"`
+	Title           string        `json:"title"`
+}

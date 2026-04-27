@@ -14,6 +14,7 @@ import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
 import { Route as ApiProfileRouteImport } from "./routes/api/profile";
 import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
 import { Route as ApiGithubStatsRouteImport } from "./routes/api/github/stats";
+import { Route as ApiBlogsSlugRouteImport } from "./routes/api/blogs.$slug";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -40,12 +41,18 @@ const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   path: "/api/github/stats",
   getParentRoute: () => rootRouteImport,
 } as any);
+const ApiBlogsSlugRoute = ApiBlogsSlugRouteImport.update({
+  id: "/api/blogs/$slug",
+  path: "/api/blogs/$slug",
+  getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
   "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
   "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRoutesById {
@@ -61,14 +69,34 @@ export interface FileRoutesById {
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
   "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
+  fullPaths:
+    | "/"
+    | "/api/experience"
+    | "/api/profile"
+    | "/api/projects"
+    | "/api/blogs/$slug"
+    | "/api/github/stats";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
-  id: "__root__" | "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
+  to:
+    | "/"
+    | "/api/experience"
+    | "/api/profile"
+    | "/api/projects"
+    | "/api/blogs/$slug"
+    | "/api/github/stats";
+  id:
+    | "__root__"
+    | "/"
+    | "/api/experience"
+    | "/api/profile"
+    | "/api/projects"
+    | "/api/blogs/$slug"
+    | "/api/github/stats";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -76,6 +104,7 @@ export interface RootRouteChildren {
   ApiExperienceRoute: typeof ApiExperienceRoute;
   ApiProfileRoute: typeof ApiProfileRoute;
   ApiProjectsRoute: typeof ApiProjectsRoute;
+  ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute;
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute;
 }
 
@@ -116,6 +145,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiGithubStatsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/api/blogs/$slug": {
+      id: "/api/blogs/$slug";
+      path: "/api/blogs/$slug";
+      fullPath: "/api/blogs/$slug";
+      preLoaderRoute: typeof ApiBlogsSlugRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
@@ -124,6 +160,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,
+  ApiBlogsSlugRoute: ApiBlogsSlugRoute,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
 };
 export const routeTree = rootRouteImport

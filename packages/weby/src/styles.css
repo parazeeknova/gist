@@ -43,6 +43,17 @@
   html::-webkit-scrollbar {
     display: none;
   }
+
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 .link-underline {
@@ -88,29 +99,108 @@ button {
   cursor: pointer !important;
 }
 
-.projects-scroll {
-  scrollbar-color: transparent auto;
-  scrollbar-width: thin;
+.blog-reader-prose .tiptap {
+  color: #ffffff;
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  text-transform: lowercase;
 }
 
-.projects-scroll::-webkit-scrollbar {
-  width: 4px;
+.blog-reader-prose .tiptap h1,
+.blog-reader-prose .tiptap h2,
+.blog-reader-prose .tiptap h3 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: #ffffff;
+  scroll-margin-top: 2rem;
 }
 
-.projects-scroll::-webkit-scrollbar-track {
-  background: transparent;
+.blog-reader-prose .tiptap p,
+.blog-reader-prose .tiptap ul,
+.blog-reader-prose .tiptap ol,
+.blog-reader-prose .tiptap blockquote,
+.blog-reader-prose .tiptap pre {
+  margin-bottom: 0.75rem;
 }
 
-.projects-scroll::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 2px;
-  transition: background-color 0.15s ease;
+.blog-reader-prose .tiptap li {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
 }
 
-.projects-scroll:hover {
-  scrollbar-color: rgba(255, 255, 255, 0.2) auto;
+.blog-reader-prose .tiptap li > p {
+  margin-bottom: 0;
 }
 
-.projects-scroll:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+.blog-reader-prose .tiptap blockquote {
+  border-left: 3px solid #b58cff;
+  background: rgba(181, 140, 255, 0.08);
+  padding: 1rem 1.25rem;
+  margin-left: 0;
+}
+
+.blog-reader-prose .tiptap pre {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1rem;
+  margin: 1rem 0;
+  line-height: 1.2;
+}
+
+.blog-reader-prose .tiptap pre code {
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  display: block;
+}
+
+/* Syntax highlighting */
+.blog-reader-prose .tiptap .hljs-keyword {
+  color: #c678dd;
+}
+
+.blog-reader-prose .tiptap .hljs-string {
+  color: #98c379;
+}
+
+.blog-reader-prose .tiptap .hljs-title {
+  color: #e5c07b;
+}
+
+.blog-reader-prose .tiptap .hljs-comment {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.blog-reader-prose .tiptap .hljs-function {
+  color: #61afef;
+}
+
+.blog-reader-prose .tiptap .hljs-number {
+  color: #d19a66;
+}
+
+.blog-reader-prose .tiptap .hljs-built_in {
+  color: #e6c07b;
+}
+
+.blog-reader-prose .tiptap .hljs-params {
+  color: #abb2bf;
+}
+
+.blog-reader-prose .tiptap .ProseMirror-code-block .ProseMirror-line {
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  min-height: 0;
+}
+
+.blog-reader-prose .tiptap .ProseMirror-code-block .ProseMirror-line:empty {
+  height: 0;
+  min-height: 0;
+  line-height: 0;
+  margin: 0;
+  padding: 0;
 }

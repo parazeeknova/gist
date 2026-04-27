@@ -6,6 +6,7 @@ import { GitHubStats } from "../components/github-stats";
 import { ExperienceSection, ProfileSection, SocialLinks } from "../components/home-sections";
 import { MobileProjectList, ProjectList } from "../components/projects";
 import { ScrollContainer } from "../components/scroll-container";
+import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
 import { useExperience, useIsFetchingData, useProfile } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
@@ -330,7 +331,13 @@ const Home = function Home() {
         </div>
       </div>
 
-      <div className="relative" ref={rightPanelRef} style={{ backgroundColor: "#000000" }} />
+      <div
+        className="relative min-h-0 overflow-hidden border-l border-white/10"
+        ref={rightPanelRef}
+        style={{ backgroundColor: "#000000" }}
+      >
+        <BlogReaderPanel slug="crdts-101-a-primer" />
+      </div>
     </div>
   );
 };

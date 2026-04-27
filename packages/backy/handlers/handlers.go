@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -54,6 +55,25 @@ func (h *Handlers) GetExperience(c *gin.Context) {
 // GetProjects returns projects data
 func (h *Handlers) GetProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, store.Projects)
+}
+
+// GetBlogPost returns a blog post by slug
+func (h *Handlers) GetBlogPost(c *gin.Context) {
+	slug := c.Param("slug")
+
+	post, err := store.GetBlogPost(slug)
+	if err != nil {
+		if errors.Is(err, store.ErrBlogPostNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "blog post not found"})
+			return
+		}
+
+		log.Printf("blog post load error for slug %s: %v", slug, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog post"})
+		return
+	}
+
+	c.JSON(http.StatusOK, post)
 }
 
 // GetGitHubStats returns GitHub statistics with caching
