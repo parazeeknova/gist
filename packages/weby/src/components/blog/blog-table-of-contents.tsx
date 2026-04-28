@@ -22,18 +22,20 @@ export const BlogTableOfContents = ({
     >
       {headings.map((heading) => {
         const isActive = heading.id === activeHeadingId;
-        let textColor: string;
+        let itemClass = "block rounded px-2 py-0.5 text-left ";
         if (isActive) {
-          textColor = isDarkMode ? "text-text-dark" : "text-text-light";
+          itemClass += isDarkMode
+            ? "bg-[rgba(181,140,255,0.12)] text-[#b58cff]"
+            : "bg-purple-100 text-purple-600";
         } else {
-          textColor = isDarkMode ? "text-text-dark/60" : "text-text-light/60";
+          itemClass += isDarkMode ? "text-text-dark/60" : "text-text-light/60";
         }
         return (
           <button
-            className={textColor}
+            className={itemClass}
             key={heading.id}
             onClick={() => onSelect(heading.id)}
-            style={{ paddingLeft: `${(heading.level - 1) * 12}px` }}
+            style={{ paddingLeft: `${(heading.level - 1) * 12 + 8}px` }}
             type="button"
           >
             {heading.label}

@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-named-as-default
 import StarterKit from "@tiptap/starter-kit";
 import { EditorContent, useEditor } from "@tiptap/react";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { createLowlight, common } from "lowlight";
 import { HeadingWithIds } from "./tiptap-heading-ids";
@@ -23,6 +23,24 @@ interface ReadonlyBlogEditorProps {
 
 export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const extractHeadings = useCallback(() => {
+    const container = wrapperRef.current;
+    if (!container) {
+      return;
+    }
+    const headingElements = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    const headings: TiptapHeading[] = [];
+    for (const el of headingElements) {
+      const { id } = el;
+      const level = Number.parseInt(el.tagName[1] || "1", 10);
+      const label = el.textContent || "";
+      if (id && label) {
+        headings.push({ id, label, level });
+      }
+    }
+    onHeadingsExtracted?.(headings);
+  }, [onHeadingsExtracted]);
 
   const editor = useEditor({
     content: html,
@@ -49,6 +67,15 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
       }),
     ],
     immediatelyRender: false,
+    onCreate: () => {
+      // Extract headings after Tiptap renders content to DOM
+      requestAnimationFrame(() => {
+        extractHeadings();
+        // Fallbacks in case DOM isn't ready yet
+        setTimeout(extractHeadings, 100);
+        setTimeout(extractHeadings, 300);
+      });
+    },
   });
 
   useEffect(() => {
@@ -58,6 +85,7 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
     editor.commands.setContent(html);
   }, [editor, html]);
 
+  // Collapse blank lines in code blocks
   useEffect(() => {
     const container = wrapperRef.current;
     if (!container) {
@@ -65,7 +93,6 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
     }
 
     const collapseBlankLines = () => {
-      // Collapse blank lines in code blocks
       const codeLines = container.querySelectorAll(".ProseMirror-code-block .ProseMirror-line");
       for (const line of codeLines) {
         const element = line as HTMLElement;
@@ -81,39 +108,14 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
       }
     };
 
-    // Extract headings after content is rendered
-    const extractHeadings = () => {
-      const headingElements = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
-      const headings: TiptapHeading[] = [];
-      for (const el of headingElements) {
-        const { id } = el;
-        const level = Number.parseInt(el.tagName[1] || "1", 10);
-        const label = el.textContent || "";
-        if (id && label) {
-          headings.push({ id, label, level });
-        }
-      }
-      onHeadingsExtracted?.(headings);
-    };
-
-    // Initial collapse and heading extraction
     collapseBlankLines();
-    extractHeadings();
-
     const timers = [
       setTimeout(collapseBlankLines, 100),
       setTimeout(collapseBlankLines, 300),
       setTimeout(collapseBlankLines, 500),
-      setTimeout(extractHeadings, 100),
-      setTimeout(extractHeadings, 300),
     ];
 
-    // Use MutationObserver to detect content changes
-    const observer = new MutationObserver(() => {
-      collapseBlankLines();
-      extractHeadings();
-    });
-
+    const observer = new MutationObserver(() => collapseBlankLines());
     observer.observe(container, { childList: true, subtree: true });
 
     return () => {
@@ -122,7 +124,7 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
       }
       observer.disconnect();
     };
-  }, [onHeadingsExtracted]);
+  }, []);
 
   if (!editor) {
     return null;

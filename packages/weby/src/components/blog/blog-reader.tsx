@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markdownToHtml } from "../../lib/markdown-to-html";
 import type { BlogPost } from "../../types";
 import { BlogFileTree } from "./blog-file-tree";
@@ -16,12 +16,19 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
   const [tiptapHeadings, setTiptapHeadings] = useState<TiptapHeading[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const headingsRef = useRef<TiptapHeading[]>([]);
 
   const html = useMemo(() => markdownToHtml(post.markdown), [post.markdown]);
 
-  const handleHeadingsExtracted = (headings: TiptapHeading[]) => {
+  const handleHeadingsExtracted = useCallback((headings: TiptapHeading[]) => {
+    // Only update if headings actually changed to avoid infinite loops
+    const prev = headingsRef.current;
+    if (prev.length === headings.length && prev.every((h, i) => h.id === headings[i].id)) {
+      return;
+    }
+    headingsRef.current = headings;
     setTiptapHeadings(headings);
-  };
+  }, []);
 
   // Set up IntersectionObserver for active heading tracking
   useEffect(() => {
@@ -120,7 +127,7 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
             <ReadonlyBlogEditor html={html} onHeadingsExtracted={handleHeadingsExtracted} />
 
             <div
-              className={`sticky bottom-0 mt-8 flex items-center justify-between border-t pt-6 text-[13px] ${
+              className={`sticky bottom-0 mt-8 flex items-center justify-between border-t pt-6 text-[13px] theme-bg ${
                 isDarkMode
                   ? "border-border-dark text-[#b58cff]"
                   : "border-border-light text-purple-600"
