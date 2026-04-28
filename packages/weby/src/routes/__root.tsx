@@ -2,7 +2,7 @@ import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persi
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import appCss from "../styles.css?url";
 
@@ -25,15 +25,18 @@ const persister = createAsyncStoragePersister({
 });
 
 const RootComponent = () => {
-  // Create QueryClient per request/component scope to avoid SSR leaks
   const [queryClient] = useState(createQueryClient);
+  const hasRestored = useRef(false);
 
   return (
     <PersistQueryClientProvider
       client={queryClient}
       onSuccess={async () => {
+        if (hasRestored.current) {
+          return;
+        }
+        hasRestored.current = true;
         await queryClient.resumePausedMutations();
-        // Only invalidate github-stats after resuming, not all queries
         await queryClient.invalidateQueries({ queryKey: ["github-stats"] });
       }}
       persistOptions={{ persister }}
