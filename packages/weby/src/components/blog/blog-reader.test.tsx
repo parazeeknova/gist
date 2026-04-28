@@ -20,7 +20,7 @@ const mockPost: BlogPost = {
 
 describe("BlogReader", () => {
   it("renders the article shell controls and metadata", () => {
-    render(<BlogReader post={mockPost} />);
+    render(<BlogReader isDarkMode={true} post={mockPost} />);
 
     expect(screen.getByText("CRDTs 101: A Primer")).toBeDefined();
     expect(screen.getByText(/all blogs/i)).toBeDefined();
@@ -54,7 +54,7 @@ it("renders fetched article data through the panel wrapper", async () => {
 
   vi.stubGlobal("fetch", mockFetch);
 
-  renderWithQuery(<BlogReaderPanel slug="crdts-101-a-primer" />);
+  renderWithQuery(<BlogReaderPanel isDarkMode={true} slug="crdts-101-a-primer" />);
 
   await waitFor(() => {
     expect(screen.getByText("CRDTs 101: A Primer")).toBeDefined();

@@ -152,84 +152,6 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
   return { buttonRef, indicatorRef };
 };
 
-const useThemeAnimation = (
-  isDarkMode: boolean,
-  leftPanelRef: React.RefObject<HTMLDivElement | null>,
-  rightPanelRef: React.RefObject<HTMLDivElement | null>,
-  mainContainerRef: React.RefObject<HTMLDivElement | null>,
-) => {
-  const hasMountedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasMountedRef.current) {
-      hasMountedRef.current = true;
-      return;
-    }
-
-    const leftPanel = leftPanelRef.current;
-    const rightPanel = rightPanelRef.current;
-    const mainContainer = mainContainerRef.current;
-    if (!(leftPanel && rightPanel && mainContainer)) {
-      return;
-    }
-
-    const tl = gsap.timeline();
-
-    tl.to([leftPanel, rightPanel], {
-      duration: 0.2,
-      ease: "power2.in",
-      opacity: 0.6,
-    });
-
-    tl.to(
-      leftPanel,
-      {
-        backgroundColor: isDarkMode ? "#000000" : "hsl(0, 0%, 95%)",
-        color: isDarkMode ? "#ffffff" : "#000000",
-        duration: 0.8,
-        ease: "power2.inOut",
-      },
-      0.1,
-    );
-
-    tl.to(
-      rightPanel,
-      {
-        backgroundColor: isDarkMode ? "#000000" : "hsl(0, 0%, 95%)",
-        duration: 0.8,
-        ease: "power2.inOut",
-      },
-      0.1,
-    );
-
-    tl.to(
-      mainContainer,
-      {
-        duration: 0.4,
-        ease: "power2.inOut",
-        repeat: 1,
-        scale: 0.98,
-        yoyo: true,
-      },
-      0.1,
-    );
-
-    tl.to(
-      [leftPanel, rightPanel],
-      {
-        duration: 0.3,
-        ease: "power2.out",
-        opacity: 1,
-      },
-      0.7,
-    );
-
-    return () => {
-      tl.kill();
-    };
-  }, [isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef]);
-};
-
 const Home = function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const isMobile = useIsMobile();
@@ -245,11 +167,24 @@ const Home = function Home() {
   const { data: experience } = useExperience();
   const isPending = useIsFetchingData();
 
-  const toggleTheme = useCallback(() => {
-    setIsDarkMode((prev) => !prev);
+  // Read initial theme from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light") {
+        setIsDarkMode(false);
+      } else {
+        setIsDarkMode(true);
+      }
+    }
   }, []);
 
-  useThemeAnimation(isDarkMode, leftPanelRef, rightPanelRef, mainContainerRef);
+  const toggleTheme = useCallback(() => {
+    const newTheme = isDarkMode ? "light" : "dark";
+    setIsDarkMode(!isDarkMode);
+    localStorage.setItem("theme", newTheme);
+    document.documentElement.dataset.theme = newTheme;
+  }, [isDarkMode]);
 
   // Extract GitHub username from profile or env
   const githubUsername = (() => {
@@ -269,9 +204,11 @@ const Home = function Home() {
       ref={mainContainerRef}
     >
       <div
-        className="relative z-10 flex select-none flex-col gap-4 overflow-y-auto p-4 font-mono sm:gap-6 sm:p-6 lg:gap-8 lg:overflow-hidden lg:p-8"
+        data-theme={isDarkMode ? "dark" : "light"}
+        className={`relative z-10 flex select-none flex-col gap-4 overflow-y-auto p-4 font-mono sm:gap-6 sm:p-6 lg:gap-8 lg:overflow-hidden lg:p-8 ${
+          isDarkMode ? "bg-bg-dark text-text-dark" : "bg-bg-light text-text-light"
+        }`}
         ref={leftPanelRef}
-        style={{ backgroundColor: "#000000", color: "#ffffff" }}
       >
         <button
           aria-label="Toggle theme"
@@ -332,11 +269,13 @@ const Home = function Home() {
       </div>
 
       <div
-        className="relative min-h-0 overflow-hidden border-l border-white/10"
+        data-theme={isDarkMode ? "dark" : "light"}
+        className={`relative min-h-0 overflow-hidden border-l ${
+          isDarkMode ? "border-border-dark bg-bg-dark" : "border-border-light bg-bg-light"
+        }`}
         ref={rightPanelRef}
-        style={{ backgroundColor: "#000000" }}
       >
-        <BlogReaderPanel slug="crdts-101-a-primer" />
+        <BlogReaderPanel isDarkMode={isDarkMode} slug="crdts-101-a-primer" />
       </div>
     </div>
   );

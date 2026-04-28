@@ -32,7 +32,45 @@
   src: url("/fonts/UbuntuMono-BoldItalic.ttf") format("truetype");
 }
 
+@theme {
+  --color-bg-light: #eeeeee;
+  --color-bg-dark: #111111;
+  --color-text-light: #1a1a1a;
+  --color-text-dark: #ffffff;
+  --color-border-light: rgba(0, 0, 0, 0.1);
+  --color-border-dark: rgba(255, 255, 255, 0.1);
+}
+
 @layer base {
+  :root {
+    --color-bg: var(--color-bg-light);
+    --color-text: var(--color-text-light);
+    --color-border: var(--color-border-light);
+  }
+
+  [data-theme="dark"] {
+    --color-bg: var(--color-bg-dark);
+    --color-text: var(--color-text-dark);
+    --color-border: var(--color-border-dark);
+  }
+
+  /* Smooth theme transition for all themed elements */
+  [data-theme] {
+    transition:
+      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Dynamic background that follows theme */
+  .theme-bg {
+    background-color: var(--color-bg);
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Ensure sticky footer also transitions */
+  .sticky {
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   html {
     -ms-overflow-style: none;
     font-family: "Ubuntu Mono", monospace;
@@ -100,7 +138,7 @@ button {
 }
 
 .blog-reader-prose .tiptap {
-  color: #ffffff;
+  color: var(--color-text);
   font-family: "Ubuntu Mono", monospace;
   font-size: 0.98rem;
   line-height: 1.6;
@@ -112,7 +150,7 @@ button {
 .blog-reader-prose .tiptap h3 {
   margin-top: 2rem;
   margin-bottom: 1rem;
-  color: #ffffff;
+  color: var(--color-text);
   scroll-margin-top: 2rem;
 }
 
@@ -142,7 +180,7 @@ button {
 
 .blog-reader-prose .tiptap pre {
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.04);
   padding: 1rem;
   margin: 1rem 0;
@@ -156,7 +194,6 @@ button {
   display: block;
 }
 
-/* Syntax highlighting */
 .blog-reader-prose .tiptap .hljs-keyword {
   color: #c678dd;
 }
@@ -203,4 +240,56 @@ button {
   line-height: 0;
   margin: 0;
   padding: 0;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap {
+  color: var(--color-text);
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap h1,
+[data-theme="light"] .blog-reader-prose .tiptap h2,
+[data-theme="light"] .blog-reader-prose .tiptap h3 {
+  color: var(--color-text);
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap blockquote {
+  border-left-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap pre {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-keyword {
+  color: #8250df;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-string {
+  color: #0a7e07;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-title {
+  color: #953800;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-comment {
+  color: #656d76;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-function {
+  color: #0550ae;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-number {
+  color: #0550ae;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-built_in {
+  color: #953800;
+}
+
+[data-theme="light"] .blog-reader-prose .tiptap .hljs-params {
+  color: var(--color-text);
 }

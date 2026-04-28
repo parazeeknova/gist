@@ -8,150 +8,150 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
-import { Route as ApiProfileRouteImport } from "./routes/api/profile";
-import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
-import { Route as ApiGithubStatsRouteImport } from "./routes/api/github/stats";
-import { Route as ApiBlogsSlugRouteImport } from "./routes/api/blogs.$slug";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiProjectsRouteImport } from './routes/api/projects'
+import { Route as ApiProfileRouteImport } from './routes/api/profile'
+import { Route as ApiExperienceRouteImport } from './routes/api/experience'
+import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
+import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs.$slug'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiProjectsRoute = ApiProjectsRouteImport.update({
-  id: "/api/projects",
-  path: "/api/projects",
+  id: '/api/projects',
+  path: '/api/projects',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiProfileRoute = ApiProfileRouteImport.update({
-  id: "/api/profile",
-  path: "/api/profile",
+  id: '/api/profile',
+  path: '/api/profile',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiExperienceRoute = ApiExperienceRouteImport.update({
-  id: "/api/experience",
-  path: "/api/experience",
+  id: '/api/experience',
+  path: '/api/experience',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
-  id: "/api/github/stats",
-  path: "/api/github/stats",
+  id: '/api/github/stats',
+  path: '/api/github/stats',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiBlogsSlugRoute = ApiBlogsSlugRouteImport.update({
-  id: "/api/blogs/$slug",
-  path: "/api/blogs/$slug",
+  id: '/api/blogs/$slug',
+  path: '/api/blogs/$slug',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/api/experience": typeof ApiExperienceRoute;
-  "/api/profile": typeof ApiProfileRoute;
-  "/api/projects": typeof ApiProjectsRoute;
-  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
-  "/api/github/stats": typeof ApiGithubStatsRoute;
+  '/': typeof IndexRoute
+  '/api/experience': typeof ApiExperienceRoute
+  '/api/profile': typeof ApiProfileRoute
+  '/api/projects': typeof ApiProjectsRoute
+  '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/github/stats': typeof ApiGithubStatsRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/api/experience": typeof ApiExperienceRoute;
-  "/api/profile": typeof ApiProfileRoute;
-  "/api/projects": typeof ApiProjectsRoute;
-  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
-  "/api/github/stats": typeof ApiGithubStatsRoute;
+  '/': typeof IndexRoute
+  '/api/experience': typeof ApiExperienceRoute
+  '/api/profile': typeof ApiProfileRoute
+  '/api/projects': typeof ApiProjectsRoute
+  '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/github/stats': typeof ApiGithubStatsRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/api/experience": typeof ApiExperienceRoute;
-  "/api/profile": typeof ApiProfileRoute;
-  "/api/projects": typeof ApiProjectsRoute;
-  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
-  "/api/github/stats": typeof ApiGithubStatsRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/api/experience': typeof ApiExperienceRoute
+  '/api/profile': typeof ApiProfileRoute
+  '/api/projects': typeof ApiProjectsRoute
+  '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/github/stats': typeof ApiGithubStatsRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/api/experience"
-    | "/api/profile"
-    | "/api/projects"
-    | "/api/blogs/$slug"
-    | "/api/github/stats";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/api/experience'
+    | '/api/profile'
+    | '/api/projects'
+    | '/api/blogs/$slug'
+    | '/api/github/stats'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/api/experience"
-    | "/api/profile"
-    | "/api/projects"
-    | "/api/blogs/$slug"
-    | "/api/github/stats";
+    | '/'
+    | '/api/experience'
+    | '/api/profile'
+    | '/api/projects'
+    | '/api/blogs/$slug'
+    | '/api/github/stats'
   id:
-    | "__root__"
-    | "/"
-    | "/api/experience"
-    | "/api/profile"
-    | "/api/projects"
-    | "/api/blogs/$slug"
-    | "/api/github/stats";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/api/experience'
+    | '/api/profile'
+    | '/api/projects'
+    | '/api/blogs/$slug'
+    | '/api/github/stats'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  ApiExperienceRoute: typeof ApiExperienceRoute;
-  ApiProfileRoute: typeof ApiProfileRoute;
-  ApiProjectsRoute: typeof ApiProjectsRoute;
-  ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute;
-  ApiGithubStatsRoute: typeof ApiGithubStatsRoute;
+  IndexRoute: typeof IndexRoute
+  ApiExperienceRoute: typeof ApiExperienceRoute
+  ApiProfileRoute: typeof ApiProfileRoute
+  ApiProjectsRoute: typeof ApiProjectsRoute
+  ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute
+  ApiGithubStatsRoute: typeof ApiGithubStatsRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/projects": {
-      id: "/api/projects";
-      path: "/api/projects";
-      fullPath: "/api/projects";
-      preLoaderRoute: typeof ApiProjectsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/profile": {
-      id: "/api/profile";
-      path: "/api/profile";
-      fullPath: "/api/profile";
-      preLoaderRoute: typeof ApiProfileRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/experience": {
-      id: "/api/experience";
-      path: "/api/experience";
-      fullPath: "/api/experience";
-      preLoaderRoute: typeof ApiExperienceRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/github/stats": {
-      id: "/api/github/stats";
-      path: "/api/github/stats";
-      fullPath: "/api/github/stats";
-      preLoaderRoute: typeof ApiGithubStatsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/blogs/$slug": {
-      id: "/api/blogs/$slug";
-      path: "/api/blogs/$slug";
-      fullPath: "/api/blogs/$slug";
-      preLoaderRoute: typeof ApiBlogsSlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/projects': {
+      id: '/api/projects'
+      path: '/api/projects'
+      fullPath: '/api/projects'
+      preLoaderRoute: typeof ApiProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile': {
+      id: '/api/profile'
+      path: '/api/profile'
+      fullPath: '/api/profile'
+      preLoaderRoute: typeof ApiProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/experience': {
+      id: '/api/experience'
+      path: '/api/experience'
+      fullPath: '/api/experience'
+      preLoaderRoute: typeof ApiExperienceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/github/stats': {
+      id: '/api/github/stats'
+      path: '/api/github/stats'
+      fullPath: '/api/github/stats'
+      preLoaderRoute: typeof ApiGithubStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blogs/$slug': {
+      id: '/api/blogs/$slug'
+      path: '/api/blogs/$slug'
+      fullPath: '/api/blogs/$slug'
+      preLoaderRoute: typeof ApiBlogsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,16 +162,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProjectsRoute: ApiProjectsRoute,
   ApiBlogsSlugRoute: ApiBlogsSlugRoute,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { createStart } from "@tanstack/react-start";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

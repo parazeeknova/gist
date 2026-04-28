@@ -35,7 +35,7 @@ interface MobileProjectListProps {
 
 export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps) => {
   const { data: projectData, isPending } = useProjects();
-  const panelBg = isDarkMode ? "#000000" : "#ffffff";
+  const panelBg = isDarkMode ? "var(--color-bg-dark)" : "var(--color-bg-light)";
   const [isExpanded, setIsExpanded] = useState(false);
 
   const visibleProjects = isExpanded ? projectData : projectData?.slice(0, 3);

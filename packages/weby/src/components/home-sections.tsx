@@ -25,7 +25,7 @@ export const ProfileSection = ({
   isMobile,
   isDarkMode = true,
 }: ProfileSectionProps) => {
-  const panelBg = isDarkMode ? "#000000" : "#ffffff";
+  const panelBg = isDarkMode ? "var(--color-bg-dark)" : "var(--color-bg-light)";
   const [isExpanded, setIsExpanded] = useState(false);
 
   const zephyr = getLink(profile?.links, "zephyr");

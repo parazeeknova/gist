@@ -14,11 +14,11 @@
     },
     "packages/backy": {
       "name": "@verso/backy",
-      "version": "0.0.28",
+      "version": "0.0.29",
     },
     "packages/weby": {
       "name": "@verso/weby",
-      "version": "0.0.28",
+      "version": "0.0.29",
       "dependencies": {
         "@tailwindcss/vite": "^4.2.4",
         "@tanstack/query-async-storage-persister": "^5.100.5",
@@ -43,6 +43,7 @@
         "react-github-calendar": "^5.0.6",
         "react-tooltip": "^6.0.0",
         "tailwindcss": "^4.2.4",
+        "theme-change": "^2.5.0",
       },
       "devDependencies": {
         "@cloudflare/vite-plugin": "^1.33.2",
@@ -1760,6 +1761,8 @@
     "tar-stream": ["tar-stream@2.2.0", "", { "dependencies": { "bl": "^4.0.3", "end-of-stream": "^1.4.1", "fs-constants": "^1.0.0", "inherits": "^2.0.3", "readable-stream": "^3.1.1" } }, "sha512-ujeqbceABgwMZxEJnk2HDY2DlnUZ+9oEcb1KzTVfYHio0UE6dG71n60d8D2I4qNvleWrrXpmjpt7vZeF1LnMZQ=="],
 
     "text-extensions": ["text-extensions@1.9.0", "", {}, "sha512-wiBrwC1EhBelW12Zy26JeOUkQ5mRu+5o8rpsJk5+2t+Y5vE7e842qtZDQ2g1NpX/29HdyFeJ4nSIhI47ENSxlQ=="],
+
+    "theme-change": ["theme-change@2.5.0", "", {}, "sha512-B/UdsgdHAGhSKHTAQnxg/etN0RaMDpehuJmZIjLMDVJ6DGIliRHGD6pODi1CXLQAN9GV0GSyB3G6yCuK05PkPQ=="],
 
     "through": ["through@2.3.8", "", {}, "sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg=="],
 
