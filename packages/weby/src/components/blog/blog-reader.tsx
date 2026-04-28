@@ -4,6 +4,7 @@ import type { BlogPost } from "../../types";
 import { BlogFileTree } from "./blog-file-tree";
 import { BlogTableOfContents } from "./blog-table-of-contents";
 import { ReadonlyBlogEditor } from "./readonly-blog-editor";
+import type { TiptapHeading } from "./readonly-blog-editor";
 
 interface BlogReaderProps {
   post: BlogPost;
@@ -12,14 +13,19 @@ interface BlogReaderProps {
 
 export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+  const [tiptapHeadings, setTiptapHeadings] = useState<TiptapHeading[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   const html = useMemo(() => markdownToHtml(post.markdown), [post.markdown]);
 
+  const handleHeadingsExtracted = (headings: TiptapHeading[]) => {
+    setTiptapHeadings(headings);
+  };
+
   // Set up IntersectionObserver for active heading tracking
   useEffect(() => {
-    const headings = post.headings || [];
+    const headings = tiptapHeadings;
     if (headings.length === 0) {
       return;
     }
@@ -58,7 +64,7 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
     observerRef.current = observer;
 
     return () => observer.disconnect();
-  }, [post]);
+  }, [tiptapHeadings]);
 
   const handleSelectHeading = (id: string) => {
     const el = document.querySelector(`#${id}`);
@@ -76,7 +82,9 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
       }`}
     >
       <button
-        className={`mb-6 self-start text-[13px] ${isDarkMode ? "text-[#b58cff]" : "text-purple-600"}`}
+        className={`mb-6 self-start text-[13px] ${
+          isDarkMode ? "text-[#b58cff]" : "text-purple-600"
+        }`}
         type="button"
       >
         all blogs
@@ -109,10 +117,10 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
               </p>
             </header>
 
-            <ReadonlyBlogEditor html={html} />
+            <ReadonlyBlogEditor html={html} onHeadingsExtracted={handleHeadingsExtracted} />
 
             <div
-              className={`sticky bottom-0 mt-8 flex items-center justify-between border-t pt-6 text-[13px] theme-bg ${
+              className={`sticky bottom-0 mt-8 flex items-center justify-between border-t pt-6 text-[13px] ${
                 isDarkMode
                   ? "border-border-dark text-[#b58cff]"
                   : "border-border-light text-purple-600"
@@ -127,11 +135,11 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
         <aside className="space-y-8 xl:sticky xl:top-8 xl:self-start">
           <BlogTableOfContents
             activeHeadingId={activeHeadingId}
-            headings={post.headings || []}
+            headings={tiptapHeadings}
             isDarkMode={isDarkMode}
             onSelect={handleSelectHeading}
           />
-          <BlogFileTree isDarkMode={isDarkMode} />
+          <BlogFileTree activeSlug={post.slug} isDarkMode={isDarkMode} />
         </aside>
       </div>
     </div>

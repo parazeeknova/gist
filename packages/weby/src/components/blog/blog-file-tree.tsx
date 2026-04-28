@@ -1,19 +1,12 @@
+import { BLOG_MANIFEST } from "./blog-manifest";
+import type { BlogManifestPost } from "./blog-manifest";
+
 interface BlogFileTreeProps {
+  activeSlug?: string;
   isDarkMode: boolean;
 }
 
-const BLOG_FILE_TREE = [
-  {
-    children: ["crdts-101-a-primer", "eventual-consistency-explained", "vector-clocks-explained"],
-    label: "distributed-systems",
-  },
-  { children: [], label: "databases" },
-  { children: [], label: "web" },
-  { children: [], label: "tools" },
-  { children: [], label: "notes" },
-];
-
-export const BlogFileTree = ({ isDarkMode }: BlogFileTreeProps) => (
+export const BlogFileTree = ({ activeSlug, isDarkMode }: BlogFileTreeProps) => (
   <div className="space-y-3">
     <p className={`text-[13px] ${isDarkMode ? "text-text-dark/60" : "text-text-light/60"}`}>
       more posts
@@ -25,20 +18,20 @@ export const BlogFileTree = ({ isDarkMode }: BlogFileTreeProps) => (
           : "border-border-light text-text-light/70"
       }`}
     >
-      {BLOG_FILE_TREE.map((section) => (
+      {BLOG_MANIFEST.map((section) => (
         <div className="space-y-2" key={section.label}>
           <p>{section.label}</p>
           {section.children.length > 0 ? (
             <div className="space-y-2 pl-4">
-              {section.children.map((entry) => {
-                const isActive = entry === "crdts-101-a-primer";
+              {section.children.map((post: BlogManifestPost) => {
+                const isActive = post.slug === activeSlug;
                 let entryClass = "";
                 if (isActive) {
                   entryClass = isDarkMode ? "text-[#b58cff]" : "text-purple-600";
                 }
                 return (
-                  <p className={entryClass} key={entry}>
-                    {entry}
+                  <p className={entryClass} key={post.slug}>
+                    {post.title}
                   </p>
                 );
               })}

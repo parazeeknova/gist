@@ -4,15 +4,24 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { useEffect, useRef } from "react";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { createLowlight, common } from "lowlight";
+import { HeadingWithIds } from "./tiptap-heading-ids";
+import { Link } from "@tiptap/extension-link";
 
 // Create lowlight instance with common languages
 const lowlight = createLowlight(common);
 
-interface ReadonlyBlogEditorProps {
-  html: string;
+export interface TiptapHeading {
+  id: string;
+  label: string;
+  level: number;
 }
 
-export const ReadonlyBlogEditor = ({ html }: ReadonlyBlogEditorProps) => {
+interface ReadonlyBlogEditorProps {
+  html: string;
+  onHeadingsExtracted?: (headings: TiptapHeading[]) => void;
+}
+
+export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
@@ -21,6 +30,17 @@ export const ReadonlyBlogEditor = ({ html }: ReadonlyBlogEditorProps) => {
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        heading: false,
+      }),
+      HeadingWithIds.configure({
+        levels: [1, 2, 3],
+      }),
+      Link.configure({
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
+          target: "_blank",
+        },
+        openOnClick: false,
       }),
       CodeBlockLowlight.configure({
         defaultLanguage: "plaintext",
@@ -60,17 +80,37 @@ export const ReadonlyBlogEditor = ({ html }: ReadonlyBlogEditorProps) => {
       }
     };
 
-    // Initial collapse
+    // Extract headings after content is rendered
+    const extractHeadings = () => {
+      const headingElements = container.querySelectorAll("h1, h2, h3, h4, h5, h6");
+      const headings: TiptapHeading[] = [];
+      for (const el of headingElements) {
+        const { id } = el;
+        const level = Number.parseInt(el.tagName[1] || "1", 10);
+        const label = el.textContent || "";
+        if (id && label) {
+          headings.push({ id, label, level });
+        }
+      }
+      onHeadingsExtracted?.(headings);
+    };
+
+    // Initial collapse and heading extraction
     collapseBlankLines();
+    extractHeadings();
+
     const timers = [
       setTimeout(collapseBlankLines, 100),
       setTimeout(collapseBlankLines, 300),
       setTimeout(collapseBlankLines, 500),
+      setTimeout(extractHeadings, 100),
+      setTimeout(extractHeadings, 300),
     ];
 
     // Use MutationObserver to detect content changes
     const observer = new MutationObserver(() => {
       collapseBlankLines();
+      extractHeadings();
     });
 
     observer.observe(container, { childList: true, subtree: true });
@@ -81,7 +121,7 @@ export const ReadonlyBlogEditor = ({ html }: ReadonlyBlogEditorProps) => {
       }
       observer.disconnect();
     };
-  }, []);
+  }, [onHeadingsExtracted]);
 
   if (!editor) {
     return null;

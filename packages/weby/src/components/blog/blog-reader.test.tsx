@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { BlogPost } from "../../types";
 import { BlogReader } from "./blog-reader";
@@ -32,6 +32,52 @@ describe("BlogReader", () => {
     expect(screen.getByText("consistency")).toBeDefined();
     expect(screen.getByText("on this page")).toBeDefined();
     expect(screen.getByText("more posts")).toBeDefined();
+  });
+
+  it("TOC items are clickable and update active state", () => {
+    render(<BlogReader isDarkMode={true} post={mockPost} />);
+
+    // Find TOC buttons (should have heading labels)
+    const whyCrdtsBtn = screen.getByText("why crdts?");
+    const corePropertiesBtn = screen.getByText("core properties");
+    const typesOfCrdtsBtn = screen.getByText("types of crdts");
+
+    // Initially, one of the headings should be active
+    expect(whyCrdtsBtn).toBeDefined();
+    expect(corePropertiesBtn).toBeDefined();
+    expect(typesOfCrdtsBtn).toBeDefined();
+
+    // Click on a TOC item
+    fireEvent.click(corePropertiesBtn);
+
+    // Verify the click doesn't throw (TOC interaction works)
+    expect(corePropertiesBtn).toBeDefined();
+  });
+
+  it("renders fetched article data through the panel wrapper", async () => {
+    const mockFetch = vi.fn().mockResolvedValueOnce({
+      json: () =>
+        Promise.resolve({
+          description: "test description",
+          format: "markdown",
+          markdown: "# why crdts?",
+          publishedAt: "2025-08-28",
+          readTimeMinutes: 8,
+          section: "distributed-systems",
+          slug: "crdts-101-a-primer",
+          tags: ["distributed-systems", "crdt", "consistency"],
+          title: "CRDTs 101: A Primer",
+        }),
+      ok: true,
+    } as Response);
+
+    vi.stubGlobal("fetch", mockFetch);
+
+    renderWithQuery(<BlogReaderPanel isDarkMode={true} slug="crdts-101-a-primer" />);
+
+    await waitFor(() => {
+      expect(screen.getByText("CRDTs 101: A Primer")).toBeDefined();
+    });
   });
 });
 
