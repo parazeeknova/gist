@@ -14,6 +14,10 @@ const createMockResponse = (data: unknown, ok = true): Response =>
 describe("GitHubStats", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    // Reset fetch mock
+    if (globalThis.fetch && "mockRestore" in globalThis.fetch) {
+      vi.restoreAllMocks();
+    }
   });
 
   const mockStats: GitHubStatsData = {
@@ -32,7 +36,7 @@ describe("GitHubStats", () => {
   it("renders loading state initially", () => {
     // Simulates loading state with unresolved promise
     // eslint-disable-next-line promise/avoid-new
-    vi.stubGlobal("fetch", () => new Promise(() => {}));
+    globalThis.fetch = vi.fn(() => new Promise(() => {})) as unknown as typeof fetch;
 
     render(<GitHubStats />, { wrapper: createWrapper() });
 
@@ -42,7 +46,9 @@ describe("GitHubStats", () => {
   });
 
   it("renders stats data correctly", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(createMockResponse(mockStats)));
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(createMockResponse(mockStats)));
 
     render(<GitHubStats />, { wrapper: createWrapper() });
 
@@ -64,7 +70,7 @@ describe("GitHubStats", () => {
   });
 
   it("renders error state", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(new Error("Network error")));
+    globalThis.fetch = vi.fn().mockImplementation(() => Promise.reject(new Error("Network error")));
 
     render(<GitHubStats />, { wrapper: createWrapper() });
 
@@ -75,7 +81,9 @@ describe("GitHubStats", () => {
   });
 
   it("renders orgs section when data has orgs", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(createMockResponse(mockStats)));
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(createMockResponse(mockStats)));
 
     render(<GitHubStats />, { wrapper: createWrapper() });
 
@@ -93,7 +101,9 @@ describe("GitHubStats", () => {
 
   it("does not render orgs section when no orgs", async () => {
     const statsNoOrgs = { ...mockStats, orgs: [] };
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(createMockResponse(statsNoOrgs)));
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(createMockResponse(statsNoOrgs)));
 
     render(<GitHubStats />, { wrapper: createWrapper() });
 
@@ -107,7 +117,9 @@ describe("GitHubStats", () => {
   });
 
   it("handles HTTP error response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(createMockResponse({}, false)));
+    globalThis.fetch = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(createMockResponse({}, false)));
 
     render(<GitHubStats />, { wrapper: createWrapper() });
 

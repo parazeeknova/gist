@@ -7,8 +7,10 @@ afterEach(() => {
 });
 
 // Mock fetch globally
-const mockFetch = vi.fn();
-vi.stubGlobal("fetch", mockFetch);
+Object.defineProperty(globalThis, "fetch", {
+  value: vi.fn(),
+  writable: true,
+});
 
 // Mock environment variables
 vi.stubEnv("VITE_GITHUB_USERNAME", "testuser");

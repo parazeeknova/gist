@@ -31,6 +31,7 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
       StarterKit.configure({
         codeBlock: false,
         heading: false,
+        link: false,
       }),
       HeadingWithIds.configure({
         levels: [1, 2, 3],
