@@ -1,57 +1,40 @@
 package store
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/verso/backy/models"
-)
-
-func TestExtractHeadings(t *testing.T) {
-	markdown := `# why crdts?
-
-Some content here.
-
-## core properties
-
-More content.
-
-### sub-heading
-
-## types of crdts
-
-### another sub-heading
-
-## example: g-counter
-
-Some code.
-
-## when to use crdts?
-`
-
-	headings := extractHeadings(markdown)
-
-	if len(headings) == 0 {
-		t.Fatal("Expected headings, got empty")
+func TestGetBlogPost(t *testing.T) {
+	post, err := GetBlogPost("crdts-101-a-primer")
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
 	}
-
-	expected := []models.BlogHeading{
-		{ID: "why-crdts", Label: "why crdts?", Level: 1},
-		{ID: "core-properties", Label: "core properties", Level: 2},
-		{ID: "sub-heading", Label: "sub-heading", Level: 3},
-		{ID: "types-of-crdts", Label: "types of crdts", Level: 2},
-		{ID: "another-sub-heading", Label: "another sub-heading", Level: 3},
-		{ID: "example-g-counter", Label: "example: g-counter", Level: 2},
-		{ID: "when-to-use-crdts", Label: "when to use crdts?", Level: 2},
+	if post.Slug != "crdts-101-a-primer" {
+		t.Errorf("Expected slug 'crdts-101-a-primer', got '%s'", post.Slug)
 	}
-
-	if len(headings) != len(expected) {
-		t.Fatalf("Expected %d headings, got %d", len(expected), len(headings))
+	if post.Markdown == "" {
+		t.Fatal("Expected markdown content, got empty")
 	}
+}
 
-	for i, h := range headings {
-		if h.ID != expected[i].ID || h.Label != expected[i].Label || h.Level != expected[i].Level {
-			t.Errorf("Heading %d mismatch: got {ID:%s, Label:%s, Level:%d}, want {ID:%s, Label:%s, Level:%d}",
-				i, h.ID, h.Label, h.Level, expected[i].ID, expected[i].Label, expected[i].Level)
-		}
+func TestGetBlogPostNotFound(t *testing.T) {
+	_, err := GetBlogPost("non-existent-post")
+	if err != ErrBlogPostNotFound {
+		t.Errorf("Expected ErrBlogPostNotFound, got %v", err)
+	}
+}
+
+func TestGetBlogPostAll(t *testing.T) {
+	slug := "crdts-101-a-primer"
+	post, err := GetBlogPost(slug)
+	if err != nil {
+		t.Fatalf("GetBlogPost(%q) error: %v", slug, err)
+	}
+	if post.Title == "" {
+		t.Errorf("GetBlogPost(%q) title is empty", slug)
+	}
+	if post.Format != "markdown" {
+		t.Errorf("GetBlogPost(%q) format = %q, want 'markdown'", slug, post.Format)
+	}
+	if len(post.Tags) == 0 {
+		t.Errorf("GetBlogPost(%q) tags is empty", slug)
 	}
 }

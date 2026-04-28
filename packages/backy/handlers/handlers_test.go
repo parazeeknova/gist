@@ -254,15 +254,9 @@ func TestGetBlogPost(t *testing.T) {
 		t.Fatalf("Markdown body did not include the expected heading")
 	}
 
-	if len(post.Headings) == 0 {
-		t.Fatal("Expected headings, got empty")
-	}
-
-	// Check first heading
-	if len(post.Headings) > 0 {
-		if post.Headings[0].Label != "why crdts?" {
-			t.Fatalf("Expected first heading label 'why crdts?', got '%s'", post.Headings[0].Label)
-		}
+	// Verify markdown contains expected content
+	if !strings.Contains(post.Markdown, "## core properties") {
+		t.Fatal("Markdown should contain '## core properties'")
 	}
 }
 

@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
-	"strings"
 
 	"github.com/verso/backy/models"
 )
@@ -35,43 +33,6 @@ func getContentPath() string {
 	return filepath.Join(backyDir, "content")
 }
 
-// extractHeadings extracts heading text and levels from markdown content using regex
-func extractHeadings(markdownContent string) []models.BlogHeading {
-	// Regex to match markdown headings: #, ##, ###, etc.
-	re := regexp.MustCompile(`^(#{1,6})\s+(.+)$`)
-	lines := strings.Split(markdownContent, "\n")
-	var headings []models.BlogHeading
-
-	for _, line := range lines {
-		matches := re.FindStringSubmatch(line)
-		if matches != nil {
-			level := len(matches[1])
-			label := strings.TrimSpace(matches[2])
-			id := slugify(label)
-
-			headings = append(headings, models.BlogHeading{
-				ID:    id,
-				Label: label,
-				Level: level,
-			})
-		}
-	}
-
-	return headings
-}
-
-// slugify converts a heading label to a URL-friendly ID
-func slugify(label string) string {
-	// Convert to lowercase
-	label = strings.ToLower(label)
-	// Remove special characters
-	re := regexp.MustCompile(`[^a-z0-9\s-]`)
-	label = re.ReplaceAllString(label, "")
-	// Replace spaces with hyphens
-	label = strings.ReplaceAll(label, " ", "-")
-	return label
-}
-
 var blogSources = map[string]blogSource{
 	"crdts-101-a-primer": {
 		Description:     "Conflict-free Replicated Data Types (CRDTs) are a class of data structures that allow replicated data to be merged automatically, without conflicts. They are the backbone of many modern distributed systems.",
@@ -95,13 +56,9 @@ func GetBlogPost(slug string) (models.BlogPost, error) {
 		return models.BlogPost{}, fmt.Errorf("read blog post %q: %w", slug, err)
 	}
 
-	// Extract headings from markdown content
-	headings := extractHeadings(string(markdown))
-
 	return models.BlogPost{
 		Description:     source.Description,
 		Format:          "markdown",
-		Headings:        headings,
 		Markdown:        string(markdown),
 		PublishedAt:     source.PublishedAt,
 		ReadTimeMinutes: source.ReadTimeMinutes,
