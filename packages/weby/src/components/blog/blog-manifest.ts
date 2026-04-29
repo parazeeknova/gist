@@ -17,28 +17,7 @@ export const BLOG_MANIFEST: BlogManifestSection[] = [
         slug: "crdts-101-a-primer",
         title: "CRDTs 101: A Primer",
       },
-      {
-        section: "distributed-systems",
-        slug: "eventual-consistency-explained",
-        title: "Eventual Consistency Explained",
-      },
     ],
     label: "distributed-systems",
-  },
-  {
-    children: [],
-    label: "databases",
-  },
-  {
-    children: [],
-    label: "web",
-  },
-  {
-    children: [],
-    label: "tools",
-  },
-  {
-    children: [],
-    label: "notes",
   },
 ];

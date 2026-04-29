@@ -23,9 +23,10 @@ type ExperienceItem struct {
 
 // Project represents a project entry
 type Project struct {
-	Title string `json:"title"`
-	Desc  string `json:"desc"`
-	Stack string `json:"stack"`
+	Title     string `json:"title"`
+	Desc      string `json:"desc"`
+	ReadmeURL string `json:"readmeUrl,omitempty"`
+	Stack     string `json:"stack"`
 }
 
 // GitHubOrg represents a GitHub organization

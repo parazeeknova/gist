@@ -7,6 +7,9 @@ interface BlogReaderPanelProps {
   isMobile: boolean;
   onToggleTheme?: () => void;
   onSwitchToAbout?: () => void;
+  onSelectPost?: (slug: string) => void;
+  onSelectProject?: (project: { readmeUrl?: string; title: string }) => void;
+  projects?: { readmeUrl?: string; title: string }[];
   themeButtonRef?: React.RefObject<HTMLButtonElement | null>;
   themeIndicatorRef?: React.RefObject<HTMLSpanElement | null>;
 }
@@ -17,6 +20,9 @@ export const BlogReaderPanel = ({
   isMobile,
   onToggleTheme,
   onSwitchToAbout,
+  onSelectPost,
+  onSelectProject,
+  projects,
   themeButtonRef,
   themeIndicatorRef,
 }: BlogReaderPanelProps) => {
@@ -44,9 +50,12 @@ export const BlogReaderPanel = ({
     <BlogReader
       isDarkMode={isDarkMode}
       isMobile={isMobile}
+      onSelectPost={onSelectPost}
+      onSelectProject={onSelectProject}
       onSwitchToAbout={onSwitchToAbout}
       onToggleTheme={onToggleTheme}
       post={data}
+      projects={projects}
       themeButtonRef={themeButtonRef}
       themeIndicatorRef={themeIndicatorRef}
     />

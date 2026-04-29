@@ -66,9 +66,10 @@ export const BlogTableOfContents = ({
                 }
               }}
               style={{ paddingLeft: `${(heading.level - 1) * 12 + 8}px` }}
+              title={heading.label}
               type="button"
             >
-              {heading.label}
+              <span className="block truncate">{heading.label}</span>
             </button>
           );
         })}

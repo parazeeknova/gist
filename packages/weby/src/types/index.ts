@@ -18,6 +18,7 @@ export interface ExperienceItem {
 
 export interface Project {
   desc: string;
+  readmeUrl?: string;
   stack: string;
   title: string;
 }

@@ -4,18 +4,37 @@ import type { Project } from "../types";
 import { LoadingDots } from "./loading";
 
 interface ProjectCardProps {
+  onDetail?: (project: Project) => void;
   project: Project;
 }
 
-const ProjectCard = ({ project }: ProjectCardProps) => (
+const ProjectCard = ({ onDetail, project }: ProjectCardProps) => (
   <div>
-    <h3 className="font-medium text-xs sm:text-sm">{project.title}</h3>
+    <div className="flex items-center gap-2">
+      <h3 className="font-medium text-xs sm:text-sm">{project.title}</h3>
+      {project.readmeUrl && onDetail ? (
+        <button
+          className="text-gray-400 text-[11px] lowercase hover:text-gray-300 focus:outline-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDetail(project);
+          }}
+          type="button"
+        >
+          detail
+        </button>
+      ) : null}
+    </div>
     <p className="mt-1 text-gray-500 text-xs sm:text-sm">{project.desc}</p>
     <p className="mt-1 text-gray-400 text-xs">{project.stack}</p>
   </div>
 );
 
-export const ProjectList = () => {
+interface ProjectListProps {
+  onDetail?: (project: Project) => void;
+}
+
+export const ProjectList = ({ onDetail }: ProjectListProps) => {
   const { data: projectData, isPending } = useProjects();
 
   return (
@@ -23,13 +42,19 @@ export const ProjectList = () => {
       {isPending ? (
         <LoadingDots />
       ) : (
-        projectData?.map((project) => <ProjectCard key={project.title} project={project} />)
+        projectData?.map((project) => (
+          <ProjectCard key={project.title} onDetail={onDetail} project={project} />
+        ))
       )}
     </div>
   );
 };
 
-export const MobileProjectList = () => {
+interface MobileProjectListProps {
+  onDetail?: (project: Project) => void;
+}
+
+export const MobileProjectList = ({ onDetail }: MobileProjectListProps) => {
   const { data: projectData, isPending } = useProjects();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -44,7 +69,7 @@ export const MobileProjectList = () => {
               <LoadingDots />
             ) : (
               visibleProjects?.map((project) => (
-                <ProjectCard key={project.title} project={project} />
+                <ProjectCard key={project.title} onDetail={onDetail} project={project} />
               ))
             )}
           </div>
@@ -62,7 +87,7 @@ export const MobileProjectList = () => {
               <LoadingDots />
             ) : (
               visibleProjects?.map((project) => (
-                <ProjectCard key={project.title} project={project} />
+                <ProjectCard key={project.title} onDetail={onDetail} project={project} />
               ))
             )}
             <div

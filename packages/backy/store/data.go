@@ -40,9 +40,10 @@ var Experiences = []models.ExperienceItem{
 
 var Projects = []models.Project{
 	{
-		Title: "Zephyr is a Social media aggregator and platform",
-		Desc:  "Unified feeds from major networks with 10K+ views in beta, optimized API latency 300ms→25ms via self-hosted stack.",
-		Stack: "Next.js, TypeScript, PostgreSQL, Redis, MinIO, Docker",
+		Title:     "Zephyr is a Social media aggregator and platform",
+		Desc:      "Unified feeds from major networks with 10K+ views in beta, optimized API latency 300ms→25ms via self-hosted stack.",
+		Stack:     "Next.js, TypeScript, PostgreSQL, Redis, MinIO, Docker",
+		ReadmeURL: "https://raw.githubusercontent.com/zephverse/zephyr/refs/heads/main/.github/README.md",
 	},
 	{
 		Title: "Zephara is a Real-time chat platform",

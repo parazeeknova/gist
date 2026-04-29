@@ -8,7 +8,8 @@ import { MobileProjectList, ProjectList } from "../components/projects";
 import { ScrollContainer } from "../components/scroll-container";
 import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
 import { LoginPopup } from "../components/login-popup";
-import { useExperience, useIsFetchingData, useProfile } from "../hooks/use-data";
+import { ReadmeViewer } from "../components/readme-viewer";
+import { useExperience, useIsFetchingData, useProfile, useProjects } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
   const getSnapshot = useCallback(() => {
@@ -156,6 +157,10 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
 const Home = function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileView, setMobileView] = useState<"about" | "blogs">("about");
+  const [selectedProject, setSelectedProject] = useState<{
+    readmeUrl: string;
+    title: string;
+  } | null>(null);
   const isMobile = useIsMobile();
 
   const linkRefs = useAnimatedLinks();
@@ -168,6 +173,7 @@ const Home = function Home() {
 
   const { data: profile } = useProfile();
   const { data: experience } = useExperience();
+  const { data: projects } = useProjects();
   const isPending = useIsFetchingData();
 
   // Read initial theme from localStorage on mount
@@ -188,6 +194,19 @@ const Home = function Home() {
     localStorage.setItem("theme", newTheme);
     document.documentElement.dataset.theme = newTheme;
   }, [isDarkMode]);
+
+  const handleProjectDetail = useCallback(
+    (project: { readmeUrl?: string; title: string }) => {
+      if (!project.readmeUrl) {
+        return;
+      }
+      setSelectedProject({ readmeUrl: project.readmeUrl, title: project.title });
+      if (isMobile) {
+        setMobileView("blogs");
+      }
+    },
+    [isMobile],
+  );
 
   // Extract GitHub username from profile or env
   const githubUsername = (() => {
@@ -263,13 +282,13 @@ const Home = function Home() {
         {isMobile ? (
           <div className="shrink-0 space-y-2">
             <h3 className="font-medium text-base">voo look what i made</h3>
-            <MobileProjectList />
+            <MobileProjectList onDetail={handleProjectDetail} />
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
             <h3 className="mb-2 shrink-0 font-medium text-base">voo look what i made</h3>
             <ScrollContainer className="min-h-0 flex-1">
-              <ProjectList />
+              <ProjectList onDetail={handleProjectDetail} />
             </ScrollContainer>
           </div>
         )}
@@ -299,15 +318,38 @@ const Home = function Home() {
         }`}
         ref={rightPanelRef}
       >
-        <BlogReaderPanel
-          isDarkMode={isDarkMode}
-          isMobile={isMobile}
-          onSwitchToAbout={() => setMobileView("about")}
-          onToggleTheme={toggleTheme}
-          slug="crdts-101-a-primer"
-          themeButtonRef={themeRefsRight.buttonRef as React.RefObject<HTMLButtonElement | null>}
-          themeIndicatorRef={themeRefsRight.indicatorRef as React.RefObject<HTMLSpanElement | null>}
-        />
+        {selectedProject ? (
+          <ReadmeViewer
+            isDarkMode={isDarkMode}
+            isMobile={isMobile}
+            onBack={() => setSelectedProject(null)}
+            onSelectPost={() => setSelectedProject(null)}
+            onSelectProject={handleProjectDetail}
+            onSwitchToAbout={() => setMobileView("about")}
+            onToggleTheme={toggleTheme}
+            projectTitle={selectedProject.title}
+            projects={projects}
+            readmeUrl={selectedProject.readmeUrl}
+            themeButtonRef={themeRefsRight.buttonRef as React.RefObject<HTMLButtonElement | null>}
+            themeIndicatorRef={
+              themeRefsRight.indicatorRef as React.RefObject<HTMLSpanElement | null>
+            }
+          />
+        ) : (
+          <BlogReaderPanel
+            isDarkMode={isDarkMode}
+            isMobile={isMobile}
+            onSelectProject={handleProjectDetail}
+            onSwitchToAbout={() => setMobileView("about")}
+            onToggleTheme={toggleTheme}
+            projects={projects}
+            slug="crdts-101-a-primer"
+            themeButtonRef={themeRefsRight.buttonRef as React.RefObject<HTMLButtonElement | null>}
+            themeIndicatorRef={
+              themeRefsRight.indicatorRef as React.RefObject<HTMLSpanElement | null>
+            }
+          />
+        )}
       </div>
     </div>
   );

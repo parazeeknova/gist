@@ -13,6 +13,9 @@ interface BlogReaderProps {
   isMobile: boolean;
   onToggleTheme?: () => void;
   onSwitchToAbout?: () => void;
+  onSelectPost?: (slug: string) => void;
+  onSelectProject?: (project: { readmeUrl?: string; title: string }) => void;
+  projects?: { readmeUrl?: string; title: string }[];
   themeButtonRef?: React.RefObject<HTMLButtonElement | null>;
   themeIndicatorRef?: React.RefObject<HTMLSpanElement | null>;
 }
@@ -23,6 +26,9 @@ export const BlogReader = ({
   isMobile,
   onToggleTheme,
   onSwitchToAbout,
+  onSelectPost,
+  onSelectProject,
+  projects,
   themeButtonRef,
   themeIndicatorRef,
 }: BlogReaderProps) => {
@@ -268,7 +274,13 @@ export const BlogReader = ({
                     }}
                   />
                   <div className="mt-4 pt-4">
-                    <BlogFileTree activeSlug={post.slug} isDarkMode={isDarkMode} />
+                    <BlogFileTree
+                      activeSlug={post.slug}
+                      isDarkMode={isDarkMode}
+                      onSelectPost={onSelectPost}
+                      onSelectProject={onSelectProject}
+                      projects={projects}
+                    />
                   </div>
                 </div>
               </div>
@@ -281,7 +293,13 @@ export const BlogReader = ({
                   isDarkMode={isDarkMode}
                   onSelect={handleSelectHeading}
                 />
-                <BlogFileTree activeSlug={post.slug} isDarkMode={isDarkMode} />
+                <BlogFileTree
+                  activeSlug={post.slug}
+                  isDarkMode={isDarkMode}
+                  onSelectPost={onSelectPost}
+                  onSelectProject={onSelectProject}
+                  projects={projects}
+                />
               </aside>
             )}
       </div>
