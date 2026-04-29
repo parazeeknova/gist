@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@property --fade-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #111111;
+}
+
 @font-face {
   font-family: "Ubuntu Mono";
   font-style: normal;
@@ -46,19 +52,22 @@
     --color-bg: var(--color-bg-light);
     --color-text: var(--color-text-light);
     --color-border: var(--color-border-light);
+    --fade-color: #eeeeee;
   }
 
   [data-theme="dark"] {
     --color-bg: var(--color-bg-dark);
     --color-text: var(--color-text-dark);
     --color-border: var(--color-border-dark);
+    --fade-color: #111111;
   }
 
   /* Smooth theme transition for all themed elements */
   [data-theme] {
     transition:
       background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      --fade-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Dynamic background that follows theme */

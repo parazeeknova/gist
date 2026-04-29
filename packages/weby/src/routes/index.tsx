@@ -225,7 +225,6 @@ const Home = function Home() {
         </button>
 
         <ProfileSection
-          isDarkMode={isDarkMode}
           isMobile={isMobile}
           isPending={isPending}
           portfolioRef={linkRefs.portfolioRef}
@@ -242,12 +241,12 @@ const Home = function Home() {
         {isMobile ? (
           <div className="shrink-0 space-y-2">
             <h3 className="font-medium text-base">voo look what i made</h3>
-            <MobileProjectList isDarkMode={isDarkMode} />
+            <MobileProjectList />
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 flex-col">
             <h3 className="mb-2 shrink-0 font-medium text-base">voo look what i made</h3>
-            <ScrollContainer className="min-h-0 flex-1" isDarkMode={isDarkMode}>
+            <ScrollContainer className="min-h-0 flex-1">
               <ProjectList />
             </ScrollContainer>
           </div>

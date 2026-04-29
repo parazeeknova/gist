@@ -29,13 +29,8 @@ export const ProjectList = () => {
   );
 };
 
-interface MobileProjectListProps {
-  isDarkMode?: boolean;
-}
-
-export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps) => {
+export const MobileProjectList = () => {
   const { data: projectData, isPending } = useProjects();
-  const panelBg = isDarkMode ? "var(--color-bg-dark)" : "var(--color-bg-light)";
   const [isExpanded, setIsExpanded] = useState(false);
 
   const visibleProjects = isExpanded ? projectData : projectData?.slice(0, 3);
@@ -73,7 +68,7 @@ export const MobileProjectList = ({ isDarkMode = true }: MobileProjectListProps)
             <div
               className="pointer-events-none absolute right-0 bottom-0 left-0 h-16"
               style={{
-                background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
+                background: `linear-gradient(to top, var(--fade-color) 0%, transparent 100%)`,
               }}
             />
           </div>

@@ -7,7 +7,6 @@ const getLink = (links: Record<string, Link> | undefined, key: string): Link | u
   links?.[key];
 
 interface ProfileSectionProps {
-  isDarkMode?: boolean;
   isMobile?: boolean;
   isPending?: boolean;
   portfolioRef: React.RefObject<HTMLAnchorElement | null>;
@@ -23,9 +22,7 @@ export const ProfileSection = ({
   singularityRef,
   isPending,
   isMobile,
-  isDarkMode = true,
 }: ProfileSectionProps) => {
-  const panelBg = isDarkMode ? "var(--color-bg-dark)" : "var(--color-bg-light)";
   const [isExpanded, setIsExpanded] = useState(false);
 
   const zephyr = getLink(profile?.links, "zephyr");
@@ -105,7 +102,7 @@ export const ProfileSection = ({
                 <div
                   className="pointer-events-none absolute right-0 bottom-0 left-0 h-16"
                   style={{
-                    background: `linear-gradient(to top, ${panelBg} 0%, transparent 100%)`,
+                    background: `linear-gradient(to top, var(--fade-color) 0%, transparent 100%)`,
                   }}
                 />
               </div>
