@@ -8,27 +8,78 @@ interface ProjectCardProps {
   project: Project;
 }
 
-const ProjectCard = ({ onDetail, project }: ProjectCardProps) => (
-  <div>
-    <div className="flex items-center gap-2">
+const ProjectCard = ({ onDetail, project }: ProjectCardProps) => {
+  const [stackOpen, setStackOpen] = useState(false);
+
+  return (
+    <div>
       <h3 className="font-medium text-xs sm:text-sm">{project.title}</h3>
-      {project.readmeUrl && onDetail ? (
-        <button
-          className="text-gray-400 text-[11px] lowercase hover:text-gray-300 focus:outline-none"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDetail(project);
-          }}
-          type="button"
-        >
-          detail
-        </button>
-      ) : null}
+      <p className="mt-1 text-gray-500 text-xs sm:text-sm">{project.desc}</p>
+      <p className="mt-1 flex items-center gap-2 text-gray-400 text-xs">
+        {stackOpen ? (
+          <>
+            {project.stack}{" "}
+            <button
+              className="text-gray-500 text-[11px] lowercase hover:text-gray-300 focus:outline-none"
+              onClick={(e) => {
+                e.stopPropagation();
+                setStackOpen(false);
+              }}
+              type="button"
+            >
+              collapse
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              className="text-gray-500 text-[11px] lowercase hover:text-gray-300 focus:outline-none"
+              onClick={(e) => {
+                e.stopPropagation();
+                setStackOpen(true);
+              }}
+              type="button"
+            >
+              stack
+            </button>
+            {project.readmeUrl && onDetail ? (
+              <button
+                className="text-[#b58cff] text-[11px] lowercase hover:opacity-70 focus:outline-none"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDetail(project);
+                }}
+                type="button"
+              >
+                detail
+              </button>
+            ) : null}
+            {project.repoUrl && (
+              <a
+                className="text-[#b58cff] text-[11px] lowercase hover:opacity-70"
+                href={project.repoUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                repo
+              </a>
+            )}
+            {project.productUrl && (
+              <a
+                className="text-[#b58cff] text-[11px] lowercase hover:opacity-70"
+                href={project.productUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                product
+              </a>
+            )}
+          </>
+        )}
+      </p>
     </div>
-    <p className="mt-1 text-gray-500 text-xs sm:text-sm">{project.desc}</p>
-    <p className="mt-1 text-gray-400 text-xs">{project.stack}</p>
-  </div>
-);
+  );
+};
 
 interface ProjectListProps {
   onDetail?: (project: Project) => void;

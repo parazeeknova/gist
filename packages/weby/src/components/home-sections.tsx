@@ -86,7 +86,9 @@ export const ProfileSection = ({ profile, isPending, isMobile }: ProfileSectionP
                       }}
                     />
                   </div>
-                  <span className="link-underline mt-1 block text-gray-400 text-xs">view more</span>
+                  <span className="link-underline mt-1 block text-center text-gray-400 text-xs">
+                    more
+                  </span>
                 </button>
               )}
             </div>
@@ -105,6 +107,8 @@ interface ExperienceSectionProps {
 }
 
 export const ExperienceSection = ({ experience, isPending }: ExperienceSectionProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (isPending) {
     return (
       <div className="shrink-0 space-y-3 sm:space-y-4">
@@ -117,16 +121,58 @@ export const ExperienceSection = ({ experience, isPending }: ExperienceSectionPr
     return null;
   }
 
+  const visible = isExpanded ? experience : experience.slice(0, 3);
+  const hasMore = experience.length > 3;
+
   return (
     <div className="shrink-0 space-y-3 sm:space-y-4">
-      {experience.map((item) => (
-        <div key={item.title}>
-          <h3 className="font-medium text-xs sm:text-sm">{item.title}</h3>
-          <p className="text-gray-500 text-xs sm:text-sm">
-            {item.location} | {item.period}
-          </p>
-        </div>
-      ))}
+      {isExpanded ? (
+        <>
+          {visible.map((item) => (
+            <div key={item.title}>
+              <h3 className="font-medium text-xs sm:text-sm">{item.title}</h3>
+              <p className="text-gray-500 text-xs sm:text-sm">
+                {item.location} | {item.period}
+              </p>
+            </div>
+          ))}
+          {hasMore && (
+            <button
+              className="link-underline mt-1 text-gray-400 text-xs"
+              onClick={() => setIsExpanded(false)}
+              type="button"
+            >
+              view less
+            </button>
+          )}
+        </>
+      ) : (
+        <button className="w-full text-left" onClick={() => setIsExpanded(true)} type="button">
+          <div className="relative space-y-3 sm:space-y-4">
+            {visible.map((item) => (
+              <div key={item.title}>
+                <h3 className="font-medium text-xs sm:text-sm">{item.title}</h3>
+                <p className="text-gray-500 text-xs sm:text-sm">
+                  {item.location} | {item.period}
+                </p>
+              </div>
+            ))}
+            {hasMore && (
+              <div
+                className="pointer-events-none absolute right-0 bottom-0 left-0 h-16"
+                style={{
+                  background: `linear-gradient(to top, var(--fade-color) 0%, transparent 100%)`,
+                }}
+              />
+            )}
+          </div>
+          {hasMore && (
+            <span className="link-underline mt-1 block text-center text-gray-400 text-xs">
+              see more
+            </span>
+          )}
+        </button>
+      )}
     </div>
   );
 };
