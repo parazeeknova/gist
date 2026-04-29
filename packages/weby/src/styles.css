@@ -1,38 +1,51 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-Regular.ttf") format("truetype");
+@property --fade-color {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #111111;
 }
 
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-Bold.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-Italic.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: italic;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-BoldItalic.ttf") format("truetype");
+@theme {
+  --color-bg-light: #eeeeee;
+  --color-bg-dark: #111111;
+  --color-text-light: #1a1a1a;
+  --color-text-dark: #ffffff;
+  --color-border-light: rgba(0, 0, 0, 0.1);
+  --color-border-dark: rgba(255, 255, 255, 0.1);
 }
 
 @layer base {
+  :root {
+    --color-bg: var(--color-bg-light);
+    --color-text: var(--color-text-light);
+    --color-border: var(--color-border-light);
+    --fade-color: #eeeeee;
+  }
+
+  [data-theme="dark"] {
+    --color-bg: var(--color-bg-dark);
+    --color-text: var(--color-text-dark);
+    --color-border: var(--color-border-dark);
+    --fade-color: #111111;
+  }
+
+  [data-theme] {
+    transition:
+      background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+      --fade-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-bg {
+    background-color: var(--color-bg);
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sticky {
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
   html {
     -ms-overflow-style: none;
     font-family: "Ubuntu Mono", monospace;
@@ -42,6 +55,17 @@
 
   html::-webkit-scrollbar {
     display: none;
+  }
+
+  * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 }
 
@@ -88,29 +112,249 @@ button {
   cursor: pointer !important;
 }
 
-.projects-scroll {
-  scrollbar-color: transparent auto;
-  scrollbar-width: thin;
+.blog-reader-prose .tiptap {
+  color: var(--color-text);
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  text-transform: lowercase;
 }
 
-.projects-scroll::-webkit-scrollbar {
-  width: 4px;
+.blog-reader-prose {
+  color: var(--color-text);
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.98rem;
+  line-height: 1.6;
 }
 
-.projects-scroll::-webkit-scrollbar-track {
-  background: transparent;
+.blog-reader-prose h1,
+.blog-reader-prose h2,
+.blog-reader-prose h3,
+.blog-reader-prose h4,
+.blog-reader-prose h5,
+.blog-reader-prose h6 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+  scroll-margin-top: 2rem;
+  font-weight: 600;
 }
 
-.projects-scroll::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 2px;
-  transition: background-color 0.15s ease;
+.blog-reader-prose h1 {
+  font-size: 1.5rem;
+}
+.blog-reader-prose h2 {
+  font-size: 1.25rem;
+}
+.blog-reader-prose h3 {
+  font-size: 1.1rem;
 }
 
-.projects-scroll:hover {
-  scrollbar-color: rgba(255, 255, 255, 0.2) auto;
+.blog-reader-prose p,
+.blog-reader-prose ul,
+.blog-reader-prose ol,
+.blog-reader-prose blockquote,
+.blog-reader-prose pre {
+  margin-bottom: 0.75rem;
 }
 
-.projects-scroll:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
+.blog-reader-prose li {
+  margin-bottom: 0.25rem;
+  line-height: 1.5;
+}
+
+.blog-reader-prose li > p {
+  margin-bottom: 0;
+}
+
+.blog-reader-prose a {
+  color: #b58cff;
+  text-decoration: underline;
+}
+
+.blog-reader-prose blockquote {
+  border-left: 3px solid #b58cff;
+  background: rgba(181, 140, 255, 0.08);
+  padding: 1rem 1.25rem;
+  margin-left: 0;
+}
+
+.blog-reader-prose pre {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1rem;
+  margin: 1rem 0;
+  line-height: 1.2;
+}
+
+.blog-reader-prose pre code {
+  font-family: "Ubuntu Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  display: block;
+}
+
+.blog-reader-prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+.blog-reader-prose [align="center"] {
+  text-align: center;
+}
+
+.blog-reader-prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+}
+
+.blog-reader-prose th,
+.blog-reader-prose td {
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.blog-reader-prose th {
+  font-weight: 600;
+}
+
+.blog-reader-prose kbd {
+  display: inline-block;
+  padding: 1px 8px;
+  font-size: 0.85em;
+  line-height: 1.25;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 var(--color-border);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+  font-family: "Ubuntu Mono", monospace;
+  margin: 0 2px;
+  vertical-align: middle;
+}
+
+[data-theme="light"] .blog-reader-prose kbd {
+  background: rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.blog-reader-prose .hljs-keyword {
+  color: #c678dd;
+}
+.blog-reader-prose .hljs-string {
+  color: #98c379;
+}
+.blog-reader-prose .hljs-title {
+  color: #e5c07b;
+}
+.blog-reader-prose .hljs-comment {
+  color: #5c6370;
+  font-style: italic;
+}
+.blog-reader-prose .hljs-function {
+  color: #61afef;
+}
+.blog-reader-prose .hljs-number {
+  color: #d19a66;
+}
+.blog-reader-prose .hljs-built_in {
+  color: #e6c07b;
+}
+.blog-reader-prose .hljs-params {
+  color: #abb2bf;
+}
+
+[data-theme="light"] .blog-reader-prose {
+  color: var(--color-text);
+}
+
+[data-theme="light"] .blog-reader-prose h1,
+[data-theme="light"] .blog-reader-prose h2,
+[data-theme="light"] .blog-reader-prose h3,
+[data-theme="light"] .blog-reader-prose h4,
+[data-theme="light"] .blog-reader-prose h5,
+[data-theme="light"] .blog-reader-prose h6 {
+  color: var(--color-text);
+}
+
+.prose-desc a {
+  color: #b58cff;
+  text-decoration: none;
+  position: relative;
+}
+
+.prose-desc a::after {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  content: "";
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.prose-desc a:hover::after {
+  width: 100%;
+}
+
+[data-theme="light"] .prose-desc a {
+  color: #7c3aed;
+}
+
+[data-theme="light"] .blog-reader-prose a {
+  color: #7c3aed;
+}
+
+[data-theme="light"] .blog-reader-prose blockquote {
+  border-left-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+}
+
+[data-theme="light"] .blog-reader-prose pre {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .blog-reader-prose .hljs-keyword {
+  color: #8250df;
+}
+[data-theme="light"] .blog-reader-prose .hljs-string {
+  color: #0a7e07;
+}
+[data-theme="light"] .blog-reader-prose .hljs-title {
+  color: #953800;
+}
+[data-theme="light"] .blog-reader-prose .hljs-comment {
+  color: #656d76;
+}
+[data-theme="light"] .blog-reader-prose .hljs-function {
+  color: #0550ae;
+}
+[data-theme="light"] .blog-reader-prose .hljs-number {
+  color: #0550ae;
+}
+[data-theme="light"] .blog-reader-prose .hljs-built_in {
+  color: #953800;
+}
+[data-theme="light"] .blog-reader-prose .hljs-params {
+  color: var(--color-text);
+}
+
+.blog-reader-prose .tiptap .ProseMirror-code-block .ProseMirror-line {
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+  min-height: 0;
+}
+
+.blog-reader-prose .tiptap .ProseMirror-code-block .ProseMirror-line:empty {
+  height: 0;
+  min-height: 0;
+  line-height: 0;
+  margin: 0;
+  padding: 0;
 }

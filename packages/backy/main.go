@@ -96,6 +96,8 @@ func main() {
 		api.GET("/experience", h.GetExperience)
 		api.GET("/projects", h.GetProjects)
 		api.GET("/github/stats", h.GetGitHubStats)
+		api.GET("/blogs", h.GetBlogManifest)
+		api.GET("/blogs/:slug", h.GetBlogPost)
 	}
 
 	if err := r.Run(":" + port); err != nil {

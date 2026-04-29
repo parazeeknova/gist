@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ func setupRouter() (*gin.Engine, *Handlers) {
 	r.GET("/api/experience", h.GetExperience)
 	r.GET("/api/projects", h.GetProjects)
 	r.GET("/api/github/stats", h.GetGitHubStats)
+	r.GET("/api/blogs/:slug", h.GetBlogPost)
 
 	return r, h
 }
@@ -225,5 +227,47 @@ func TestGetGitHubStats_CacheExpiration(t *testing.T) {
 
 	if response["error"] != "failed to fetch GitHub stats" {
 		t.Errorf("error = %s, want failed to fetch GitHub stats", response["error"])
+	}
+}
+
+func TestGetBlogPost(t *testing.T) {
+	router, _ := setupRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/blogs/crdts-101-a-primer", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("GetBlogPost status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var post models.BlogPost
+	if err := json.Unmarshal(w.Body.Bytes(), &post); err != nil {
+		t.Fatalf("Failed to unmarshal blog post: %v", err)
+	}
+
+	if post.Slug != "crdts-101-a-primer" {
+		t.Fatalf("Slug = %q, want crdts-101-a-primer", post.Slug)
+	}
+
+	if !strings.Contains(post.Markdown, "# why crdts?") {
+		t.Fatalf("Markdown body did not include the expected heading")
+	}
+
+	// Verify markdown contains expected content
+	if !strings.Contains(post.Markdown, "## core properties") {
+		t.Fatal("Markdown should contain '## core properties'")
+	}
+}
+
+func TestGetBlogPost_NotFound(t *testing.T) {
+	router, _ := setupRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/blogs/does-not-exist", nil)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("GetBlogPost status = %d, want %d", w.Code, http.StatusNotFound)
 	}
 }

@@ -11,6 +11,8 @@ type Profile struct {
 	Name        string          `json:"name"`
 	Tagline     string          `json:"tagline"`
 	Description string          `json:"description"`
+	Email       string          `json:"email,omitempty"`
+	Username    string          `json:"username,omitempty"`
 	Links       map[string]Link `json:"links"`
 }
 
@@ -23,9 +25,12 @@ type ExperienceItem struct {
 
 // Project represents a project entry
 type Project struct {
-	Title string `json:"title"`
-	Desc  string `json:"desc"`
-	Stack string `json:"stack"`
+	Title      string `json:"title"`
+	Desc       string `json:"desc"`
+	ReadmeURL  string `json:"readmeUrl,omitempty"`
+	RepoURL    string `json:"repoUrl,omitempty"`
+	ProductURL string `json:"productUrl,omitempty"`
+	Stack      string `json:"stack"`
 }
 
 // GitHubOrg represents a GitHub organization
@@ -63,4 +68,17 @@ type GraphQLResponse struct {
 	Errors []struct {
 		Message string `json:"message"`
 	} `json:"errors"`
+}
+
+// BlogPost represents a blog post response
+type BlogPost struct {
+	Description     string   `json:"description"`
+	Format          string   `json:"format"`
+	Markdown        string   `json:"markdown"`
+	PublishedAt     string   `json:"publishedAt"`
+	ReadTimeMinutes int      `json:"readTimeMinutes"`
+	Section         string   `json:"section"`
+	Slug            string   `json:"slug"`
+	Tags            []string `json:"tags"`
+	Title           string   `json:"title"`
 }

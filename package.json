@@ -1,22 +1,21 @@
 {
   "$schema": "https://raw.githubusercontent.com/SchemaStore/schemastore/refs/heads/master/src/schemas/json/package.json",
   "name": "verso",
-  "version": "0.0.28",
+  "version": "0.0.49",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "type": "module",
   "scripts": {
+    "check:ci": "ultracite check && lerna run check",
     "autobump": "go run scripts/autobump.go",
     "build": "lerna run build",
     "check": "ultracite fix --unsafe && lerna run check",
     "check-types": "lerna run check-types",
-    "check:ci": "ultracite check && lerna run check",
     "dev": "lerna run dev",
-    "format": "ultracite fix --unsafe && lerna run format",
-    "prepare": "lefthook install",
-    "start": "lerna run start --parallel",
+    "infra:down": "docker compose -f docker/docker-compose.infrastructure.yml down",
+    "infra:up": "docker compose -f docker/docker-compose.infrastructure.yml up -d",
     "test": "lerna run test"
   },
   "devDependencies": {

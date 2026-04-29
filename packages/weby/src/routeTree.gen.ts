@@ -13,7 +13,9 @@ import { Route as IndexRouteImport } from "./routes/index";
 import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
 import { Route as ApiProfileRouteImport } from "./routes/api/profile";
 import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
+import { Route as ApiBlogsRouteImport } from "./routes/api/blogs";
 import { Route as ApiGithubStatsRouteImport } from "./routes/api/github/stats";
+import { Route as ApiBlogsSlugRouteImport } from "./routes/api/blogs.$slug";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -35,44 +37,83 @@ const ApiExperienceRoute = ApiExperienceRouteImport.update({
   path: "/api/experience",
   getParentRoute: () => rootRouteImport,
 } as any);
+const ApiBlogsRoute = ApiBlogsRouteImport.update({
+  id: "/api/blogs",
+  path: "/api/blogs",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   id: "/api/github/stats",
   path: "/api/github/stats",
   getParentRoute: () => rootRouteImport,
 } as any);
+const ApiBlogsSlugRoute = ApiBlogsSlugRouteImport.update({
+  id: "/$slug",
+  path: "/$slug",
+  getParentRoute: () => ApiBlogsRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/api/blogs": typeof ApiBlogsRouteWithChildren;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
   "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/api/blogs": typeof ApiBlogsRouteWithChildren;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
   "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
+  "/api/blogs": typeof ApiBlogsRouteWithChildren;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
   "/api/github/stats": typeof ApiGithubStatsRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
+  fullPaths:
+    | "/"
+    | "/api/blogs"
+    | "/api/experience"
+    | "/api/profile"
+    | "/api/projects"
+    | "/api/blogs/$slug"
+    | "/api/github/stats";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
-  id: "__root__" | "/" | "/api/experience" | "/api/profile" | "/api/projects" | "/api/github/stats";
+  to:
+    | "/"
+    | "/api/blogs"
+    | "/api/experience"
+    | "/api/profile"
+    | "/api/projects"
+    | "/api/blogs/$slug"
+    | "/api/github/stats";
+  id:
+    | "__root__"
+    | "/"
+    | "/api/blogs"
+    | "/api/experience"
+    | "/api/profile"
+    | "/api/projects"
+    | "/api/blogs/$slug"
+    | "/api/github/stats";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  ApiBlogsRoute: typeof ApiBlogsRouteWithChildren;
   ApiExperienceRoute: typeof ApiExperienceRoute;
   ApiProfileRoute: typeof ApiProfileRoute;
   ApiProjectsRoute: typeof ApiProjectsRoute;
@@ -109,6 +150,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiExperienceRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/api/blogs": {
+      id: "/api/blogs";
+      path: "/api/blogs";
+      fullPath: "/api/blogs";
+      preLoaderRoute: typeof ApiBlogsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/api/github/stats": {
       id: "/api/github/stats";
       path: "/api/github/stats";
@@ -116,11 +164,29 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiGithubStatsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/api/blogs/$slug": {
+      id: "/api/blogs/$slug";
+      path: "/$slug";
+      fullPath: "/api/blogs/$slug";
+      preLoaderRoute: typeof ApiBlogsSlugRouteImport;
+      parentRoute: typeof ApiBlogsRoute;
+    };
   }
 }
 
+interface ApiBlogsRouteChildren {
+  ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute;
+}
+
+const ApiBlogsRouteChildren: ApiBlogsRouteChildren = {
+  ApiBlogsSlugRoute: ApiBlogsSlugRoute,
+};
+
+const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(ApiBlogsRouteChildren);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiBlogsRoute: ApiBlogsRouteWithChildren,
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,

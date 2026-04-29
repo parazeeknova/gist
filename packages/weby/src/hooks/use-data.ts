@@ -1,5 +1,5 @@
+import type { BlogManifestSection, ExperienceItem, Profile, Project } from "#/types";
 import { useQuery } from "@tanstack/react-query";
-import type { ExperienceItem, Profile, Project } from "../types";
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const res = await fetch(url, init);
@@ -25,6 +25,12 @@ export const useProjects = () =>
   useQuery<Project[]>({
     queryFn: ({ signal }) => fetchJson<Project[]>("/api/projects", { signal }),
     queryKey: ["projects"],
+  });
+
+export const useBlogManifest = () =>
+  useQuery<BlogManifestSection[]>({
+    queryFn: ({ signal }) => fetchJson<BlogManifestSection[]>("/api/blogs", { signal }),
+    queryKey: ["blogManifest"],
   });
 
 export const useIsFetchingData = (): boolean => {
