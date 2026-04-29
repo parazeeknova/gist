@@ -1,10 +1,10 @@
-import { BLOG_MANIFEST } from "./blog-manifest";
-import type { BlogManifestPost } from "./blog-manifest";
+import type { BlogManifestPost, BlogManifestSection } from "#/types";
 
 interface BlogFileTreeProps {
   activeProjectTitle?: string;
   activeSlug?: string;
   isDarkMode: boolean;
+  manifest: BlogManifestSection[];
   onSelectPost?: (slug: string) => void;
   onSelectProject?: (project: { readmeUrl?: string; title: string }) => void;
   projects?: { readmeUrl?: string; title: string }[];
@@ -14,6 +14,7 @@ export const BlogFileTree = ({
   activeProjectTitle,
   activeSlug,
   isDarkMode,
+  manifest,
   onSelectPost,
   onSelectProject,
   projects,
@@ -47,7 +48,7 @@ export const BlogFileTree = ({
             : "border-border-light text-text-light/70"
         }`}
       >
-        {BLOG_MANIFEST.map((section) => (
+        {manifest.map((section) => (
           <div className="space-y-2" key={section.label}>
             <p>{section.label}</p>
             {section.children.length > 0 && (

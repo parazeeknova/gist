@@ -9,7 +9,13 @@ import { ScrollContainer } from "../components/scroll-container";
 import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
 import { LoginPopup } from "../components/login-popup";
 import { ReadmeViewer } from "../components/readme-viewer";
-import { useExperience, useIsFetchingData, useProfile, useProjects } from "../hooks/use-data";
+import {
+  useBlogManifest,
+  useExperience,
+  useIsFetchingData,
+  useProfile,
+  useProjects,
+} from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
   const getSnapshot = useCallback(() => {
@@ -104,6 +110,7 @@ const Home = function Home() {
   const { data: profile } = useProfile();
   const { data: experience } = useExperience();
   const { data: projects } = useProjects();
+  const { data: manifest = [] } = useBlogManifest();
   const isPending = useIsFetchingData();
 
   // Read initial theme from localStorage on mount
@@ -203,7 +210,7 @@ const Home = function Home() {
         <ProfileSection isMobile={isMobile} isPending={isPending} profile={profile} />
 
         <div className="shrink-0 space-y-2">
-          <h3 className="font-medium text-base">work stuff i guess</h3>
+          <h3 className="font-medium text-base">work i did</h3>
           <ExperienceSection experience={experience} isPending={isPending} />
         </div>
 
@@ -245,6 +252,7 @@ const Home = function Home() {
           <ReadmeViewer
             isDarkMode={isDarkMode}
             isMobile={isMobile}
+            manifest={manifest}
             onBack={() => setSelectedProject(null)}
             onSelectPost={() => setSelectedProject(null)}
             onSelectProject={handleProjectDetail}
@@ -264,6 +272,7 @@ const Home = function Home() {
           <BlogReaderPanel
             isDarkMode={isDarkMode}
             isMobile={isMobile}
+            manifest={manifest}
             onSelectProject={handleProjectDetail}
             onSwitchToAbout={() => setMobileView("about")}
             onToggleTheme={toggleTheme}

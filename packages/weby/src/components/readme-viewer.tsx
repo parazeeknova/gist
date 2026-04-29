@@ -5,11 +5,13 @@ import { extractBlogHeadings } from "../lib/blog-headings";
 import { markdownToHtml } from "../lib/markdown-to-html";
 import { AnimatedLink } from "./animated-link";
 import { BlogFileTree } from "./blog/blog-file-tree";
+import type { BlogManifestSection } from "#/types";
 import { BlogTableOfContents } from "./blog/blog-table-of-contents";
 
 interface ReadmeViewerProps {
   isDarkMode: boolean;
   isMobile: boolean;
+  manifest: BlogManifestSection[];
   onBack: () => void;
   onSelectPost?: (slug: string) => void;
   onSelectProject?: (project: { readmeUrl?: string; title: string }) => void;
@@ -27,6 +29,7 @@ interface ReadmeViewerProps {
 export const ReadmeViewer = ({
   isDarkMode,
   isMobile,
+  manifest,
   onBack,
   onSelectPost,
   onSelectProject,
@@ -196,6 +199,7 @@ export const ReadmeViewer = ({
             <BlogFileTree
               activeProjectTitle={projectTitle}
               isDarkMode={isDarkMode}
+              manifest={manifest}
               onSelectPost={onSelectPost}
               onSelectProject={onSelectProject}
               projects={projects}

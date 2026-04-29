@@ -68,3 +68,38 @@ func GetBlogPost(slug string) (models.BlogPost, error) {
 		Title:           source.Title,
 	}, nil
 }
+
+// BlogManifestEntry represents a single entry in the blog manifest
+type BlogManifestEntry struct {
+	Slug    string `json:"slug"`
+	Title   string `json:"title"`
+	Section string `json:"section"`
+}
+
+// BlogManifestSection represents a section of the blog manifest
+type BlogManifestSection struct {
+	Label    string              `json:"label"`
+	Children []BlogManifestEntry `json:"children"`
+}
+
+// GetBlogManifest returns the blog manifest grouped by section
+func GetBlogManifest() []BlogManifestSection {
+	sections := make(map[string][]BlogManifestEntry)
+	for slug, source := range blogSources {
+		entry := BlogManifestEntry{
+			Slug:    slug,
+			Title:   source.Title,
+			Section: source.Section,
+		}
+		sections[source.Section] = append(sections[source.Section], entry)
+	}
+
+	result := make([]BlogManifestSection, 0, len(sections))
+	for label, children := range sections {
+		result = append(result, BlogManifestSection{
+			Label:    label,
+			Children: children,
+		})
+	}
+	return result
+}

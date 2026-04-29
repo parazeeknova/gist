@@ -1,16 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { markdownToHtml } from "../../lib/markdown-to-html";
-import type { BlogPost } from "../../types";
 import { BlogFileTree } from "./blog-file-tree";
 import { BlogTableOfContents } from "./blog-table-of-contents";
 import { ReadonlyBlogEditor } from "./readonly-blog-editor";
 import type { TiptapHeading } from "./readonly-blog-editor";
+import type { BlogManifestSection, BlogPost } from "#/types";
 
 interface BlogReaderProps {
   post: BlogPost;
   isDarkMode: boolean;
   isMobile: boolean;
+  manifest: BlogManifestSection[];
   onToggleTheme?: () => void;
   onSwitchToAbout?: () => void;
   onSelectPost?: (slug: string) => void;
@@ -24,6 +25,7 @@ export const BlogReader = ({
   post,
   isDarkMode,
   isMobile,
+  manifest,
   onToggleTheme,
   onSwitchToAbout,
   onSelectPost,
@@ -277,6 +279,7 @@ export const BlogReader = ({
                     <BlogFileTree
                       activeSlug={post.slug}
                       isDarkMode={isDarkMode}
+                      manifest={manifest}
                       onSelectPost={onSelectPost}
                       onSelectProject={onSelectProject}
                       projects={projects}
@@ -296,6 +299,7 @@ export const BlogReader = ({
                 <BlogFileTree
                   activeSlug={post.slug}
                   isDarkMode={isDarkMode}
+                  manifest={manifest}
                   onSelectPost={onSelectPost}
                   onSelectProject={onSelectProject}
                   projects={projects}

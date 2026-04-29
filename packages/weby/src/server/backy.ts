@@ -1,4 +1,4 @@
-import type { BlogPost, ExperienceItem, Profile, Project } from "../types";
+import type { BlogManifestSection, BlogPost, ExperienceItem, Profile, Project } from "#/types";
 
 const getBackyOrigin = (): string => {
   const origin = process.env.BACKY_ORIGIN;
@@ -32,3 +32,5 @@ export const getProjects = () => fetchBacky<Project[]>("projects");
 export const getGitHubStats = () => fetchBacky<unknown>("github/stats");
 
 export const getBlogPost = (slug: string) => fetchBacky<BlogPost>(`blogs/${slug}`);
+
+export const getBlogManifest = () => fetchBacky<BlogManifestSection[]>("blogs");

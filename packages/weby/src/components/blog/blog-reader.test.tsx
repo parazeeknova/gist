@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { BlogPost } from "../../types";
+import type { BlogPost } from "#/types";
 import { BlogReader } from "./blog-reader";
 import { BlogReaderPanel } from "./blog-reader-panel";
 import { renderWithQuery } from "../../test/utils";
@@ -20,7 +20,7 @@ const mockPost: BlogPost = {
 
 describe("BlogReader", () => {
   it("renders the article shell controls and metadata", () => {
-    render(<BlogReader isDarkMode={true} isMobile={false} post={mockPost} />);
+    render(<BlogReader isDarkMode={true} isMobile={false} manifest={[]} post={mockPost} />);
 
     const headings = screen.getAllByRole("heading", { level: 2 });
     expect(headings.length).toBeGreaterThan(0);
@@ -36,7 +36,7 @@ describe("BlogReader", () => {
   });
 
   it("TOC items are clickable and update active state", () => {
-    render(<BlogReader isDarkMode={true} isMobile={false} post={mockPost} />);
+    render(<BlogReader isDarkMode={true} isMobile={false} manifest={[]} post={mockPost} />);
 
     // Find TOC buttons (should have heading labels)
     const whyCrdtsBtn = screen.getByText("why crdts?");
@@ -78,7 +78,12 @@ describe("BlogReader", () => {
     });
 
     renderWithQuery(
-      <BlogReaderPanel isDarkMode={true} isMobile={false} slug="crdts-101-a-primer" />,
+      <BlogReaderPanel
+        isDarkMode={true}
+        isMobile={false}
+        manifest={[]}
+        slug="crdts-101-a-primer"
+      />,
     );
 
     await waitFor(() => {

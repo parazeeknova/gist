@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useProjects } from "../hooks/use-data";
-import type { Project } from "../types";
+import type { Project } from "#/types";
 import { LoadingDots } from "./loading";
 
 interface ProjectCardProps {

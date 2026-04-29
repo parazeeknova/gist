@@ -2,11 +2,10 @@ package store
 
 import "github.com/verso/backy/models"
 
-// Static data stores
-
 var Profile = models.Profile{
 	Name:    "Harsh Sahu",
 	Tagline: "designer portfolio",
+	Email:   "harsh@itssingularity.com",
 	Description: "Engineer and founder, building web platforms, infrastructure, and tools. " +
 		"Creator of Zephyr. Runs Singularity Works, a freelance design and development studio. " +
 		"CS undergrad, active in open-source and hackathons.",

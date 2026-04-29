@@ -1,10 +1,12 @@
 import { BlogReader } from "./blog-reader";
 import { useBlogPost } from "../../hooks/use-blog-post";
+import type { BlogManifestSection } from "#/types";
 
 interface BlogReaderPanelProps {
   slug: string;
   isDarkMode: boolean;
   isMobile: boolean;
+  manifest: BlogManifestSection[];
   onToggleTheme?: () => void;
   onSwitchToAbout?: () => void;
   onSelectPost?: (slug: string) => void;
@@ -18,6 +20,7 @@ export const BlogReaderPanel = ({
   slug,
   isDarkMode,
   isMobile,
+  manifest,
   onToggleTheme,
   onSwitchToAbout,
   onSelectPost,
@@ -50,6 +53,7 @@ export const BlogReaderPanel = ({
     <BlogReader
       isDarkMode={isDarkMode}
       isMobile={isMobile}
+      manifest={manifest}
       onSelectPost={onSelectPost}
       onSelectProject={onSelectProject}
       onSwitchToAbout={onSwitchToAbout}

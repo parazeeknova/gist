@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { BlogPost } from "../types";
+import type { BlogPost } from "#/types";
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, init);

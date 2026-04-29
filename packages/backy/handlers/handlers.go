@@ -76,6 +76,11 @@ func (h *Handlers) GetBlogPost(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
+// GetBlogManifest returns the blog manifest
+func (h *Handlers) GetBlogManifest(c *gin.Context) {
+	c.JSON(http.StatusOK, store.GetBlogManifest())
+}
+
 // GetGitHubStats returns GitHub statistics with caching
 func (h *Handlers) GetGitHubStats(c *gin.Context) {
 	if h.config.GitHubToken == "" {
