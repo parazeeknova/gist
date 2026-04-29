@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { extractBlogHeadings } from "../lib/blog-headings";
 import { markdownToHtml } from "../lib/markdown-to-html";
+import { AnimatedLink } from "./animated-link";
 import { BlogFileTree } from "./blog/blog-file-tree";
 import { BlogTableOfContents } from "./blog/blog-table-of-contents";
 
@@ -223,28 +224,24 @@ export const ReadmeViewer = ({
           {projectTitle}
         </p>
         {repoUrl && (
-          <a
-            className={`text-[13px] lowercase hover:opacity-70 ${
-              isDarkMode ? "text-[#b58cff]" : "text-purple-600"
-            }`}
+          <AnimatedLink
+            className="text-[13px] lowercase"
             href={repoUrl}
             rel="noopener noreferrer"
             target="_blank"
           >
             repo
-          </a>
+          </AnimatedLink>
         )}
         {productUrl && (
-          <a
-            className={`text-[13px] lowercase hover:opacity-70 ${
-              isDarkMode ? "text-[#b58cff]" : "text-purple-600"
-            }`}
+          <AnimatedLink
+            className="text-[13px] lowercase"
             href={productUrl}
             rel="noopener noreferrer"
             target="_blank"
           >
             product
-          </a>
+          </AnimatedLink>
         )}
         <div className="flex-1" />
         {!isMobile && (

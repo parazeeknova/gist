@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ExperienceItem, Link, Profile } from "../types";
+import { AnimatedLink } from "./animated-link";
 import { LoadingDots } from "./loading";
 
 // Helper to safely get a link from the flexible links record
@@ -9,20 +10,10 @@ const getLink = (links: Record<string, Link> | undefined, key: string): Link | u
 interface ProfileSectionProps {
   isMobile?: boolean;
   isPending?: boolean;
-  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
   profile: Profile | undefined;
-  singularityRef: React.RefObject<HTMLAnchorElement | null>;
-  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
-export const ProfileSection = ({
-  profile,
-  portfolioRef,
-  zephyrRef,
-  singularityRef,
-  isPending,
-  isMobile,
-}: ProfileSectionProps) => {
+export const ProfileSection = ({ profile, isPending, isMobile }: ProfileSectionProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const zephyr = getLink(profile?.links, "zephyr");
@@ -39,25 +30,13 @@ export const ProfileSection = ({
         <>
           {" "}
           Creator of{" "}
-          <a
-            className="link-underline"
-            href={zephyr.url}
-            ref={zephyrRef}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <AnimatedLink href={zephyr.url} rel="noopener noreferrer" target="_blank">
             {zephyr.label}
-          </a>
+          </AnimatedLink>
           . Runs{" "}
-          <a
-            className="link-underline"
-            href={singularity.url}
-            ref={singularityRef}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
+          <AnimatedLink href={singularity.url} rel="noopener noreferrer" target="_blank">
             {singularity.label}
-          </a>
+          </AnimatedLink>
           , a freelance design and development studio. CS undergrad, active in open-source and
           hackathons.
         </>
@@ -71,16 +50,14 @@ export const ProfileSection = ({
         {isPending ? <LoadingDots /> : (profile?.name ?? "Harsh Sahu")}
       </h1>
       <p className="mb-6 text-sm sm:mb-8 sm:text-base">
-        <a
-          className="link-underline"
+        <AnimatedLink
           href={portfolio?.url ?? "https://folio.zephyyrr.in"}
-          ref={portfolioRef}
           rel="noopener noreferrer"
           target="_blank"
         >
           {portfolio?.label ?? "designer portfolio"}
           <span className="ml-1">↗</span>
-        </a>
+        </AnimatedLink>
       </p>
 
       {isMobile ? (
@@ -175,49 +152,37 @@ export const ExperienceSection = ({ experience, isPending }: ExperienceSectionPr
 };
 
 interface SocialLinksProps {
-  githubRef: React.RefObject<HTMLAnchorElement | null>;
-  linkedinRef: React.RefObject<HTMLAnchorElement | null>;
   profile: Profile | undefined;
-  twitterRef: React.RefObject<HTMLAnchorElement | null>;
 }
 
-export const SocialLinks = ({ profile, githubRef, linkedinRef, twitterRef }: SocialLinksProps) => {
+export const SocialLinks = ({ profile }: SocialLinksProps) => {
   const github = getLink(profile?.links, "github");
   const linkedin = getLink(profile?.links, "linkedin");
   const twitter = getLink(profile?.links, "twitter");
 
   return (
     <div className="flex space-x-6">
-      <a
-        aria-label="GitHub"
-        className="link-underline text-xs sm:text-sm"
+      <AnimatedLink
         href={github?.url ?? "https://github.com/parazeeknova"}
-        ref={githubRef}
         rel="noopener noreferrer"
         target="_blank"
       >
         {github?.label ?? "GitHub"}
-      </a>
-      <a
-        aria-label="LinkedIn"
-        className="link-underline text-xs sm:text-sm"
+      </AnimatedLink>
+      <AnimatedLink
         href={linkedin?.url ?? "https://www.linkedin.com/in/hashk"}
-        ref={linkedinRef}
         rel="noopener noreferrer"
         target="_blank"
       >
         {linkedin?.label ?? "LinkedIn"}
-      </a>
-      <a
-        aria-label="X"
-        className="link-underline text-xs sm:text-sm"
+      </AnimatedLink>
+      <AnimatedLink
         href={twitter?.url ?? "https://x.com/parazeeknova"}
-        ref={twitterRef}
         rel="noopener noreferrer"
         target="_blank"
       >
         {twitter?.label ?? "X"}
-      </a>
+      </AnimatedLink>
     </div>
   );
 };

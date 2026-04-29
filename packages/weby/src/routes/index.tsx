@@ -32,77 +32,6 @@ const useIsMobile = (): boolean => {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 };
 
-interface LinkRefs {
-  githubRef: React.RefObject<HTMLAnchorElement | null>;
-  linkedinRef: React.RefObject<HTMLAnchorElement | null>;
-  portfolioRef: React.RefObject<HTMLAnchorElement | null>;
-  singularityRef: React.RefObject<HTMLAnchorElement | null>;
-  twitterRef: React.RefObject<HTMLAnchorElement | null>;
-  zephyrRef: React.RefObject<HTMLAnchorElement | null>;
-}
-
-const useAnimatedLinks = (): LinkRefs => {
-  const portfolioRef = useRef<HTMLAnchorElement>(null);
-  const zephyrRef = useRef<HTMLAnchorElement>(null);
-  const singularityRef = useRef<HTMLAnchorElement>(null);
-  const githubRef = useRef<HTMLAnchorElement>(null);
-  const linkedinRef = useRef<HTMLAnchorElement>(null);
-  const twitterRef = useRef<HTMLAnchorElement>(null);
-
-  useEffect(() => {
-    const links = [
-      portfolioRef.current,
-      zephyrRef.current,
-      singularityRef.current,
-      githubRef.current,
-      linkedinRef.current,
-      twitterRef.current,
-    ].filter(Boolean) as HTMLAnchorElement[];
-
-    const handlers: { enter: () => void; leave: () => void }[] = [];
-
-    for (const link of links) {
-      const tl = gsap.timeline({ paused: true });
-      tl.fromTo(
-        link,
-        { "--underline-width": "0%" } as gsap.TweenVars,
-        {
-          "--underline-width": "100%",
-          duration: 0.3,
-          ease: "power2.out",
-        } as gsap.TweenVars,
-      );
-
-      const enter = () => tl.play();
-      const leave = () => tl.reverse();
-      handlers.push({ enter, leave });
-
-      link.addEventListener("mouseenter", enter);
-      link.addEventListener("mouseleave", leave);
-      link.setAttribute("draggable", "false");
-      link.addEventListener("dragstart", (e) => e.preventDefault());
-    }
-
-    return () => {
-      for (const [index, link] of links.entries()) {
-        if (handlers[index]) {
-          link.removeEventListener("mouseenter", handlers[index].enter);
-          link.removeEventListener("mouseleave", handlers[index].leave);
-        }
-      }
-    };
-  }, []);
-
-  return {
-    githubRef,
-    linkedinRef,
-    portfolioRef,
-    singularityRef,
-    twitterRef,
-    zephyrRef,
-  };
-};
-
 interface ThemeButtonRefs {
   buttonRef: React.RefObject<HTMLButtonElement | null>;
   indicatorRef: React.RefObject<HTMLSpanElement | null>;
@@ -165,7 +94,6 @@ const Home = function Home() {
   } | null>(null);
   const isMobile = useIsMobile();
 
-  const linkRefs = useAnimatedLinks();
   const themeRefs = useThemeButtonHover();
   const themeRefsRight = useThemeButtonHover();
 
@@ -272,14 +200,7 @@ const Home = function Home() {
           </button>
         </div>
 
-        <ProfileSection
-          isMobile={isMobile}
-          isPending={isPending}
-          portfolioRef={linkRefs.portfolioRef}
-          profile={profile}
-          singularityRef={linkRefs.singularityRef}
-          zephyrRef={linkRefs.zephyrRef}
-        />
+        <ProfileSection isMobile={isMobile} isPending={isPending} profile={profile} />
 
         <div className="shrink-0 space-y-2">
           <h3 className="font-medium text-base">work stuff i guess</h3>
@@ -306,12 +227,7 @@ const Home = function Home() {
         </div>
 
         <div className="shrink-0 flex items-center justify-between">
-          <SocialLinks
-            githubRef={linkRefs.githubRef}
-            linkedinRef={linkRefs.linkedinRef}
-            profile={profile}
-            twitterRef={linkRefs.twitterRef}
-          />
+          <SocialLinks profile={profile} />
           <LoginPopup isDarkMode={isDarkMode} />
         </div>
       </div>

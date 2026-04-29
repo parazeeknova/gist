@@ -3,19 +3,6 @@ import { describe, expect, it } from "vitest";
 import type { ExperienceItem, Profile } from "../types";
 import { ExperienceSection, ProfileSection, SocialLinks } from "./home-sections";
 
-// Helper to create mock refs - defined at module level
-const createMockProfileRefs = () => ({
-  portfolioRef: { current: null },
-  singularityRef: { current: null },
-  zephyrRef: { current: null },
-});
-
-const createMockSocialRefs = () => ({
-  githubRef: { current: null },
-  linkedinRef: { current: null },
-  twitterRef: { current: null },
-});
-
 describe("ProfileSection", () => {
   const mockProfile: Profile = {
     description: "Test description about the user.",
@@ -32,15 +19,13 @@ describe("ProfileSection", () => {
   };
 
   it("renders profile name", () => {
-    const refs = createMockProfileRefs();
-    render(<ProfileSection profile={mockProfile} {...refs} isMobile={false} isPending={false} />);
+    render(<ProfileSection profile={mockProfile} isMobile={false} isPending={false} />);
 
     expect(screen.getByText("Test User")).toBeDefined();
   });
 
   it("renders loading state", () => {
-    const refs = createMockProfileRefs();
-    render(<ProfileSection profile={undefined} {...refs} isMobile={false} isPending={true} />);
+    render(<ProfileSection profile={undefined} isMobile={false} isPending={true} />);
 
     // LoadingDots should be rendered
     const heading = screen.getByRole("heading", { level: 1 });
@@ -48,15 +33,13 @@ describe("ProfileSection", () => {
   });
 
   it("renders fallback when no profile", () => {
-    const refs = createMockProfileRefs();
-    render(<ProfileSection profile={undefined} {...refs} isMobile={false} isPending={false} />);
+    render(<ProfileSection profile={undefined} isMobile={false} isPending={false} />);
 
     expect(screen.getByText("Harsh Sahu")).toBeDefined();
   });
 
   it("renders portfolio link", () => {
-    const refs = createMockProfileRefs();
-    render(<ProfileSection profile={mockProfile} {...refs} isMobile={false} isPending={false} />);
+    render(<ProfileSection profile={mockProfile} isMobile={false} isPending={false} />);
 
     // Text is split across elements, so use a function matcher
     const portfolioLink = screen.getByText(
@@ -115,8 +98,7 @@ describe("SocialLinks", () => {
   };
 
   it("renders social links", () => {
-    const refs = createMockSocialRefs();
-    render(<SocialLinks profile={mockProfile} {...refs} />);
+    render(<SocialLinks profile={mockProfile} />);
 
     expect(screen.getByText("GitHub")).toBeDefined();
     expect(screen.getByText("LinkedIn")).toBeDefined();
@@ -124,16 +106,14 @@ describe("SocialLinks", () => {
   });
 
   it("uses profile links when available", () => {
-    const refs = createMockSocialRefs();
-    render(<SocialLinks profile={mockProfile} {...refs} />);
+    render(<SocialLinks profile={mockProfile} />);
 
     const githubLink = screen.getByText("GitHub").closest("a");
     expect(githubLink?.getAttribute("href")).toBe("https://github.com/testuser");
   });
 
   it("uses fallback links when profile is undefined", () => {
-    const refs = createMockSocialRefs();
-    render(<SocialLinks profile={undefined} {...refs} />);
+    render(<SocialLinks profile={undefined} />);
 
     const githubLink = screen.getByText("GitHub").closest("a");
     expect(githubLink?.getAttribute("href")).toBe("https://github.com/parazeeknova");
