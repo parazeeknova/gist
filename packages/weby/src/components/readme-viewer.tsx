@@ -62,6 +62,22 @@ export const ReadmeViewer = ({
     const raw = markdownToHtml(markdown);
     const div = document.createElement("div");
     div.innerHTML = raw;
+
+    // Collapse center-aligned kbd button sections into a <details> block
+    const centerDivs = div.querySelectorAll<HTMLDivElement>('div[align="center"]');
+    for (const center of centerDivs) {
+      if (center.querySelector("kbd")) {
+        const details = document.createElement("details");
+        const summary = document.createElement("summary");
+        summary.textContent = "kbd elements";
+        summary.style.cssText =
+          "cursor:pointer;font-size:0.85em;opacity:0.6;margin-bottom:0.75rem;user-select:none;";
+        details.append(summary);
+        details.append(center.cloneNode(true));
+        center.replaceWith(details);
+      }
+    }
+
     const extracted = extractBlogHeadings(div);
     return { headings: extracted, html: div.innerHTML };
   }, [markdown]);
