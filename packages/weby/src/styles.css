@@ -280,6 +280,31 @@ button {
   color: var(--color-text);
 }
 
+.prose-desc a {
+  color: #b58cff;
+  text-decoration: none;
+  position: relative;
+}
+
+.prose-desc a::after {
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  content: "";
+  background-color: currentColor;
+  transition: width 0.3s ease;
+}
+
+.prose-desc a:hover::after {
+  width: 100%;
+}
+
+[data-theme="light"] .prose-desc a {
+  color: #7c3aed;
+}
+
 [data-theme="light"] .blog-reader-prose a {
   color: #7c3aed;
 }

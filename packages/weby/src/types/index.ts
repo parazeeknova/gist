@@ -9,6 +9,7 @@ export interface Profile {
   links: Record<string, Link>;
   name: string;
   tagline: string;
+  username?: string;
 }
 
 export interface ExperienceItem {

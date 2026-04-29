@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { ExperienceItem, Link, Profile } from "#/types";
 import { AnimatedLink } from "./animated-link";
 import { LoadingDots } from "./loading";
+import { markdownToHtml } from "../lib/markdown-to-html";
 
 const getLink = (links: Record<string, Link> | undefined, key: string): Link | undefined =>
   links?.[key];
@@ -16,11 +17,28 @@ export const ProfileSection = ({ profile, isPending, isMobile }: ProfileSectionP
   const [isExpanded, setIsExpanded] = useState(false);
   const portfolio = getLink(profile?.links, "portfolio");
 
-  const description = isPending ? <LoadingDots /> : <>{profile?.description}</>;
+  const descriptionHtml = useMemo(
+    () => (profile?.description ? markdownToHtml(profile.description) : ""),
+    [profile?.description],
+  );
+
+  let description: React.ReactNode = null;
+  if (isPending) {
+    description = <LoadingDots />;
+  } else if (descriptionHtml) {
+    description = (
+      <span className="prose-desc" dangerouslySetInnerHTML={{ __html: descriptionHtml }} />
+    );
+  }
 
   return (
     <div className="shrink-0">
-      {profile?.name && <h1 className="font-normal text-xl sm:text-2xl">{profile.name}</h1>}
+      {profile?.name && (
+        <h1 className="font-normal text-xl sm:text-2xl">
+          {profile.name}
+          {profile.username && <span className="ml-2 text-sm opacity-50">@{profile.username}</span>}
+        </h1>
+      )}
 
       {(portfolio || profile?.email) && (
         <p className="mb-6 text-sm sm:mb-8 sm:text-base">

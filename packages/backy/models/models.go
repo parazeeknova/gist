@@ -12,6 +12,7 @@ type Profile struct {
 	Tagline     string          `json:"tagline"`
 	Description string          `json:"description"`
 	Email       string          `json:"email,omitempty"`
+	Username    string          `json:"username,omitempty"`
 	Links       map[string]Link `json:"links"`
 }
 
