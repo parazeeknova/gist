@@ -1,41 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 @import "tailwindcss";
 
 @property --fade-color {
   syntax: "<color>";
   inherits: true;
   initial-value: #111111;
-}
-
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-Regular.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-Bold.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-Italic.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "Ubuntu Mono";
-  font-style: italic;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/UbuntuMono-BoldItalic.ttf") format("truetype");
 }
 
 @theme {

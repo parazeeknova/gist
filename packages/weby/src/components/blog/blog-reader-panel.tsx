@@ -4,9 +4,22 @@ import { useBlogPost } from "../../hooks/use-blog-post";
 interface BlogReaderPanelProps {
   slug: string;
   isDarkMode: boolean;
+  isMobile: boolean;
+  onToggleTheme?: () => void;
+  onSwitchToAbout?: () => void;
+  themeButtonRef?: React.RefObject<HTMLButtonElement | null>;
+  themeIndicatorRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
-export const BlogReaderPanel = ({ slug, isDarkMode }: BlogReaderPanelProps) => {
+export const BlogReaderPanel = ({
+  slug,
+  isDarkMode,
+  isMobile,
+  onToggleTheme,
+  onSwitchToAbout,
+  themeButtonRef,
+  themeIndicatorRef,
+}: BlogReaderPanelProps) => {
   const { data, isError, isPending } = useBlogPost(slug);
 
   if (isPending) {
@@ -27,5 +40,15 @@ export const BlogReaderPanel = ({ slug, isDarkMode }: BlogReaderPanelProps) => {
     );
   }
 
-  return <BlogReader isDarkMode={isDarkMode} post={data} />;
+  return (
+    <BlogReader
+      isDarkMode={isDarkMode}
+      isMobile={isMobile}
+      onSwitchToAbout={onSwitchToAbout}
+      onToggleTheme={onToggleTheme}
+      post={data}
+      themeButtonRef={themeButtonRef}
+      themeIndicatorRef={themeIndicatorRef}
+    />
+  );
 };

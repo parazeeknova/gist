@@ -9,11 +9,25 @@ import type { TiptapHeading } from "./readonly-blog-editor";
 interface BlogReaderProps {
   post: BlogPost;
   isDarkMode: boolean;
+  isMobile: boolean;
+  onToggleTheme?: () => void;
+  onSwitchToAbout?: () => void;
+  themeButtonRef?: React.RefObject<HTMLButtonElement | null>;
+  themeIndicatorRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
-export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
+export const BlogReader = ({
+  post,
+  isDarkMode,
+  isMobile,
+  onToggleTheme,
+  onSwitchToAbout,
+  themeButtonRef,
+  themeIndicatorRef,
+}: BlogReaderProps) => {
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
   const [tiptapHeadings, setTiptapHeadings] = useState<TiptapHeading[]>([]);
+  const [tocOpen, setTocOpen] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const headingsRef = useRef<TiptapHeading[]>([]);
@@ -88,14 +102,55 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
         isDarkMode ? "text-text-dark" : "text-text-light"
       }`}
     >
-      <button
-        className={`mb-6 self-start text-[13px] ${
-          isDarkMode ? "text-[#b58cff]" : "text-purple-600"
-        }`}
-        type="button"
-      >
-        all blogs
-      </button>
+      <div className="mb-6 flex items-center gap-3">
+        <button
+          className={`text-[13px] ${isDarkMode ? "text-[#b58cff]" : "text-purple-600"}`}
+          type="button"
+        >
+          all blogs
+        </button>
+        {isMobile && (
+          <button
+            className={`text-[13px] lowercase focus:outline-none ${
+              isDarkMode
+                ? "text-text-dark/60 hover:text-text-dark"
+                : "text-text-light/60 hover:text-text-light"
+            }`}
+            onClick={() => setTocOpen(!tocOpen)}
+            type="button"
+          >
+            {tocOpen ? "close" : "toc"}
+          </button>
+        )}
+        <div className="flex-1" />
+        {isMobile && (
+          <>
+            <button
+              className={`text-[13px] lowercase focus:outline-none hover:opacity-70 ${
+                isDarkMode ? "text-text-dark/60" : "text-text-light/60"
+              }`}
+              onClick={onSwitchToAbout}
+              type="button"
+            >
+              about
+            </button>
+            <button
+              aria-label="Toggle theme"
+              className="rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40"
+              onClick={onToggleTheme}
+              ref={themeButtonRef}
+              type="button"
+            >
+              <span className="sr-only">Toggle theme</span>
+              <span
+                className="block h-3 w-3 rounded-full border border-current"
+                ref={themeIndicatorRef}
+                style={{ backgroundColor: "transparent" }}
+              />
+            </button>
+          </>
+        )}
+      </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_240px]">
         <div className="min-h-0 overflow-y-auto pr-2" ref={scrollContainerRef}>
@@ -139,15 +194,50 @@ export const BlogReader = ({ post, isDarkMode }: BlogReaderProps) => {
           </div>
         </div>
 
-        <aside className="space-y-8 xl:sticky xl:top-8 xl:self-start">
-          <BlogTableOfContents
-            activeHeadingId={activeHeadingId}
-            headings={tiptapHeadings}
-            isDarkMode={isDarkMode}
-            onSelect={handleSelectHeading}
-          />
-          <BlogFileTree activeSlug={post.slug} isDarkMode={isDarkMode} />
-        </aside>
+        {isMobile ? (
+          tocOpen && (
+            <div className="fixed inset-0 z-50" role="dialog">
+              <div
+                className="absolute inset-0 bg-black/40"
+                onClick={() => setTocOpen(false)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setTocOpen(false);
+                  }
+                }}
+                role="presentation"
+              />
+              <div
+                className={`absolute top-12 right-4 max-h-[80vh] w-64 overflow-y-auto border p-4 shadow-xl sm:top-16 sm:right-6 ${
+                  isDarkMode ? "border-border-dark bg-bg-dark" : "border-border-light bg-bg-light"
+                }`}
+              >
+                <BlogTableOfContents
+                  activeHeadingId={activeHeadingId}
+                  headings={tiptapHeadings}
+                  isDarkMode={isDarkMode}
+                  onSelect={(id) => {
+                    handleSelectHeading(id);
+                    setTocOpen(false);
+                  }}
+                />
+                <div className="mt-4 pt-4">
+                  <BlogFileTree activeSlug={post.slug} isDarkMode={isDarkMode} />
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          <aside className="space-y-8 xl:sticky xl:top-8 xl:self-start">
+            <BlogTableOfContents
+              activeHeadingId={activeHeadingId}
+              headings={tiptapHeadings}
+              isDarkMode={isDarkMode}
+              onSelect={handleSelectHeading}
+            />
+            <BlogFileTree activeSlug={post.slug} isDarkMode={isDarkMode} />
+          </aside>
+        )}
       </div>
     </div>
   );

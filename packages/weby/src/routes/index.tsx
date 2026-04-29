@@ -154,10 +154,12 @@ const useThemeButtonHover = (): ThemeButtonRefs => {
 
 const Home = function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [mobileView, setMobileView] = useState<"about" | "blogs">("about");
   const isMobile = useIsMobile();
 
   const linkRefs = useAnimatedLinks();
   const themeRefs = useThemeButtonHover();
+  const themeRefsRight = useThemeButtonHover();
 
   const leftPanelRef = useRef<HTMLDivElement>(null);
   const rightPanelRef = useRef<HTMLDivElement>(null);
@@ -198,6 +200,13 @@ const Home = function Home() {
     return "parazeeknova";
   })();
 
+  let rightPanelVisibility: string;
+  if (isMobile) {
+    rightPanelVisibility = mobileView === "blogs" ? "h-screen overflow-hidden" : "hidden";
+  } else {
+    rightPanelVisibility = "min-h-0 overflow-hidden lg:border-l";
+  }
+
   return (
     <div
       className="relative grid min-h-screen grid-cols-1 overflow-hidden lg:h-screen lg:grid-cols-2"
@@ -205,24 +214,36 @@ const Home = function Home() {
     >
       <div
         data-theme={isDarkMode ? "dark" : "light"}
-        className={`relative z-10 flex select-none flex-col gap-4 overflow-y-auto p-4 font-mono sm:gap-6 sm:p-6 lg:gap-8 lg:overflow-hidden lg:p-8 ${
+        className={`relative z-10 flex select-none flex-col gap-4 overflow-y-auto p-4 sm:gap-6 sm:p-6 lg:gap-8 lg:overflow-hidden lg:p-8 ${
           isDarkMode ? "bg-bg-dark text-text-dark" : "bg-bg-light text-text-light"
-        }`}
+        } ${isMobile && mobileView !== "about" ? "hidden" : ""}`}
         ref={leftPanelRef}
       >
-        <button
-          aria-label="Toggle theme"
-          className="absolute top-4 right-4 rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40 sm:top-6 sm:right-6 lg:top-8 lg:right-8"
-          onClick={toggleTheme}
-          ref={themeRefs.buttonRef}
-        >
-          <span className="sr-only">Toggle theme</span>
-          <span
-            className="block h-3 w-3 rounded-full border border-current"
-            ref={themeRefs.indicatorRef}
-            style={{ backgroundColor: "transparent" }}
-          />
-        </button>
+        <div className="absolute top-4 right-4 flex items-center gap-3 sm:top-6 sm:right-6 lg:top-8 lg:right-8">
+          {isMobile && (
+            <button
+              className={`text-[13px] lowercase focus:outline-none hover:opacity-70 ${
+                isDarkMode ? "text-text-dark/60" : "text-text-light/60"
+              }`}
+              onClick={() => setMobileView("blogs")}
+            >
+              blogs
+            </button>
+          )}
+          <button
+            aria-label="Toggle theme"
+            className="rounded-full p-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-current/40"
+            onClick={toggleTheme}
+            ref={themeRefs.buttonRef}
+          >
+            <span className="sr-only">Toggle theme</span>
+            <span
+              className="block h-3 w-3 rounded-full border border-current"
+              ref={themeRefs.indicatorRef}
+              style={{ backgroundColor: "transparent" }}
+            />
+          </button>
+        </div>
 
         <ProfileSection
           isMobile={isMobile}
@@ -269,12 +290,22 @@ const Home = function Home() {
 
       <div
         data-theme={isDarkMode ? "dark" : "light"}
-        className={`relative min-h-0 overflow-hidden border-l ${
-          isDarkMode ? "border-border-dark bg-bg-dark" : "border-border-light bg-bg-light"
+        className={`relative ${rightPanelVisibility} ${
+          isDarkMode
+            ? "border-border-dark bg-bg-dark text-text-dark"
+            : "border-border-light bg-bg-light text-text-light"
         }`}
         ref={rightPanelRef}
       >
-        <BlogReaderPanel isDarkMode={isDarkMode} slug="crdts-101-a-primer" />
+        <BlogReaderPanel
+          isDarkMode={isDarkMode}
+          isMobile={isMobile}
+          onSwitchToAbout={() => setMobileView("about")}
+          onToggleTheme={toggleTheme}
+          slug="crdts-101-a-primer"
+          themeButtonRef={themeRefsRight.buttonRef as React.RefObject<HTMLButtonElement | null>}
+          themeIndicatorRef={themeRefsRight.indicatorRef as React.RefObject<HTMLSpanElement | null>}
+        />
       </div>
     </div>
   );

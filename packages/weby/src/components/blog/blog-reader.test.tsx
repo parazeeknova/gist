@@ -20,16 +20,14 @@ const mockPost: BlogPost = {
 
 describe("BlogReader", () => {
   it("renders the article shell controls and metadata", () => {
-    render(<BlogReader isDarkMode={true} post={mockPost} />);
+    render(<BlogReader isDarkMode={true} isMobile={false} post={mockPost} />);
 
-    // Check heading in the article
     const headings = screen.getAllByRole("heading", { level: 2 });
     expect(headings.length).toBeGreaterThan(0);
     expect(headings[0]).toBeDefined();
     expect(screen.getByText(/all blogs/i)).toBeDefined();
     expect(screen.getByText(/prev post/i)).toBeDefined();
     expect(screen.getByText(/next post/i)).toBeDefined();
-    // Tag section has the distributed-systems tag
     expect(screen.getAllByText("distributed-systems").length).toBeGreaterThan(0);
     expect(screen.getByText("crdt")).toBeDefined();
     expect(screen.getByText("consistency")).toBeDefined();
@@ -38,7 +36,7 @@ describe("BlogReader", () => {
   });
 
   it("TOC items are clickable and update active state", () => {
-    render(<BlogReader isDarkMode={true} post={mockPost} />);
+    render(<BlogReader isDarkMode={true} isMobile={false} post={mockPost} />);
 
     // Find TOC buttons (should have heading labels)
     const whyCrdtsBtn = screen.getByText("why crdts?");
@@ -79,7 +77,9 @@ describe("BlogReader", () => {
       writable: true,
     });
 
-    renderWithQuery(<BlogReaderPanel isDarkMode={true} slug="crdts-101-a-primer" />);
+    renderWithQuery(
+      <BlogReaderPanel isDarkMode={true} isMobile={false} slug="crdts-101-a-primer" />,
+    );
 
     await waitFor(() => {
       // Check heading in the article
