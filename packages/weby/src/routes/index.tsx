@@ -7,6 +7,7 @@ import { ExperienceSection, ProfileSection, SocialLinks } from "../components/ho
 import { MobileProjectList, ProjectList } from "../components/projects";
 import { ScrollContainer } from "../components/scroll-container";
 import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
+import { LoginPopup } from "../components/login-popup";
 import { useExperience, useIsFetchingData, useProfile } from "../hooks/use-data";
 
 const useIsMobile = (): boolean => {
@@ -278,13 +279,14 @@ const Home = function Home() {
           <GitHubStats />
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center justify-between">
           <SocialLinks
             githubRef={linkRefs.githubRef}
             linkedinRef={linkRefs.linkedinRef}
             profile={profile}
             twitterRef={linkRefs.twitterRef}
           />
+          <LoginPopup isDarkMode={isDarkMode} />
         </div>
       </div>
 
