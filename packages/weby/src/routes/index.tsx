@@ -158,7 +158,9 @@ const Home = function Home() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileView, setMobileView] = useState<"about" | "blogs">("about");
   const [selectedProject, setSelectedProject] = useState<{
+    productUrl?: string;
     readmeUrl: string;
+    repoUrl?: string;
     title: string;
   } | null>(null);
   const isMobile = useIsMobile();
@@ -196,11 +198,16 @@ const Home = function Home() {
   }, [isDarkMode]);
 
   const handleProjectDetail = useCallback(
-    (project: { readmeUrl?: string; title: string }) => {
+    (project: { productUrl?: string; readmeUrl?: string; repoUrl?: string; title: string }) => {
       if (!project.readmeUrl) {
         return;
       }
-      setSelectedProject({ readmeUrl: project.readmeUrl, title: project.title });
+      setSelectedProject({
+        productUrl: project.productUrl,
+        readmeUrl: project.readmeUrl,
+        repoUrl: project.repoUrl,
+        title: project.title,
+      });
       if (isMobile) {
         setMobileView("blogs");
       }
@@ -327,9 +334,11 @@ const Home = function Home() {
             onSelectProject={handleProjectDetail}
             onSwitchToAbout={() => setMobileView("about")}
             onToggleTheme={toggleTheme}
+            productUrl={selectedProject.productUrl}
             projectTitle={selectedProject.title}
             projects={projects}
             readmeUrl={selectedProject.readmeUrl}
+            repoUrl={selectedProject.repoUrl}
             themeButtonRef={themeRefsRight.buttonRef as React.RefObject<HTMLButtonElement | null>}
             themeIndicatorRef={
               themeRefsRight.indicatorRef as React.RefObject<HTMLSpanElement | null>

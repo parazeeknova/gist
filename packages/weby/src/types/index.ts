@@ -18,7 +18,9 @@ export interface ExperienceItem {
 
 export interface Project {
   desc: string;
+  productUrl?: string;
   readmeUrl?: string;
+  repoUrl?: string;
   stack: string;
   title: string;
 }

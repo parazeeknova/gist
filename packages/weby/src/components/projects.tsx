@@ -81,7 +81,19 @@ export const MobileProjectList = ({ onDetail }: MobileProjectListProps) => {
           </button>
         </>
       ) : (
-        <button className="w-full text-left" onClick={() => setIsExpanded(true)}>
+        <div
+          className="w-full text-left"
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- this div wraps interactive children that include <button> elements, so a native <button> cannot be used here
+          onClick={() => setIsExpanded(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setIsExpanded(true);
+            }
+          }}
+          // eslint-disable-next-line jsx-a11y/prefer-tag-over-role -- same reason as above, native <button> would nest other <button>s
+          role="button"
+          tabIndex={0}
+        >
           <div className="relative space-y-3 sm:space-y-4">
             {isPending ? (
               <LoadingDots />
@@ -98,7 +110,7 @@ export const MobileProjectList = ({ onDetail }: MobileProjectListProps) => {
             />
           </div>
           <span className="link-underline mt-1 block text-gray-400 text-xs">view more</span>
-        </button>
+        </div>
       )}
     </div>
   );

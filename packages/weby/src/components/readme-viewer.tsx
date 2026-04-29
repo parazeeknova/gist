@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { gsap } from "gsap";
 import { extractBlogHeadings } from "../lib/blog-headings";
 import { markdownToHtml } from "../lib/markdown-to-html";
 import { BlogFileTree } from "./blog/blog-file-tree";
@@ -13,9 +14,11 @@ interface ReadmeViewerProps {
   onSelectProject?: (project: { readmeUrl?: string; title: string }) => void;
   onSwitchToAbout?: () => void;
   onToggleTheme?: () => void;
+  productUrl?: string;
   projectTitle: string;
   projects?: { readmeUrl?: string; title: string }[];
   readmeUrl: string;
+  repoUrl?: string;
   themeButtonRef?: React.RefObject<HTMLButtonElement | null>;
   themeIndicatorRef?: React.RefObject<HTMLSpanElement | null>;
 }
@@ -28,15 +31,19 @@ export const ReadmeViewer = ({
   onSelectProject,
   onSwitchToAbout,
   onToggleTheme,
+  productUrl,
   projectTitle,
   projects,
   readmeUrl,
+  repoUrl,
   themeButtonRef,
   themeIndicatorRef,
 }: ReadmeViewerProps) => {
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+  const [asideMounted, setAsideMounted] = useState(true);
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const asideRef = useRef<HTMLElement>(null);
 
   const {
     data: markdown,
@@ -90,6 +97,33 @@ export const ReadmeViewer = ({
     }
   }, []);
 
+  const toggleAside = useCallback(() => {
+    if (asideMounted) {
+      const el = asideRef.current;
+      if (el) {
+        gsap.to(el, {
+          duration: 0.2,
+          ease: "power2.in",
+          onComplete: () => setAsideMounted(false),
+          opacity: 0,
+          x: 24,
+        });
+      }
+    } else {
+      setAsideMounted(true);
+    }
+  }, [asideMounted]);
+
+  useEffect(() => {
+    if (asideMounted && asideRef.current) {
+      gsap.fromTo(
+        asideRef.current,
+        { opacity: 0, x: 24 },
+        { duration: 0.25, ease: "power2.out", opacity: 1, x: 0 },
+      );
+    }
+  }, [asideMounted]);
+
   useEffect(() => {
     const container = scrollRef.current;
     if (!container || headings.length === 0) {
@@ -138,7 +172,11 @@ export const ReadmeViewer = ({
     );
   } else {
     content = (
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_240px]">
+      <div
+        className={`grid min-h-0 flex-1 grid-cols-1 gap-4 sm:gap-6 lg:gap-8 ${
+          !isMobile && asideMounted ? "xl:grid-cols-[minmax(0,1fr)_240px]" : ""
+        }`}
+      >
         <div className="min-h-0 overflow-y-auto pr-2" ref={scrollRef}>
           <div
             className="blog-reader-prose mx-auto max-w-3xl"
@@ -146,21 +184,23 @@ export const ReadmeViewer = ({
             ref={contentRef}
           />
         </div>
-        <aside className="space-y-8 xl:sticky xl:top-8 xl:self-start">
-          <BlogTableOfContents
-            activeHeadingId={activeHeadingId}
-            headings={headings}
-            isDarkMode={isDarkMode}
-            onSelect={handleSelectHeading}
-          />
-          <BlogFileTree
-            activeProjectTitle={projectTitle}
-            isDarkMode={isDarkMode}
-            onSelectPost={onSelectPost}
-            onSelectProject={onSelectProject}
-            projects={projects}
-          />
-        </aside>
+        {asideMounted && (
+          <aside className="space-y-8 xl:sticky xl:top-8 xl:self-start" ref={asideRef}>
+            <BlogTableOfContents
+              activeHeadingId={activeHeadingId}
+              headings={headings}
+              isDarkMode={isDarkMode}
+              onSelect={handleSelectHeading}
+            />
+            <BlogFileTree
+              activeProjectTitle={projectTitle}
+              isDarkMode={isDarkMode}
+              onSelectPost={onSelectPost}
+              onSelectProject={onSelectProject}
+              projects={projects}
+            />
+          </aside>
+        )}
       </div>
     );
   }
@@ -182,7 +222,44 @@ export const ReadmeViewer = ({
         <p className={`text-[13px] ${isDarkMode ? "text-text-dark/60" : "text-text-light/60"}`}>
           {projectTitle}
         </p>
+        {repoUrl && (
+          <a
+            className={`text-[13px] lowercase hover:opacity-70 ${
+              isDarkMode ? "text-[#b58cff]" : "text-purple-600"
+            }`}
+            href={repoUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            repo
+          </a>
+        )}
+        {productUrl && (
+          <a
+            className={`text-[13px] lowercase hover:opacity-70 ${
+              isDarkMode ? "text-[#b58cff]" : "text-purple-600"
+            }`}
+            href={productUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            product
+          </a>
+        )}
         <div className="flex-1" />
+        {!isMobile && (
+          <button
+            className={`text-[13px] lowercase focus:outline-none ${
+              isDarkMode
+                ? "text-text-dark/60 hover:text-text-dark"
+                : "text-text-light/60 hover:text-text-light"
+            }`}
+            onClick={toggleAside}
+            type="button"
+          >
+            {asideMounted ? "hide toc" : "show toc"}
+          </button>
+        )}
         {isMobile && (
           <>
             <button
