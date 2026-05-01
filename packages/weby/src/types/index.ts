@@ -71,6 +71,12 @@ export interface BootstrapState {
   bootstrapped: boolean;
 }
 
+export interface Stats {
+  pages: number;
+  posts: number;
+  readmes: number;
+}
+
 export interface ConsolePage {
   id: string;
   slugId: string;

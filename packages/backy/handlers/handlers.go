@@ -242,3 +242,34 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		"updatedAt":   page.UpdatedAt.Format(time.RFC3339),
 	})
 }
+
+// GetStats returns aggregate counts (public, no auth required).
+func (h *Handlers) GetStats(c *gin.Context) {
+	pages := 0
+	posts := 0
+	readmes := 0
+
+	if h.pageService != nil {
+		all, err := h.pageService.ListAllPages(c.Request.Context())
+		if err == nil {
+			pages = len(all)
+			for _, p := range all {
+				if p.IsPublished {
+					posts++
+				}
+			}
+		}
+	}
+
+	for _, p := range store.Projects {
+		if p.ReadmeURL != "" {
+			readmes++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"pages":   pages,
+		"posts":   posts,
+		"readmes": readmes,
+	})
+}

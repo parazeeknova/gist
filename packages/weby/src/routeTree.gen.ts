@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from "./routes/__root";
 import { Route as ConsoleRouteImport } from "./routes/console";
 import { Route as IndexRouteImport } from "./routes/index";
+import { Route as ApiStatsRouteImport } from "./routes/api/stats";
 import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
 import { Route as ApiProfileRouteImport } from "./routes/api/profile";
 import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
@@ -33,6 +34,11 @@ const ConsoleRoute = ConsoleRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiStatsRoute = ApiStatsRouteImport.update({
+  id: "/api/stats",
+  path: "/api/stats",
   getParentRoute: () => rootRouteImport,
 } as any);
 const ApiProjectsRoute = ApiProjectsRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/stats": typeof ApiStatsRoute;
   "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
   "/api/auth/login": typeof ApiAuthLoginRoute;
   "/api/auth/logout": typeof ApiAuthLogoutRoute;
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/stats": typeof ApiStatsRoute;
   "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
   "/api/auth/login": typeof ApiAuthLoginRoute;
   "/api/auth/logout": typeof ApiAuthLogoutRoute;
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/stats": typeof ApiStatsRoute;
   "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
   "/api/auth/login": typeof ApiAuthLoginRoute;
   "/api/auth/logout": typeof ApiAuthLogoutRoute;
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | "/api/experience"
     | "/api/profile"
     | "/api/projects"
+    | "/api/stats"
     | "/api/auth/bootstrap-state"
     | "/api/auth/login"
     | "/api/auth/logout"
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | "/api/experience"
     | "/api/profile"
     | "/api/projects"
+    | "/api/stats"
     | "/api/auth/bootstrap-state"
     | "/api/auth/login"
     | "/api/auth/logout"
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | "/api/experience"
     | "/api/profile"
     | "/api/projects"
+    | "/api/stats"
     | "/api/auth/bootstrap-state"
     | "/api/auth/login"
     | "/api/auth/logout"
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   ApiExperienceRoute: typeof ApiExperienceRoute;
   ApiProfileRoute: typeof ApiProfileRoute;
   ApiProjectsRoute: typeof ApiProjectsRoute;
+  ApiStatsRoute: typeof ApiStatsRoute;
   ApiAuthBootstrapStateRoute: typeof ApiAuthBootstrapStateRoute;
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute;
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute;
@@ -237,6 +250,13 @@ declare module "@tanstack/react-router" {
       path: "/";
       fullPath: "/";
       preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/stats": {
+      id: "/api/stats";
+      path: "/api/stats";
+      fullPath: "/api/stats";
+      preLoaderRoute: typeof ApiStatsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/api/projects": {
@@ -362,6 +382,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,
+  ApiStatsRoute: ApiStatsRoute,
   ApiAuthBootstrapStateRoute: ApiAuthBootstrapStateRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,

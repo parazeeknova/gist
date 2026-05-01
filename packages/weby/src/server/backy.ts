@@ -8,6 +8,7 @@ import type {
   ExperienceItem,
   Profile,
   Project,
+  Stats,
 } from "#/types";
 
 const getBackyOrigin = (): string => {
@@ -55,6 +56,8 @@ export const getBlogPost = (slug: string) => fetchBacky<BlogPost>(`blogs/${slug}
 export const getBlogManifest = () => fetchBacky<BlogManifestSection[]>("blogs");
 
 export const getBootstrapState = () => fetchBacky<BootstrapState>("auth/bootstrap-state");
+
+export const getStats = () => fetchBacky<Stats>("stats");
 
 export const getAuthMe = (cookieHeader?: string | null) =>
   fetchBacky<AuthUser>("auth/me", {

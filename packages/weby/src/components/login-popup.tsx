@@ -1,6 +1,9 @@
 import { useForm } from "@tanstack/react-form";
+import { useNavigate } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { AuthUser, Stats } from "#/types";
 import { useAuth, useAuthActions } from "../hooks/use-auth";
 import { useBootstrapState } from "../hooks/use-bootstrap-state";
 
@@ -8,7 +11,7 @@ interface LoginPopupProps {
   isDarkMode: boolean;
 }
 
-type PopupMode = "loading" | "login" | "bootstrap";
+type PopupMode = "loading" | "login" | "bootstrap" | "account";
 
 const validateUsername = (value: string): string | undefined => {
   if (value.length < 1) {
@@ -40,6 +43,67 @@ const validatePassword = (value: string): string | undefined => {
   return undefined;
 };
 
+interface AccountPanelProps {
+  user: Pick<AuthUser, "username" | "email">;
+  stats: { pages: number; posts: number; readmes: number } | undefined;
+  onLogout: () => void;
+  onNavigateConsole: () => void;
+  isDarkMode: boolean;
+}
+
+const AccountPanel = ({
+  user,
+  stats,
+  onLogout,
+  onNavigateConsole,
+  isDarkMode,
+}: AccountPanelProps) => (
+  <div className="space-y-3">
+    <div className={`border-b pb-3 ${isDarkMode ? "border-border-dark" : "border-border-light"}`}>
+      <p className={`text-[13px] ${isDarkMode ? "text-text-dark" : "text-text-light"}`}>
+        @{user.username}
+      </p>
+      <p
+        className={`mt-0.5 text-[11px] ${isDarkMode ? "text-text-dark/50" : "text-text-light/50"}`}
+      >
+        {user.email}
+      </p>
+    </div>
+
+    {stats && (
+      <div className={`text-[11px] ${isDarkMode ? "text-text-dark/40" : "text-text-light/40"}`}>
+        <span className="mr-3">pages {stats.pages}</span>
+        <span className="mr-3">posts {stats.posts}</span>
+        <span>readmes {stats.readmes}</span>
+      </div>
+    )}
+
+    <button
+      className={`w-full py-1.5 text-[13px] lowercase ${
+        isDarkMode
+          ? "border border-border-dark bg-white/5 text-text-dark hover:bg-white/10"
+          : "border border-border-light bg-black/3 text-text-light hover:bg-black/5"
+      }`}
+      onClick={onNavigateConsole}
+      type="button"
+    >
+      console
+    </button>
+
+    <button
+      className={`w-full py-1.5 text-[13px] lowercase ${
+        isDarkMode
+          ? "border border-border-dark bg-white/5 text-red-300 hover:bg-red-400/10"
+          : "border border-border-light bg-black/3 text-red-600 hover:bg-red-500/10"
+      }`}
+      onClick={onLogout}
+      type="button"
+    >
+      logout
+    </button>
+  </div>
+);
+
 export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<PopupMode>("loading");
@@ -49,6 +113,16 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
   const { data: user } = useAuth();
   const { data: bootstrapState } = useBootstrapState();
   const { login: loginAction, logout } = useAuthActions();
+  const navigate = useNavigate();
+
+  const { data: stats } = useQuery<Stats>({
+    queryFn: async ({ signal }) => {
+      const r = await fetch("/api/stats", { signal });
+      return r.ok ? r.json() : null;
+    },
+    queryKey: ["stats"],
+    staleTime: 5 * 60 * 1000,
+  });
 
   const isAuthenticated = user !== undefined && user !== null;
 
@@ -127,7 +201,8 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
         }`}
         onClick={() => {
           if (isAuthenticated) {
-            logout();
+            setMode("account");
+            setOpen(true);
           } else {
             handleOpen();
           }
@@ -416,6 +491,22 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                   )}
                 </bootstrapForm.Subscribe>
               </form>
+            )}
+
+            {mode === "account" && user && (
+              <AccountPanel
+                isDarkMode={isDarkMode}
+                onLogout={() => {
+                  logout();
+                  setOpen(false);
+                }}
+                onNavigateConsole={() => {
+                  setOpen(false);
+                  navigate({ to: "/console" });
+                }}
+                stats={stats ?? undefined}
+                user={user}
+              />
             )}
           </div>
         </div>
