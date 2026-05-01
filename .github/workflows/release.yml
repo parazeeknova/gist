@@ -238,18 +238,25 @@ jobs:
             -d '{ "applicationId": "${{ secrets.DOKPLOY_APP_ID }}" }' \
             --fail --silent --show-error
 
-      - name: Wait for migration readiness
+      - name: Wait for deploy to complete (migrations run on startup)
         run: |
-          BACKY_URL="${{ secrets.BACKY_MIGRATION_URL }}"
-          echo "Waiting for backy migrations to complete..."
-          for i in $(seq 1 12); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BACKY_URL" || echo "000")
-            if [ "$STATUS" = "200" ]; then
-              echo "Backy migrations complete"
+          API_URL="${{ secrets.DOKPLOY_API_URL }}"
+          TOKEN="${{ secrets.DOKPLOY_API_TOKEN }}"
+          APP_ID="${{ secrets.DOKPLOY_APP_ID }}"
+          echo "Polling Dokploy deployment status..."
+          for i in $(seq 1 24); do
+            RESPONSE=$(curl -s "$API_URL/api/deployment.all?applicationId=$APP_ID" -H "x-api-key: $TOKEN")
+            STATUS=$(echo "$RESPONSE" | jq -r 'if type == "array" then .[0].status // .[0].applicationStatus // "polling" else .status // .applicationStatus // "polling" end')
+            echo "attempt $i/24: status=$STATUS"
+            if [ "$STATUS" = "done" ] || [ "$STATUS" = "running" ]; then
+              echo "Deployment complete (migrations applied)"
               exit 0
             fi
-            echo "attempt $i/12: status=$STATUS, waiting..."
+            if [ "$STATUS" = "error" ] || [ "$STATUS" = "failed" ]; then
+              echo "Deployment failed"
+              exit 1
+            fi
             sleep 5
           done
-          echo "Migration readiness check failed after 12 attempts"
+          echo "Timed out waiting for deployment"
           exit 1
