@@ -502,7 +502,7 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                 }}
                 onNavigateConsole={() => {
                   setOpen(false);
-                  navigate({ to: "/console" });
+                  navigate({ to: "/home" });
                 }}
                 stats={stats ?? undefined}
                 user={user}
