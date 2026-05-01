@@ -49,16 +49,19 @@ describe("useBootstrapState", () => {
   });
 
   it("handles fetch error", async () => {
-    const mockFetch = vi.fn().mockRejectedValueOnce(new Error("Network error"));
+    const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
     vi.stubGlobal("fetch", mockFetch);
 
     const { result } = renderHook(() => useBootstrapState(), {
       wrapper: createWrapper(),
     });
 
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
+    await waitFor(
+      () => {
+        expect(result.current.isError).toBe(true);
+      },
+      { timeout: 10_000 },
+    );
   });
 });
 

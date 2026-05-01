@@ -36,6 +36,7 @@ export const PageList = ({ onSelectPage, selectedPageId }: PageListProps) => {
         return (
           <li key={page.id}>
             <button
+              aria-current={isSelected ? "page" : undefined}
               className={`w-full px-2 py-1.5 text-left text-[13px] lowercase transition-colors ${
                 isSelected
                   ? "bg-white/10 text-text-dark"

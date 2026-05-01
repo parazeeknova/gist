@@ -4,12 +4,22 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/verso/backy/auth"
 	"github.com/verso/backy/repositories"
+)
+
+// Sentinel errors for expected auth outcomes.
+var (
+	ErrNotBootstrapped     = errors.New("system not bootstrapped")
+	ErrUserInactive        = errors.New("user account is inactive")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrAlreadyBootstrapped = errors.New("system already bootstrapped")
 )
 
 // TokenPair holds the access and refresh tokens returned after authentication.
@@ -60,7 +70,7 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 	}
 
 	if !bootstrapped {
-		return nil, nil, fmt.Errorf("system not bootstrapped")
+		return nil, nil, ErrNotBootstrapped
 	}
 
 	dbUser, err := s.userRepo.FindUserByUsernameOrEmail(ctx, usernameOrEmail)
@@ -72,7 +82,7 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 	}
 
 	if !dbUser.IsActive {
-		return nil, nil, fmt.Errorf("user account is inactive")
+		return nil, nil, ErrUserInactive
 	}
 
 	passwordHash, err := s.userRepo.GetPasswordHash(ctx, dbUser.ID)
@@ -89,7 +99,11 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 		return nil, nil, fmt.Errorf("parse user id: %w", err)
 	}
 
-	createdAt, _ := time.Parse(time.RFC3339, dbUser.CreatedAt)
+	createdAt, err := time.Parse(time.RFC3339, dbUser.CreatedAt)
+	if err != nil {
+		log.Printf("parse created_at for user %s: %v", dbUser.ID, err)
+		createdAt = time.Time{}
+	}
 	userResp := &auth.UserResponse{
 		ID:        uid,
 		Username:  dbUser.Username,
@@ -108,6 +122,9 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 }
 
 // bootstrap creates the first owner user when no users exist.
+// The user creation is transactional so concurrent bootstrap attempts are
+// safe — the second caller hits a unique constraint and gets an
+// ErrAlreadyBootstrapped error.
 func (s *AuthService) bootstrap(ctx context.Context, username, email, password string) (*auth.UserResponse, *TokenPair, error) {
 	passwordHash, err := auth.HashPassword(password)
 	if err != nil {
@@ -116,6 +133,9 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 
 	userID, err := s.userRepo.CreateUser(ctx, username, email, passwordHash, true)
 	if err != nil {
+		if errors.Is(err, repositories.ErrDuplicateUser) {
+			return nil, nil, ErrAlreadyBootstrapped
+		}
 		return nil, nil, fmt.Errorf("create bootstrap user: %w", err)
 	}
 
@@ -154,8 +174,10 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 	}
 	if session == nil {
 		// Check if this is a replay of a previously rotated or revoked token
-		replayed, replayedSessionID := s.sessionRepo.IsReplayedToken(ctx, tokenHash)
-		if replayed && replayedSessionID != "" {
+		replayed, replayedSessionID, replayErr := s.sessionRepo.IsReplayedToken(ctx, tokenHash)
+		if replayErr != nil {
+			log.Printf("replay token check error: %v", replayErr)
+		} else if replayed && replayedSessionID != "" {
 			_ = s.sessionRepo.RevokeAllSessionTokens(ctx, replayedSessionID)
 		}
 		return nil, fmt.Errorf("invalid or expired refresh token")
@@ -177,8 +199,11 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 	_ = s.sessionRepo.UpdateSessionLastSeen(ctx, newSessionID)
 
 	dbUser, err := s.userRepo.GetUserByID(ctx, session.UserID)
-	if err != nil || dbUser == nil {
+	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
+	}
+	if dbUser == nil {
+		return nil, ErrUserNotFound
 	}
 
 	uid, err := uuid.Parse(dbUser.ID)
@@ -219,7 +244,7 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 	if dbUser == nil {
-		return nil, fmt.Errorf("user not found")
+		return nil, ErrUserNotFound
 	}
 
 	uid, err := uuid.Parse(dbUser.ID)
@@ -227,7 +252,11 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 		return nil, fmt.Errorf("parse user id: %w", err)
 	}
 
-	createdAt, _ := time.Parse(time.RFC3339, dbUser.CreatedAt)
+	createdAt, err := time.Parse(time.RFC3339, dbUser.CreatedAt)
+	if err != nil {
+		log.Printf("parse created_at for user %s: %v", dbUser.ID, err)
+		createdAt = time.Time{}
+	}
 	return &auth.UserResponse{
 		ID:        uid,
 		Username:  dbUser.Username,
@@ -245,30 +274,29 @@ func (s *AuthService) createSession(ctx context.Context, userID string) (*TokenP
 	}
 
 	dbUser, err := s.userRepo.GetUserByID(ctx, userID)
-	if err != nil || dbUser == nil {
+	if err != nil {
 		return nil, fmt.Errorf("get user for access token: %w", err)
+	}
+	if dbUser == nil {
+		return nil, ErrUserNotFound
 	}
 
 	refreshTTL := auth.GetRefreshTokenTTL()
 	sessionExpiresAt := time.Now().Add(refreshTTL)
-	sessionID, err := s.sessionRepo.CreateSession(ctx, userID, sessionExpiresAt)
-	if err != nil {
-		return nil, fmt.Errorf("create session record: %w", err)
-	}
-
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID)
-	if err != nil {
-		return nil, fmt.Errorf("generate access token: %w", err)
-	}
 
 	rawRefreshToken, refreshTokenHash, err := auth.GenerateRefreshToken()
 	if err != nil {
 		return nil, fmt.Errorf("generate refresh token: %w", err)
 	}
 
-	_, err = s.sessionRepo.StoreRefreshToken(ctx, sessionID, refreshTokenHash, sessionExpiresAt)
+	sessionID, err := s.sessionRepo.CreateSessionWithRefreshToken(ctx, userID, sessionExpiresAt, refreshTokenHash)
 	if err != nil {
-		return nil, fmt.Errorf("store refresh token: %w", err)
+		return nil, fmt.Errorf("create session with refresh token: %w", err)
+	}
+
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("generate access token: %w", err)
 	}
 
 	return &TokenPair{

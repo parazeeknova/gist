@@ -215,6 +215,17 @@ func (s *ImportService) ConvertMarkdownToProseMirror(markdown string) (json.RawM
 		textContent.WriteString("\n")
 	}
 
+	// Flush any remaining code block lines at EOF
+	if inCodeBlock {
+		codeText := strings.Join(codeBlockLines, "\n")
+		content = append(content, map[string]any{
+			"type":    "codeBlock",
+			"content": []any{map[string]any{"type": "text", "text": codeText}},
+		})
+		textContent.WriteString(codeText)
+		textContent.WriteString("\n")
+	}
+
 	doc["content"] = content
 	result, _ := json.Marshal(doc)
 	return json.RawMessage(result), strings.TrimSpace(textContent.String())

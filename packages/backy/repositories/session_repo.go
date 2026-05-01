@@ -36,6 +36,42 @@ func (r *SessionRepo) CreateSession(ctx context.Context, userID string, expiresA
 	return sessionID, nil
 }
 
+// CreateSessionWithRefreshToken creates a session and stores a refresh token
+// in a single transaction.
+func (r *SessionRepo) CreateSessionWithRefreshToken(ctx context.Context, userID string, expiresAt time.Time, tokenHash string) (string, error) {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	var sessionID string
+	err = tx.QueryRow(ctx,
+		`INSERT INTO sessions (user_id, expires_at, last_seen_at)
+		 VALUES ($1, $2, now())
+		 RETURNING id`,
+		userID, expiresAt,
+	).Scan(&sessionID)
+	if err != nil {
+		return "", fmt.Errorf("create session: %w", err)
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO refresh_tokens (session_id, token_hash, expires_at)
+		 VALUES ($1, $2, $3)`,
+		sessionID, tokenHash, expiresAt,
+	)
+	if err != nil {
+		return "", fmt.Errorf("store refresh token: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("commit tx: %w", err)
+	}
+
+	return sessionID, nil
+}
+
 // UpdateSessionLastSeen bumps the last_seen_at timestamp for a session.
 func (r *SessionRepo) UpdateSessionLastSeen(ctx context.Context, sessionID string) error {
 	_, err := r.pool.Exec(ctx,
@@ -83,12 +119,18 @@ func (r *SessionRepo) RotateRefreshToken(ctx context.Context, oldTokenHash, newT
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	// Find the old token and its session
+	// Find the old token and lock the row; also verify the session is not expired
 	var oldTokenID string
 	var sessionID string
 	err = tx.QueryRow(ctx,
-		`SELECT id, session_id FROM refresh_tokens
-		 WHERE token_hash = $1 AND revoked_at IS NULL AND rotated_at IS NULL AND expires_at > now()`,
+		`SELECT rt.id, rt.session_id FROM refresh_tokens rt
+		 JOIN sessions s ON rt.session_id = s.id
+		 WHERE rt.token_hash = $1
+		   AND rt.revoked_at IS NULL
+		   AND rt.rotated_at IS NULL
+		   AND rt.expires_at > now()
+		   AND s.expires_at > now()
+		 FOR UPDATE OF rt`,
 		oldTokenHash,
 	).Scan(&oldTokenID, &sessionID)
 	if err != nil {
@@ -164,8 +206,8 @@ func (r *SessionRepo) GetSessionByRefreshToken(ctx context.Context, tokenHash st
 }
 
 // IsReplayedToken checks if a token hash exists but has been rotated or revoked (replay signal).
-// Returns (isReplayed, sessionID).
-func (r *SessionRepo) IsReplayedToken(ctx context.Context, tokenHash string) (bool, string) {
+// Returns (isReplayed, sessionID, error).
+func (r *SessionRepo) IsReplayedToken(ctx context.Context, tokenHash string) (bool, string, error) {
 	var sessionID string
 	err := r.pool.QueryRow(ctx,
 		`SELECT rt.session_id FROM refresh_tokens rt
@@ -174,9 +216,12 @@ func (r *SessionRepo) IsReplayedToken(ctx context.Context, tokenHash string) (bo
 		tokenHash,
 	).Scan(&sessionID)
 	if err != nil {
-		return false, ""
+		if err == pgx.ErrNoRows {
+			return false, "", nil
+		}
+		return false, "", fmt.Errorf("check replayed token: %w", err)
 	}
-	return true, sessionID
+	return true, sessionID, nil
 }
 
 // RevokeAllSessionTokens revokes all refresh tokens belonging to a session.

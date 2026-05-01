@@ -213,7 +213,7 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50" role="dialog">
+        <div aria-label="Login" aria-modal="true" className="fixed inset-0 z-50" role="dialog">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setOpen(false)}

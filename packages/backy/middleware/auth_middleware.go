@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -35,7 +36,12 @@ func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
 		// Verify the bound session is still active (not revoked, not expired)
 		if claims.SessionID != "" {
 			active, checkErr := authService.ValidateSession(c.Request.Context(), claims.SessionID)
-			if checkErr != nil || !active {
+			if checkErr != nil {
+				log.Printf("session validation error for user %s: %v", claims.UserID, checkErr)
+				c.AbortWithStatusJSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session validation failed"})
+				return
+			}
+			if !active {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "session expired or revoked"})
 				return
 			}
@@ -69,5 +75,9 @@ func GetCurrentUserID(c *gin.Context) string {
 	if userID == nil {
 		return ""
 	}
-	return userID.(string)
+	value, ok := userID.(string)
+	if !ok {
+		return ""
+	}
+	return value
 }

@@ -62,9 +62,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("database config: %v", err)
 	}
-	dbAvailable := database.InitPool(context.Background(), dbCfg) == nil
+	dbErr := database.InitPool(context.Background(), dbCfg)
+	dbAvailable := dbErr == nil
 	if !dbAvailable {
-		log.Printf("database init warning (blog endpoints will fall back to file-based store)")
+		log.Printf("database init warning (blog endpoints will fall back to file-based store): %v", dbErr)
 	} else {
 		pool := database.GetPool()
 		if err := database.MigrateUp(context.Background(), pool); err != nil {

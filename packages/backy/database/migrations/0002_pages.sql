@@ -15,7 +15,6 @@ CREATE TABLE IF NOT EXISTS pages (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_pages_slug_id ON pages (slug_id);
 CREATE INDEX IF NOT EXISTS idx_pages_parent_page_id ON pages (parent_page_id);
 CREATE INDEX IF NOT EXISTS idx_pages_creator_id ON pages (creator_id);
 CREATE INDEX IF NOT EXISTS idx_pages_is_published ON pages (is_published);

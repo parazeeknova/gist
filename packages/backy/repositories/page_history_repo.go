@@ -22,7 +22,7 @@ func NewPageHistoryRepo(pool *pgxpool.Pool) *PageHistoryRepo {
 // Insert creates a new page history row
 func (r *PageHistoryRepo) Insert(ctx context.Context, h models.PageHistory) error {
 	contentJSONBytes := []byte(h.ContentJSON)
-	if contentJSONBytes == nil {
+	if len(contentJSONBytes) == 0 {
 		contentJSONBytes = []byte("{}")
 	}
 

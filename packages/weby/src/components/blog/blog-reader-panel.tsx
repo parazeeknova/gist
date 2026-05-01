@@ -42,7 +42,17 @@ export const BlogReaderPanel = ({
     );
   }
 
-  if (isError || !data) {
+  if (isError) {
+    return (
+      <div
+        className={`px-8 py-10 text-sm ${isDarkMode ? "text-text-dark/60" : "text-text-light/60"}`}
+      >
+        failed to load articles — please try again
+      </div>
+    );
+  }
+
+  if (!data) {
     return (
       <div className="flex h-full min-h-0 flex-col p-4 sm:p-6 lg:p-8">
         <div className="mb-6">

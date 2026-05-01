@@ -9,11 +9,20 @@ import (
 	"github.com/google/uuid"
 )
 
-func init() {
-	_ = os.Setenv("JWT_ACCESS_TOKEN_SECRET", "test-secret-that-is-at-least-32-bytes-long!")
-	_ = os.Setenv("JWT_ISSUER", "verso-test")
-	_ = os.Setenv("JWT_AUDIENCE", "verso-test")
-	_ = os.Setenv("ACCESS_TOKEN_TTL", "15m")
+func TestMain(m *testing.M) {
+	if err := os.Setenv("JWT_ACCESS_TOKEN_SECRET", "test-secret-that-is-at-least-32-bytes-long!"); err != nil {
+		os.Exit(1)
+	}
+	if err := os.Setenv("JWT_ISSUER", "verso-test"); err != nil {
+		os.Exit(1)
+	}
+	if err := os.Setenv("JWT_AUDIENCE", "verso-test"); err != nil {
+		os.Exit(1)
+	}
+	if err := os.Setenv("ACCESS_TOKEN_TTL", "15m"); err != nil {
+		os.Exit(1)
+	}
+	os.Exit(m.Run())
 }
 
 func TestGenerateAndValidateAccessToken(t *testing.T) {
@@ -161,9 +170,12 @@ func TestValidateAccessToken_NonHMAC(t *testing.T) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodNone, claims)
-	tokenStr := token.Raw
+	tokenStr, err := token.SignedString(jwt.UnsafeAllowNoneSignatureType)
+	if err != nil {
+		t.Fatalf("failed to sign none token: %v", err)
+	}
 
-	_, err := ValidateAccessToken(tokenStr)
+	_, err = ValidateAccessToken(tokenStr)
 	if err == nil {
 		t.Error("expected validation error for 'none' algorithm, got nil")
 	}
@@ -207,7 +219,9 @@ func TestValidateSecret_Valid(t *testing.T) {
 
 func TestGetCookieSecure_DefaultLocalhost(t *testing.T) {
 	t.Setenv("COOKIE_DOMAIN", "localhost")
-	t.Setenv("COOKIE_SECURE", "")
+	if err := os.Unsetenv("COOKIE_SECURE"); err != nil {
+		t.Fatalf("unsetenv: %v", err)
+	}
 
 	if GetCookieSecure() {
 		t.Error("expected COOKIE_SECURE=false for localhost domain when not explicitly set")
@@ -216,7 +230,9 @@ func TestGetCookieSecure_DefaultLocalhost(t *testing.T) {
 
 func TestGetCookieSecure_DefaultProduction(t *testing.T) {
 	t.Setenv("COOKIE_DOMAIN", "example.com")
-	t.Setenv("COOKIE_SECURE", "")
+	if err := os.Unsetenv("COOKIE_SECURE"); err != nil {
+		t.Fatalf("unsetenv: %v", err)
+	}
 
 	if !GetCookieSecure() {
 		t.Error("expected COOKIE_SECURE=true for non-localhost domain when not explicitly set")

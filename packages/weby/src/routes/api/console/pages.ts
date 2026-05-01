@@ -6,6 +6,9 @@ export const Route = createFileRoute("/api/console/pages")({
     handlers: {
       GET: async ({ request }) => {
         const cookieHeader = request.headers.get("cookie");
+        if (!cookieHeader) {
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
         const pages = await getConsolePages(cookieHeader);
         return Response.json(pages ?? []);
       },

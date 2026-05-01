@@ -169,7 +169,7 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 // Insert creates a new page row
 func (r *PageRepo) Insert(ctx context.Context, p models.Page) error {
 	contentJSONBytes := []byte(p.ContentJSON)
-	if contentJSONBytes == nil {
+	if len(contentJSONBytes) == 0 {
 		contentJSONBytes = []byte("{}")
 	}
 
@@ -195,7 +195,7 @@ func (r *PageRepo) Insert(ctx context.Context, p models.Page) error {
 // Update modifies an existing page row
 func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 	contentJSONBytes := []byte(p.ContentJSON)
-	if contentJSONBytes == nil {
+	if len(contentJSONBytes) == 0 {
 		contentJSONBytes = []byte("{}")
 	}
 
@@ -206,13 +206,16 @@ func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 		    last_updated_by_id = $9, updated_at = $10
 		WHERE id = $11`
 
-	_, err := r.pool.Exec(ctx, query,
+	tag, err := r.pool.Exec(ctx, query,
 		p.Title, p.Icon, p.CoverPhoto, contentJSONBytes, p.YDoc,
 		p.TextContent, p.IsPublished, p.ParentPageID,
 		p.LastUpdatedByID, p.UpdatedAt, p.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("updating page %q: %w", p.SlugID, err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("page %q: not found", p.SlugID)
 	}
 
 	return nil

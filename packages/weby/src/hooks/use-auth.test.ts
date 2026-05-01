@@ -142,7 +142,7 @@ describe("useAuthActions", () => {
   });
 
   it("login throws on error response", async () => {
-    const errorResponse = createMockResponse({ message: "Invalid credentials" }, false, 401);
+    const errorResponse = createMockResponse({ error: "Invalid credentials" }, false, 401);
     const mockFetch = vi
       .fn()
       // initial useAuth query → /api/auth/me 401

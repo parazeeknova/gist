@@ -15,7 +15,7 @@ import (
 var embeddedMigrations embed.FS
 
 // MigrateUp runs all SQL migration files from the embedded migrations directory against the pool.
-// Migrations are run in filename order and are idempotent (use CREATE TABLE IF NOT EXISTS).
+// Migrations are run in filename order, each in its own transaction, and are idempotent (use CREATE TABLE IF NOT EXISTS).
 func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
 	migrations, err := readMigrations()
 	if err != nil {
@@ -24,8 +24,19 @@ func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
 
 	for _, m := range migrations {
 		log.Printf("migrate: applying %s", m.name)
-		if _, err := pool.Exec(ctx, m.sql); err != nil {
+
+		tx, txErr := pool.Begin(ctx)
+		if txErr != nil {
+			return fmt.Errorf("begin tx for %s: %w", m.name, txErr)
+		}
+
+		if _, err := tx.Exec(ctx, m.sql); err != nil {
+			_ = tx.Rollback(ctx)
 			return fmt.Errorf("apply migration %s: %w", m.name, err)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return fmt.Errorf("commit migration %s: %w", m.name, err)
 		}
 	}
 

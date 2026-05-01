@@ -169,7 +169,13 @@ func GetRefreshTokenTTL() time.Duration {
 	return d
 }
 
+// GetAccessTokenTTL returns the configured access token TTL.
+func GetAccessTokenTTL() time.Duration {
+	return getAccessTokenTTL()
+}
+
 // parseDuration wraps time.ParseDuration with support for "d" (days).
+// Returns an error for zero or negative durations.
 func parseDuration(s string) (time.Duration, error) {
 	if strings.HasSuffix(s, "d") {
 		daysStr := strings.TrimSuffix(s, "d")
@@ -177,9 +183,19 @@ func parseDuration(s string) (time.Duration, error) {
 		if err != nil {
 			return 0, fmt.Errorf("invalid duration %q: %w", s, err)
 		}
+		if days <= 0 {
+			return 0, fmt.Errorf("invalid duration %q: must be positive", s)
+		}
 		return time.Duration(days) * 24 * time.Hour, nil
 	}
-	return time.ParseDuration(s)
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return 0, err
+	}
+	if d <= 0 {
+		return 0, fmt.Errorf("invalid duration %q: must be positive", s)
+	}
+	return d, nil
 }
 
 // GetCookieDomain returns the cookie domain from env.

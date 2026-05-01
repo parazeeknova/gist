@@ -133,6 +133,7 @@ const Home = function Home() {
         repoUrl: firstWithReadme.repoUrl,
         title: firstWithReadme.title,
       });
+      setMobileView("blogs");
     }
   }, [projects, manifest, selectedProject]);
 

@@ -251,12 +251,15 @@ func (h *Handlers) GetStats(c *gin.Context) {
 
 	if h.pageService != nil {
 		all, err := h.pageService.ListAllPages(c.Request.Context())
-		if err == nil {
-			pages = len(all)
-			for _, p := range all {
-				if p.IsPublished {
-					posts++
-				}
+		if err != nil {
+			log.Printf("stats: list all pages error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load stats"})
+			return
+		}
+		pages = len(all)
+		for _, p := range all {
+			if p.IsPublished {
+				posts++
 			}
 		}
 	}

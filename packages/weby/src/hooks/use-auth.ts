@@ -9,7 +9,10 @@ export const useAuth = () => {
     queryFn: async ({ signal }) => {
       try {
         return await fetchProtected<AuthUser>("/api/auth/me", { signal });
-      } catch {
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          throw error;
+        }
         queryClient.setQueryData(["auth"], null);
         return null;
       }
@@ -34,15 +37,18 @@ export const useAuthActions = () => {
       method: "POST",
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ message: "Login failed" }));
-      throw new Error((err as { message?: string }).message ?? "Login failed");
+      const err = await res.json().catch(() => ({ error: "Login failed" }));
+      throw new Error((err as { error?: string }).error ?? "Login failed");
     }
     await queryClient.invalidateQueries({ queryKey: ["auth"] });
     return res.json() as Promise<unknown>;
   };
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    const res = await fetch("/api/auth/logout", { method: "POST" });
+    if (!res.ok) {
+      throw new Error("Logout failed");
+    }
     queryClient.setQueryData(["auth"], null);
     await queryClient.invalidateQueries({ queryKey: ["auth"] });
   };

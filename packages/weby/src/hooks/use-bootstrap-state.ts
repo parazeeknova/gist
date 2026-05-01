@@ -13,7 +13,8 @@ export const useBootstrapState = () =>
   useQuery<BootstrapState>({
     queryFn: ({ signal }) => fetchJson<BootstrapState>("/api/auth/bootstrap-state", { signal }),
     queryKey: ["bootstrapState"],
-    retry: false,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10_000),
     staleTime: 5 * 60 * 1000,
   });
 

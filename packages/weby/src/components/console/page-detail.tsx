@@ -39,7 +39,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
         <div className="flex items-center gap-4 text-[11px] text-text-dark/40">
           <span>{page.isPublished ? "published" : "draft"}</span>
           <span>slug: {page.slugId}</span>
-          <span>updated: {new Date(page.updatedAt).toLocaleDateString()}</span>
+          <span>updated: {new Date(page.updatedAt).toISOString().slice(0, 10)}</span>
         </div>
         {page.coverPhoto && (
           <img

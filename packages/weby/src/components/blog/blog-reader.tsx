@@ -214,7 +214,9 @@ export const BlogReader = ({
               <h2 className="text-4xl">{post.title}</h2>
               <p className={`text-sm ${isDarkMode ? "text-text-dark/55" : "text-text-light/55"}`}>
                 {post.publishedAt ?? ""}{" "}
-                {post.readTimeMinutes ? `\u2022 ${post.readTimeMinutes} min read` : ""}
+                {typeof post.readTimeMinutes === "number"
+                  ? `\u2022 ${post.readTimeMinutes} min read`
+                  : ""}
               </p>
               <div className="flex flex-wrap gap-2">
                 {(post.tags ?? []).map((tag) => (

@@ -24,12 +24,18 @@ const fetchBacky = async <T>(endpoint: string, init?: RequestInit): Promise<T | 
   const url = new URL(`api/${endpoint}`, origin).toString();
 
   const callerHeaders = init?.headers as Record<string, string> | undefined;
-  const headers: Record<string, string> = {
+  const mergedHeaders: Record<string, string> = {
     Accept: "application/json",
     ...callerHeaders,
   };
 
-  const response = await fetch(url, { headers });
+  const { headers: _, ...restInit } = init ?? {};
+  const mergedInit: RequestInit = {
+    ...restInit,
+    headers: mergedHeaders,
+  };
+
+  const response = await fetch(url, mergedInit);
 
   if (!response.ok) {
     return null;

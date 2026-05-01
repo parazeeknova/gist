@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/verso/backy/database"
 	"github.com/verso/backy/models"
 	"github.com/verso/backy/repositories"
 )
@@ -68,26 +70,57 @@ func (s *PageService) GetBlogManifest(ctx context.Context) ([]models.BlogManifes
 	return result, nil
 }
 
-// CreatePage inserts a page and creates an initial history entry
+// CreatePage inserts a page and creates an initial history entry inside a single transaction.
 func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
-	if err := s.pageRepo.Insert(ctx, page); err != nil {
-		return fmt.Errorf("creating page: %w", err)
+	pool := database.GetPool()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Create tx-scoped repos using a helper or inline the queries.
+	// For simplicity we delegate to repository methods that accept a tx-like executor.
+	// Since our current repos accept *pgxpool.Pool, we inline the insert here.
+
+	contentJSONBytes := []byte(page.ContentJSON)
+	if len(contentJSONBytes) == 0 {
+		contentJSONBytes = []byte("{}")
 	}
 
-	history := models.PageHistory{
-		ID:          newUUID(),
-		PageID:      page.ID,
-		Title:       page.Title,
-		ContentJSON: page.ContentJSON,
-		YDoc:        page.YDoc,
-		TextContent: page.TextContent,
-		Operation:   "create",
-		CreatedByID: page.CreatorID,
-		CreatedAt:   page.CreatedAt,
+	_, err = tx.Exec(ctx,
+		`INSERT INTO pages (id, slug_id, title, icon, cover_photo, content_json, ydoc,
+		                   text_content, is_published, parent_page_id, creator_id,
+		                   last_updated_by_id, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+		page.ID, page.SlugID, page.Title, page.Icon, page.CoverPhoto,
+		contentJSONBytes, page.YDoc, page.TextContent, page.IsPublished,
+		page.ParentPageID, page.CreatorID, page.LastUpdatedByID,
+		page.CreatedAt, page.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("inserting page %q: %w", page.SlugID, err)
 	}
 
-	if err := s.pageHistoryRepo.Insert(ctx, history); err != nil {
-		return fmt.Errorf("creating page history: %w", err)
+	historyID := newUUID()
+	historyContentJSONBytes := []byte(page.ContentJSON)
+	if len(historyContentJSONBytes) == 0 {
+		historyContentJSONBytes = []byte("{}")
+	}
+
+	_, err = tx.Exec(ctx,
+		`INSERT INTO page_history (id, page_id, title, content_json, ydoc,
+		                          text_content, operation, created_by_id, created_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		historyID, page.ID, page.Title, historyContentJSONBytes, page.YDoc,
+		page.TextContent, "create", page.CreatorID, page.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("inserting page history for page %q: %w", page.ID, err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
 	}
 
 	return nil
@@ -188,19 +221,9 @@ func estimateReadTime(text string) int {
 	return minutes
 }
 
-// newUUID generates a unique ID string
-var idCounter uint64
-
+// newUUID generates a RFC 4122 v4 UUID string.
 func newUUID() string {
-	idCounter++
-	t := time.Now().UnixNano()
-	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
-		uint32(t),
-		uint16(t>>32),
-		uint16(idCounter),
-		uint16(t>>48),
-		uint64(t)&0xFFFFFFFFFFFF,
-	)
+	return uuid.New().String()
 }
 
 // proseMirrorToMarkdown converts a ProseMirror/Tiptap JSON document back to markdown.

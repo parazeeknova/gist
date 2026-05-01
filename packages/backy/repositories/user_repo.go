@@ -2,13 +2,18 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/verso/backy/database"
 	"github.com/verso/backy/models"
 )
+
+// ErrDuplicateUser is returned when a user creation violates a unique constraint.
+var ErrDuplicateUser = errors.New("user already exists")
 
 // UserRepo handles database operations for the users and password_credentials tables.
 type UserRepo struct {
@@ -31,7 +36,7 @@ func (r *UserRepo) CountUsers(ctx context.Context) (int64, error) {
 }
 
 // CreateUser inserts a new user and their password credential in a single transaction.
-// Returns the newly created user's ID.
+// Returns the newly created user's ID, or ErrDuplicateUser on unique constraint violations.
 func (r *UserRepo) CreateUser(ctx context.Context, username, email, passwordHash string, isOwner bool) (string, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -47,6 +52,10 @@ func (r *UserRepo) CreateUser(ctx context.Context, username, email, passwordHash
 		username, email, isOwner,
 	).Scan(&userID)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return "", ErrDuplicateUser
+		}
 		return "", fmt.Errorf("insert user: %w", err)
 	}
 

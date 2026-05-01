@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -54,7 +56,20 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 
 	userResp, pair, err := h.authService.Login(c.Request.Context(), req.UsernameOrEmail, req.Password, req.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: err.Error()})
+		if errors.Is(err, services.ErrNotBootstrapped) {
+			c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "system not bootstrapped"})
+			return
+		}
+		if errors.Is(err, services.ErrUserInactive) {
+			c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "user account is inactive"})
+			return
+		}
+		if errors.Is(err, services.ErrAlreadyBootstrapped) {
+			c.JSON(http.StatusConflict, auth.ErrorResponse{Error: "system already bootstrapped"})
+			return
+		}
+		log.Printf("login error: %v", err)
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "authentication failed"})
 		return
 	}
 	if userResp == nil {
@@ -108,9 +123,28 @@ func (h *AuthHandlers) Me(c *gin.Context) {
 		return
 	}
 
+	// Verify the bound session is still active
+	if accessClaims.SessionID != "" {
+		active, checkErr := h.authService.ValidateSession(c.Request.Context(), accessClaims.SessionID)
+		if checkErr != nil {
+			log.Printf("session validation error for user %s: %v", accessClaims.UserID, checkErr)
+			c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session validation failed"})
+			return
+		}
+		if !active {
+			c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "session expired or revoked"})
+			return
+		}
+	}
+
 	userResp, err := h.authService.GetMe(c.Request.Context(), accessClaims.UserID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
+		if errors.Is(err, services.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
+			return
+		}
+		log.Printf("get me error for user %s: %v", accessClaims.UserID, err)
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to retrieve user"})
 		return
 	}
 
@@ -134,7 +168,7 @@ func extractAuthToken(c *gin.Context) string {
 func setAuthCookies(c *gin.Context, pair *services.TokenPair) {
 	domain := auth.GetCookieDomain()
 	secure := auth.GetCookieSecure()
-	maxAgeAccess := 15 * 60
+	maxAgeAccess := int(auth.GetAccessTokenTTL().Seconds())
 	maxAgeRefresh := int(auth.GetRefreshTokenTTL().Seconds())
 	path := "/"
 	sameSite := http.SameSiteLaxMode
