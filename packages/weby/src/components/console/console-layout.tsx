@@ -12,7 +12,12 @@ const SIDEBAR_WIDTH = 280;
 export const ConsoleLayout = () => {
   const { isDarkMode } = useTheme();
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+    return window.innerWidth >= 768;
+  });
   const [activeTab, setActiveTab] = useState<"spaces" | "public" | "profile">("spaces");
   const sidebarRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
@@ -39,7 +44,11 @@ export const ConsoleLayout = () => {
 
   useEffect(() => {
     if (sidebarRef.current) {
-      gsap.set(sidebarRef.current, { opacity: 1, width: SIDEBAR_WIDTH });
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      gsap.set(sidebarRef.current, {
+        opacity: isMobile ? 0 : 1,
+        width: isMobile ? 0 : SIDEBAR_WIDTH,
+      });
     }
   }, []);
 
@@ -49,10 +58,10 @@ export const ConsoleLayout = () => {
     >
       <ConsoleNavbar onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="relative flex flex-1 overflow-hidden">
         <aside
           ref={sidebarRef}
-          className={`shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark bg-bg-dark/60", "border-border-light bg-bg-light/60")}`}
+          className={`absolute inset-y-0 left-0 z-40 md:relative md:shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
         >
           <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto">
             <div

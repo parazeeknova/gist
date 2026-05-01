@@ -7,6 +7,7 @@ import { useAuth, useAuthActions } from "../../hooks/use-auth";
 import { useTheme } from "../../hooks/use-theme";
 import {
   BellIcon,
+  ListIcon,
   MagnifyingGlassIcon,
   SidebarIcon,
   SidebarSimpleIcon,
@@ -18,15 +19,24 @@ interface ConsoleNavbarProps {
   sidebarOpen: boolean;
 }
 
+const NAV_ROUTES = [
+  { href: "/home", label: "home" },
+  { href: "/#projects", label: "public" },
+  { href: "/#blogs", label: "blogs" },
+  { href: "/#about", label: "about" },
+] as const;
+
 export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarProps) => {
   const { data: user } = useAuth();
   const { logout } = useAuthActions();
   const { isDarkMode, toggleTheme } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notiRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const { data: stats } = useQuery<Stats>({
     queryFn: async ({ signal }) => {
@@ -38,7 +48,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   });
 
   useEffect(() => {
-    if (!dropdownOpen && !notiOpen) {
+    if (!dropdownOpen && !notiOpen && !mobileMenuOpen) {
       return;
     }
     const handleClick = (e: MouseEvent) => {
@@ -48,10 +58,13 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
       if (notiRef.current && !notiRef.current.contains(e.target as Node)) {
         setNotiOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [dropdownOpen, notiOpen]);
+  }, [dropdownOpen, notiOpen, mobileMenuOpen]);
 
   useEffect(() => {
     let el: HTMLDivElement | null = null;
@@ -59,6 +72,8 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
       el = dropdownRef.current;
     } else if (notiOpen) {
       el = notiRef.current;
+    } else if (mobileMenuOpen) {
+      el = mobileMenuRef.current;
     }
     if (!el) {
       return;
@@ -71,19 +86,25 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         { duration: 0.15, ease: "power2.out", opacity: 1, scale: 1, y: 0 },
       );
     }
-  }, [dropdownOpen, notiOpen]);
+  }, [dropdownOpen, notiOpen, mobileMenuOpen]);
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
 
+  const navLinkClass = (href: string) =>
+    `lowercase ${currentPath === href ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`;
+
+  const mobileLinkClass = (href: string) =>
+    `block px-3 py-1.5 text-left text-[12px] lowercase ${currentPath === href ? t("text-text-dark border-b-transparent", "text-text-light border-b-transparent") : ""} ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`;
+
   return (
     <nav
-      className={`flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+      className={`relative flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
     >
-      {/* Left: sidebar toggle + brand + nav links */}
+      {/* Left: sidebar toggle + brand + desktop nav links */}
       <div className="flex items-center gap-2">
         <button
-          className={`lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+          className={`flex items-center lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
           onClick={onToggleSidebar}
           type="button"
         >
@@ -95,38 +116,27 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         >
           verso
         </a>
-        <span className={t("text-text-dark/20", "text-text-light/20")}>/</span>
-        <a
-          className={`lowercase ${currentPath === "/home" ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-          href="/home"
-        >
-          home
-        </a>
-        <span className={t("text-text-dark/20", "text-text-light/20")}>/</span>
-        <a
-          className={`lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-          href="/#projects"
-        >
-          public
-        </a>
-        <span className={t("text-text-dark/20", "text-text-light/20")}>/</span>
-        <a
-          className={`lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-          href="/#blogs"
-        >
-          blogs
-        </a>
-        <span className={t("text-text-dark/20", "text-text-light/20")}>/</span>
-        <a
-          className={`lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-          href="/#about"
-        >
-          about
-        </a>
+        {NAV_ROUTES.map((route, i) => [
+          i > 0 ? (
+            <span
+              className={`hidden md:inline ${t("text-text-dark/20", "text-text-light/20")}`}
+              key={`sep-${route.href}`}
+            >
+              /
+            </span>
+          ) : null,
+          <a
+            className={`hidden md:inline ${navLinkClass(route.href)}`}
+            href={route.href}
+            key={route.href}
+          >
+            {route.label}
+          </a>,
+        ])}
       </div>
 
       {/* Middle: search */}
-      <div className="mx-auto flex w-full max-w-md items-center gap-2">
+      <div className="mx-auto flex w-full max-w-40 md:max-w-md items-center gap-2">
         <MagnifyingGlassIcon className={t("text-text-dark/20", "text-text-light/20")} size={12} />
         <input
           aria-label="Search"
@@ -145,17 +155,47 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         />
       </div>
 
-      {/* Right: theme text, user dropdown, noti dropdown */}
+      {/* Right: notification + profile dropdown + mobile hamburger */}
       <div className="flex items-center gap-3">
-        <button
-          aria-label="Toggle theme"
-          className={`lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
-          onClick={toggleTheme}
-          type="button"
-        >
-          {isDarkMode ? "light" : "dark"}
-        </button>
+        {/* Notification dropdown */}
+        <div className="relative" ref={notiRef}>
+          <button
+            className={`flex items-center gap-1 lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+            onClick={() => setNotiOpen((o) => !o)}
+            type="button"
+          >
+            <BellIcon size={12} />
+          </button>
 
+          {notiOpen && (
+            <div
+              className={`absolute right-0 top-full z-50 mt-1 w-52 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+            >
+              <div className="py-1">
+                <div
+                  className={`flex items-center justify-between border-b px-3 pb-1.5 pt-1 ${t("border-border-dark", "border-border-light")}`}
+                >
+                  <span className={`text-[12px] ${t("text-text-dark/70", "text-text-light/70")}`}>
+                    notifications
+                  </span>
+                  <button
+                    className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
+                    type="button"
+                  >
+                    clear all
+                  </button>
+                </div>
+                <p
+                  className={`px-3 py-2 text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
+                >
+                  no notifications yet !
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Profile dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             className={`flex items-center gap-1 lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
@@ -187,6 +227,14 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
                     </p>
                   )}
                 </div>
+
+                <button
+                  className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                  onClick={toggleTheme}
+                  type="button"
+                >
+                  {isDarkMode ? "light" : "dark"} mode
+                </button>
 
                 <button
                   className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
@@ -229,39 +277,31 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           )}
         </div>
 
-        {/* Notification dropdown */}
-        <div className="relative" ref={notiRef}>
+        {/* Mobile hamburger menu */}
+        <div className="relative md:hidden" ref={mobileMenuRef}>
           <button
-            className={`flex items-center gap-1 lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setNotiOpen((o) => !o)}
+            className={`flex items-center ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+            onClick={() => setMobileMenuOpen((o) => !o)}
             type="button"
           >
-            <BellIcon size={12} />
+            <ListIcon size={14} />
           </button>
 
-          {notiOpen && (
+          {mobileMenuOpen && (
             <div
-              className={`absolute right-0 top-full z-50 mt-1 w-52 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+              className={`absolute right-0 top-full z-50 mt-1 w-28 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
             >
               <div className="py-1">
-                <div
-                  className={`flex items-center justify-between border-b px-3 pb-1.5 pt-1 ${t("border-border-dark", "border-border-light")}`}
-                >
-                  <span className={`text-[12px] ${t("text-text-dark/70", "text-text-light/70")}`}>
-                    notifications
-                  </span>
-                  <button
-                    className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
-                    type="button"
+                {NAV_ROUTES.map((route) => (
+                  <a
+                    className={mobileLinkClass(route.href)}
+                    href={route.href}
+                    key={route.href}
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    clear all
-                  </button>
-                </div>
-                <p
-                  className={`px-3 py-2 text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
-                >
-                  no notifications yet !
-                </p>
+                    {route.label}
+                  </a>
+                ))}
               </div>
             </div>
           )}

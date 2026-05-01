@@ -140,7 +140,7 @@ export const ConsoleHome = () => {
         )}
       </div>
       <p
-        className={`absolute bottom-0 left-0 right-0 pb-4 text-center text-[10px] lowercase ${t("text-text-dark/15", "text-text-light/15")}`}
+        className={`fixed bottom-0 left-0 right-0 z-30 md:absolute md:bottom-0 md:left-0 md:right-0 pb-4 pt-2 text-center text-[10px] lowercase ${t("bg-bg-dark/80 text-text-dark/20", "bg-bg-light/80 text-text-light/20")}`}
       >
         spotted a bug or have a suggestion ?{" "}
         <a

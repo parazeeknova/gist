@@ -42,7 +42,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
   }
 
   return (
-    <article className="mx-auto max-w-2xl">
+    <article className="mx-auto max-w-2xl px-4">
       <header className="mb-6 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">{page.icon}</span>
@@ -51,7 +51,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
           </h2>
         </div>
         <div
-          className={`flex items-center gap-4 text-[11px] ${t("text-text-dark/40", "text-text-light/40")}`}
+          className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] ${t("text-text-dark/40", "text-text-light/40")}`}
         >
           <span>{page.isPublished ? "published" : "draft"}</span>
           <span>slug: {page.slugId}</span>
