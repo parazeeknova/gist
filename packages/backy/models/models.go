@@ -1,5 +1,10 @@
 package models
 
+import (
+	"encoding/json"
+	"time"
+)
+
 // Link represents a labeled URL link
 type Link struct {
 	Label string `json:"label"`
@@ -72,13 +77,91 @@ type GraphQLResponse struct {
 
 // BlogPost represents a blog post response
 type BlogPost struct {
-	Description     string   `json:"description"`
-	Format          string   `json:"format"`
-	Markdown        string   `json:"markdown"`
-	PublishedAt     string   `json:"publishedAt"`
-	ReadTimeMinutes int      `json:"readTimeMinutes"`
-	Section         string   `json:"section"`
-	Slug            string   `json:"slug"`
-	Tags            []string `json:"tags"`
-	Title           string   `json:"title"`
+	Description     string          `json:"description"`
+	Format          string          `json:"format"`
+	Markdown        string          `json:"markdown"`
+	PublishedAt     string          `json:"publishedAt"`
+	ReadTimeMinutes int             `json:"readTimeMinutes"`
+	Section         string          `json:"section"`
+	Slug            string          `json:"slug"`
+	Tags            []string        `json:"tags"`
+	Title           string          `json:"title"`
+	ContentJSON     json.RawMessage `json:"content,omitempty"`
+	Icon            string          `json:"icon,omitempty"`
+	CoverPhoto      string          `json:"coverPhoto,omitempty"`
+}
+
+// Page represents a page stored in the database
+type Page struct {
+	ID              string          `json:"id"`
+	SlugID          string          `json:"slug_id"`
+	Title           string          `json:"title"`
+	Icon            string          `json:"icon"`
+	CoverPhoto      string          `json:"cover_photo"`
+	ContentJSON     json.RawMessage `json:"content_json"`
+	YDoc            []byte          `json:"ydoc,omitempty"`
+	TextContent     string          `json:"text_content"`
+	IsPublished     bool            `json:"is_published"`
+	ParentPageID    *string         `json:"parent_page_id,omitempty"`
+	CreatorID       string          `json:"creator_id"`
+	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
+	CreatedAt       time.Time       `json:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at"`
+}
+
+// PageHistory represents a page history entry
+type PageHistory struct {
+	ID          string          `json:"id"`
+	PageID      string          `json:"page_id"`
+	Title       string          `json:"title"`
+	ContentJSON json.RawMessage `json:"content_json"`
+	YDoc        []byte          `json:"ydoc,omitempty"`
+	TextContent string          `json:"text_content"`
+	Operation   string          `json:"operation"`
+	CreatedByID string          `json:"created_by_id"`
+	CreatedAt   time.Time       `json:"created_at"`
+}
+
+// BlogManifestEntry represents a single entry in the blog manifest
+type BlogManifestEntry struct {
+	Slug    string `json:"slug"`
+	Title   string `json:"title"`
+	Section string `json:"section"`
+}
+
+// BlogManifestSection represents a section of the blog manifest
+type BlogManifestSection struct {
+	Label    string              `json:"label"`
+	Children []BlogManifestEntry `json:"children"`
+}
+
+// AuthUser is a database row from the users table.
+type AuthUser struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	IsOwner   bool   `json:"is_owner"`
+	IsActive  bool   `json:"is_active"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// AuthSession is a database row from the sessions table.
+type AuthSession struct {
+	ID         string `json:"id"`
+	UserID     string `json:"user_id"`
+	ExpiresAt  string `json:"expires_at"`
+	LastSeenAt string `json:"last_seen_at"`
+	CreatedAt  string `json:"created_at"`
+}
+
+// AuthRefreshToken is a database row from the refresh_tokens table.
+type AuthRefreshToken struct {
+	ID        string `json:"id"`
+	SessionID string `json:"session_id"`
+	TokenHash string `json:"token_hash"`
+	ExpiresAt string `json:"expires_at"`
+	CreatedAt string `json:"created_at"`
+	RotatedAt string `json:"rotated_at,omitempty"`
+	RevokedAt string `json:"revoked_at,omitempty"`
 }
