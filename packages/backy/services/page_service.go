@@ -153,20 +153,15 @@ func (s *PageService) GetPageByID(ctx context.Context, id string) (models.Page, 
 	return page, nil
 }
 
-// pageToBlogPost converts a Page model to a BlogPost response shape
+// pageToBlogPost converts a Page model to a BlogPost response shape.
 func (s *PageService) pageToBlogPost(page models.Page) models.BlogPost {
 	description := page.TextContent
 	if len(description) > 200 {
 		description = description[:200] + "..."
 	}
 
-	// Reconstruct markdown from ProseMirror JSON for backward compat
-	markdown := proseMirrorToMarkdown(page.ContentJSON)
-
 	post := models.BlogPost{
 		Description:     description,
-		Format:          "prosemirror",
-		Markdown:        markdown,
 		PublishedAt:     page.CreatedAt.Format(time.RFC3339),
 		ReadTimeMinutes: estimateReadTime(page.TextContent),
 		Section:         extractSection(page.SlugID),
@@ -224,129 +219,4 @@ func estimateReadTime(text string) int {
 // newUUID generates a RFC 4122 v4 UUID string.
 func newUUID() string {
 	return uuid.New().String()
-}
-
-// proseMirrorToMarkdown converts a ProseMirror/Tiptap JSON document back to markdown.
-// This provides backward compatibility for the existing markdown-based blog reader.
-func proseMirrorToMarkdown(raw json.RawMessage) string {
-	if len(raw) == 0 {
-		return ""
-	}
-
-	var doc map[string]any
-	if err := json.Unmarshal(raw, &doc); err != nil {
-		return ""
-	}
-
-	content, ok := doc["content"].([]any)
-	if !ok {
-		return ""
-	}
-
-	var b strings.Builder
-	for _, node := range content {
-		nodeMap, ok := node.(map[string]any)
-		if !ok {
-			continue
-		}
-		writeMarkdownNode(&b, nodeMap)
-	}
-	return strings.TrimSpace(b.String())
-}
-
-func writeMarkdownNode(b *strings.Builder, node map[string]any) {
-	nodeType, _ := node["type"].(string)
-	switch nodeType {
-	case "heading":
-		level := 1
-		if attrs, ok := node["attrs"].(map[string]any); ok {
-			if l, ok := attrs["level"].(float64); ok {
-				level = int(l)
-			}
-		}
-		text := extractNodeText(node)
-		if text != "" {
-			prefix := strings.Repeat("#", level)
-			b.WriteString(prefix)
-			b.WriteString(" ")
-			b.WriteString(text)
-			b.WriteString("\n\n")
-		}
-
-	case "paragraph":
-		text := extractNodeText(node)
-		if text != "" {
-			b.WriteString(text)
-			b.WriteString("\n\n")
-		}
-
-	case "blockquote":
-		text := extractNodeText(node)
-		if text != "" {
-			for _, line := range strings.Split(text, "\n") {
-				b.WriteString("> ")
-				b.WriteString(line)
-				b.WriteString("\n")
-			}
-			b.WriteString("\n")
-		}
-
-	case "codeBlock":
-		text := extractNodeText(node)
-		b.WriteString("```\n")
-		b.WriteString(text)
-		b.WriteString("\n```\n\n")
-
-	case "bulletList", "orderedList":
-		items, _ := node["content"].([]any)
-		for _, item := range items {
-			itemMap, _ := item.(map[string]any)
-			text := extractNodeText(itemMap)
-			if text != "" {
-				b.WriteString("- ")
-				b.WriteString(text)
-				b.WriteString("\n")
-			}
-		}
-		b.WriteString("\n")
-
-	case "listItem":
-		text := extractNodeText(node)
-		b.WriteString("- ")
-		b.WriteString(text)
-		b.WriteString("\n")
-
-	default:
-		text := extractNodeText(node)
-		if text != "" {
-			b.WriteString(text)
-			b.WriteString("\n\n")
-		}
-	}
-}
-
-// extractNodeText extracts plain text from a ProseMirror node recursively
-func extractNodeText(node map[string]any) string {
-	// Check for a "text" field in children of type "text"
-	content, ok := node["content"].([]any)
-	if !ok {
-		return ""
-	}
-
-	var b strings.Builder
-	for _, child := range content {
-		childMap, ok := child.(map[string]any)
-		if !ok {
-			continue
-		}
-		if childType, _ := childMap["type"].(string); childType == "text" {
-			if text, ok := childMap["text"].(string); ok {
-				b.WriteString(text)
-			}
-		} else {
-			// Recurse into nested structures (e.g., listItems -> paragraphs -> text)
-			b.WriteString(extractNodeText(childMap))
-		}
-	}
-	return b.String()
 }

@@ -46,16 +46,14 @@ export interface BlogManifestPost {
 
 export interface BlogPost {
   description: string;
-  format: "markdown";
   headings?: BlogHeading[];
-  markdown: string;
   publishedAt: string;
   readTimeMinutes: number;
   section: string;
   slug: string;
   tags: string[];
   title: string;
-  contentJson?: Record<string, unknown>;
+  content?: Record<string, unknown>;
   icon?: string;
   coverPhoto?: string;
 }

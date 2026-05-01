@@ -229,26 +229,14 @@ func TestGetGitHubStats_CacheExpiration(t *testing.T) {
 	}
 }
 
-func TestGetBlogPost(t *testing.T) {
+func TestGetBlogPost_NoDB(t *testing.T) {
 	router, _ := setupRouter()
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/api/blogs/crdts-101-a-primer", nil)
 	router.ServeHTTP(w, req)
 
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("GetBlogPost status = %d, want %d", w.Code, http.StatusNotFound)
-	}
-}
-
-func TestGetBlogPost_NotFound(t *testing.T) {
-	router, _ := setupRouter()
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/api/blogs/does-not-exist", nil)
-	router.ServeHTTP(w, req)
-
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("GetBlogPost status = %d, want %d", w.Code, http.StatusNotFound)
+	if w.Code != http.StatusServiceUnavailable {
+		t.Fatalf("GetBlogPost status = %d, want %d (no DB available)", w.Code, http.StatusServiceUnavailable)
 	}
 }

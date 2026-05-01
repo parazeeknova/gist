@@ -67,41 +67,21 @@ func (h *Handlers) GetProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, store.Projects)
 }
 
-// GetBlogPost returns a blog post by slug (DB-backed when available, else file-backed)
+// GetBlogPost returns a blog post by slug from the database.
 func (h *Handlers) GetBlogPost(c *gin.Context) {
 	slug := c.Param("slug")
 
-	if h.pageService != nil {
-		h.getBlogPostFromDB(c, slug)
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "blog service unavailable"})
 		return
 	}
 
-	h.getBlogPostFromFile(c, slug)
-}
-
-func (h *Handlers) getBlogPostFromDB(c *gin.Context, slug string) {
 	post, err := h.pageService.GetBlogPost(c.Request.Context(), slug)
 	if err != nil {
 		if errors.Is(err, services.ErrBlogPostNotFound) {
-			h.getBlogPostFromFile(c, slug)
-			return
-		}
-		log.Printf("blog post load error for slug %s: %v", slug, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog post"})
-		return
-	}
-
-	c.JSON(http.StatusOK, post)
-}
-
-func (h *Handlers) getBlogPostFromFile(c *gin.Context, slug string) {
-	post, err := store.GetBlogPost(slug)
-	if err != nil {
-		if errors.Is(err, store.ErrBlogPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "blog post not found"})
 			return
 		}
-
 		log.Printf("blog post load error for slug %s: %v", slug, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog post"})
 		return
@@ -110,17 +90,13 @@ func (h *Handlers) getBlogPostFromFile(c *gin.Context, slug string) {
 	c.JSON(http.StatusOK, post)
 }
 
-// GetBlogManifest returns the blog manifest (DB-backed when available, else file-backed)
+// GetBlogManifest returns the blog manifest from the database.
 func (h *Handlers) GetBlogManifest(c *gin.Context) {
-	if h.pageService != nil {
-		h.getBlogManifestFromDB(c)
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "blog service unavailable"})
 		return
 	}
 
-	c.JSON(http.StatusOK, store.GetBlogManifest())
-}
-
-func (h *Handlers) getBlogManifestFromDB(c *gin.Context) {
 	manifest, err := h.pageService.GetBlogManifest(c.Request.Context())
 	if err != nil {
 		log.Printf("blog manifest error: %v", err)

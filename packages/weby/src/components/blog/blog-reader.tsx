@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { markdownToHtml } from "../../lib/markdown-to-html";
 import { BlogFileTree } from "./blog-file-tree";
 import { BlogTableOfContents } from "./blog-table-of-contents";
 import { ReadonlyBlogEditor } from "./readonly-blog-editor";
@@ -43,8 +42,6 @@ export const BlogReader = ({
   const asideRef = useRef<HTMLElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const headingsRef = useRef<TiptapHeading[]>([]);
-
-  const html = useMemo(() => (post.markdown ? markdownToHtml(post.markdown) : ""), [post.markdown]);
 
   const handleHeadingsExtracted = useCallback((headings: TiptapHeading[]) => {
     // Only update if headings actually changed to avoid infinite loops
@@ -237,7 +234,10 @@ export const BlogReader = ({
               </p>
             </header>
 
-            <ReadonlyBlogEditor html={html} onHeadingsExtracted={handleHeadingsExtracted} />
+            <ReadonlyBlogEditor
+              content={post.content ?? null}
+              onHeadingsExtracted={handleHeadingsExtracted}
+            />
 
             <div
               className={`sticky bottom-0 mt-8 flex items-center justify-between border-t pt-6 text-[13px] theme-bg ${

@@ -78,8 +78,6 @@ type GraphQLResponse struct {
 // BlogPost represents a blog post response
 type BlogPost struct {
 	Description     string          `json:"description"`
-	Format          string          `json:"format"`
-	Markdown        string          `json:"markdown"`
 	PublishedAt     string          `json:"publishedAt"`
 	ReadTimeMinutes int             `json:"readTimeMinutes"`
 	Section         string          `json:"section"`

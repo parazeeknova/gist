@@ -6,10 +6,20 @@ import { BlogReaderPanel } from "./blog-reader-panel";
 import { renderWithQuery } from "../../test/utils";
 
 const mockPost: BlogPost = {
+  content: {
+    content: [
+      { attrs: { level: 1 }, content: [{ text: "why crdts?", type: "text" }], type: "heading" },
+      {
+        attrs: { level: 2 },
+        content: [{ text: "core properties", type: "text" }],
+        type: "heading",
+      },
+      { attrs: { level: 2 }, content: [{ text: "types of crdts", type: "text" }], type: "heading" },
+    ],
+    type: "doc",
+  },
   description:
     "Conflict-free Replicated Data Types (CRDTs) are a class of data structures that allow replicated data to be merged automatically, without conflicts. They are the backbone of many modern distributed systems.",
-  format: "markdown",
-  markdown: "# why crdts?\n\n## core properties\n\n## types of crdts",
   publishedAt: "2025-08-28",
   readTimeMinutes: 8,
   section: "distributed-systems",
@@ -59,9 +69,17 @@ describe("BlogReader", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce({
       json: () =>
         Promise.resolve({
+          content: {
+            content: [
+              {
+                attrs: { level: 1 },
+                content: [{ text: "why crdts?", type: "text" }],
+                type: "heading",
+              },
+            ],
+            type: "doc",
+          },
           description: "test description",
-          format: "markdown",
-          markdown: "# why crdts?",
           publishedAt: "2025-08-28",
           readTimeMinutes: 8,
           section: "distributed-systems",
