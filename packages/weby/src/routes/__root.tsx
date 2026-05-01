@@ -6,8 +6,28 @@ import { useRef, useState } from "react";
 
 import appCss from "../styles.css?url";
 
-const createQueryClient = () =>
-  new QueryClient({
+const APP_VERSION = import.meta.env.VITE_APP_VERSION;
+const VERSION_STORAGE_KEY = "app-version";
+// Default key used by createAsyncStoragePersister
+const QUERY_CACHE_KEY = "REACT_QUERY_OFFLINE_CACHE";
+
+// Clear persisted query cache when the app version changes so users
+// always get fresh data after a deploy instead of stale browser-cached output.
+const clearStaleCacheOnVersionBump = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const storedVersion = window.localStorage.getItem(VERSION_STORAGE_KEY);
+  if (storedVersion !== APP_VERSION) {
+    window.localStorage.removeItem(QUERY_CACHE_KEY);
+    window.localStorage.setItem(VERSION_STORAGE_KEY, APP_VERSION);
+  }
+};
+
+const createQueryClient = () => {
+  clearStaleCacheOnVersionBump();
+
+  return new QueryClient({
     defaultOptions: {
       queries: {
         gcTime: 1000 * 60 * 60 * 24,
@@ -19,8 +39,10 @@ const createQueryClient = () =>
       },
     },
   });
+};
 
 const persister = createAsyncStoragePersister({
+  key: QUERY_CACHE_KEY,
   storage: typeof window === "undefined" ? undefined : window.localStorage,
 });
 
