@@ -2,20 +2,20 @@ package database
 
 import (
 	"context"
+	"embed"
 	"fmt"
-	"io/fs"
 	"log"
-	"os"
-	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// MigrateUp runs all SQL migration files from the migrations directory against the pool.
-// Migrations are run in filename order and are idempotent.
+//go:embed migrations/*.sql
+var embeddedMigrations embed.FS
+
+// MigrateUp runs all SQL migration files from the embedded migrations directory against the pool.
+// Migrations are run in filename order and are idempotent (use CREATE TABLE IF NOT EXISTS).
 func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
 	migrations, err := readMigrations()
 	if err != nil {
@@ -58,11 +58,9 @@ type migration struct {
 }
 
 func readMigrations() ([]migration, error) {
-	migrationsDir := getMigrationsDir()
-
-	entries, err := fs.ReadDir(os.DirFS(migrationsDir), ".")
+	entries, err := embeddedMigrations.ReadDir("migrations")
 	if err != nil {
-		return nil, fmt.Errorf("read migrations directory %s: %w", migrationsDir, err)
+		return nil, fmt.Errorf("read embedded migrations dir: %w", err)
 	}
 
 	var migrations []migration
@@ -71,9 +69,9 @@ func readMigrations() ([]migration, error) {
 			continue
 		}
 
-		content, err := os.ReadFile(filepath.Join(migrationsDir, entry.Name()))
+		content, err := embeddedMigrations.ReadFile("migrations/" + entry.Name())
 		if err != nil {
-			return nil, fmt.Errorf("read migration file %s: %w", entry.Name(), err)
+			return nil, fmt.Errorf("read embedded migration %s: %w", entry.Name(), err)
 		}
 
 		migrations = append(migrations, migration{
@@ -87,10 +85,4 @@ func readMigrations() ([]migration, error) {
 	})
 
 	return migrations, nil
-}
-
-func getMigrationsDir() string {
-	_, filename, _, _ := runtime.Caller(0)
-	databaseDir := filepath.Dir(filename)
-	return filepath.Join(databaseDir, "migrations")
 }

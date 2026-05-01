@@ -65,6 +65,11 @@ func main() {
 	dbAvailable := database.InitPool(context.Background(), dbCfg) == nil
 	if !dbAvailable {
 		log.Printf("database init warning (blog endpoints will fall back to file-based store)")
+	} else {
+		pool := database.GetPool()
+		if err := database.MigrateUp(context.Background(), pool); err != nil {
+			log.Printf("migration warning: %v", err)
+		}
 	}
 
 	// Create handlers with configuration
