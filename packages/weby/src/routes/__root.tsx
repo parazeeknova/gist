@@ -69,8 +69,13 @@ const RootComponent = () => {
 };
 
 const RootShell = ({ children }: { children: React.ReactNode }) => (
-  <html lang="en">
+  <html lang="en" suppressHydrationWarning>
     <head>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){var t=localStorage.getItem("theme")||"dark";document.documentElement.dataset.theme=t})()`,
+        }}
+      />
       <HeadContent />
     </head>
     <body>
@@ -89,34 +94,15 @@ export const Route = createRootRoute({
         rel: "stylesheet",
       },
       {
-        href: "/apple-touch-icon.png",
-        rel: "apple-touch-icon",
-        sizes: "180x180",
-      },
-      {
-        href: "/favicon-32x32.png",
+        href: "/verso.svg",
         rel: "icon",
-        sizes: "32x32",
-        type: "image/png",
-      },
-      {
-        href: "/favicon-16x16.png",
-        rel: "icon",
-        sizes: "16x16",
-        type: "image/png",
-      },
-      {
-        href: "/manifest.json",
-        rel: "manifest",
+        sizes: "any",
+        type: "image/svg+xml",
       },
       {
         color: "#000000",
-        href: "/gist.svg",
+        href: "/verso.svg",
         rel: "mask-icon",
-      },
-      {
-        href: "/gist.svg",
-        rel: "shortcut icon",
       },
     ],
     meta: [

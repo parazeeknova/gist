@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 let listeners: (() => void)[] = [];
 
@@ -24,8 +24,26 @@ const notify = () => {
   }
 };
 
+let initialized = false;
+
+const ensureInitialized = () => {
+  if (initialized) {
+    return;
+  }
+  initialized = true;
+  if (typeof document !== "undefined" && !document.documentElement.dataset.theme) {
+    const stored = localStorage.getItem("theme") || "dark";
+    document.documentElement.dataset.theme = stored;
+    notify();
+  }
+};
+
 export const useTheme = () => {
   const isDarkMode = useSyncExternalStore(subscribe, getThemeSnapshot, getThemeSnapshot);
+
+  useEffect(() => {
+    ensureInitialized();
+  }, []);
 
   const toggleTheme = useCallback(() => {
     const next = isDarkMode ? "light" : "dark";
