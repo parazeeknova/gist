@@ -113,6 +113,30 @@ const Home = function Home() {
   const { data: manifest = [] } = useBlogManifest();
   const isPending = useIsFetchingData();
 
+  // Auto-select first project readme when no blog posts exist
+  useEffect(() => {
+    if (!projects || projects.length === 0) {
+      return;
+    }
+    if (selectedProject) {
+      return;
+    }
+    const hasPosts = manifest.some((s) => s.children.length > 0);
+    if (hasPosts) {
+      return;
+    }
+    const firstWithReadme = projects.find((p) => p.readmeUrl);
+    if (firstWithReadme?.readmeUrl) {
+      setSelectedProject({
+        productUrl: firstWithReadme.productUrl,
+        readmeUrl: firstWithReadme.readmeUrl,
+        repoUrl: firstWithReadme.repoUrl,
+        title: firstWithReadme.title,
+      });
+      setMobileView("blogs");
+    }
+  }, [projects, manifest, selectedProject]);
+
   // Read initial theme from localStorage on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -277,7 +301,7 @@ const Home = function Home() {
             onSwitchToAbout={() => setMobileView("about")}
             onToggleTheme={toggleTheme}
             projects={projects}
-            slug="crdts-101-a-primer"
+            slug=""
             themeButtonRef={themeRefsRight.buttonRef as React.RefObject<HTMLButtonElement | null>}
             themeIndicatorRef={
               themeRefsRight.indicatorRef as React.RefObject<HTMLSpanElement | null>

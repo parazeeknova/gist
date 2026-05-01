@@ -20,6 +20,9 @@ type Handlers struct {
 	statsCache    *cache.StatsCache
 	config        Config
 	statsGroup    singleflight.Group
+
+	// Optional DB-backed page service; if nil, falls back to file-based store
+	pageService *services.PageService
 }
 
 // Config holds application configuration
@@ -37,9 +40,24 @@ func New(cfg Config) *Handlers {
 	}
 }
 
+// NewWithDB creates a new handlers instance with database-backed page service
+func NewWithDB(cfg Config, pageService *services.PageService) *Handlers {
+	h := New(cfg)
+	h.pageService = pageService
+	return h
+}
+
 // Health returns health check handler
 func (h *Handlers) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// MigrationStatus is a handler that signals to infrastructure tooling
+// that DB migrations have completed successfully.
+// Returns 200 with {"status":"complete"} so CI health checks can
+// gate deployment on migration readiness rather than just /health.
+func (h *Handlers) MigrationStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "complete"})
 }
 
 // GetProfile returns profile data
@@ -57,17 +75,21 @@ func (h *Handlers) GetProjects(c *gin.Context) {
 	c.JSON(http.StatusOK, store.Projects)
 }
 
-// GetBlogPost returns a blog post by slug
+// GetBlogPost returns a blog post by slug from the database.
 func (h *Handlers) GetBlogPost(c *gin.Context) {
 	slug := c.Param("slug")
 
-	post, err := store.GetBlogPost(slug)
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "blog service unavailable"})
+		return
+	}
+
+	post, err := h.pageService.GetBlogPost(c.Request.Context(), slug)
 	if err != nil {
-		if errors.Is(err, store.ErrBlogPostNotFound) {
+		if errors.Is(err, services.ErrBlogPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "blog post not found"})
 			return
 		}
-
 		log.Printf("blog post load error for slug %s: %v", slug, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog post"})
 		return
@@ -76,9 +98,25 @@ func (h *Handlers) GetBlogPost(c *gin.Context) {
 	c.JSON(http.StatusOK, post)
 }
 
-// GetBlogManifest returns the blog manifest
+// GetBlogManifest returns the blog manifest from the database.
 func (h *Handlers) GetBlogManifest(c *gin.Context) {
-	c.JSON(http.StatusOK, store.GetBlogManifest())
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "blog service unavailable"})
+		return
+	}
+
+	manifest, err := h.pageService.GetBlogManifest(c.Request.Context())
+	if err != nil {
+		log.Printf("blog manifest error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog manifest"})
+		return
+	}
+
+	if manifest == nil {
+		manifest = []models.BlogManifestSection{}
+	}
+
+	c.JSON(http.StatusOK, manifest)
 }
 
 // GetGitHubStats returns GitHub statistics with caching
@@ -90,25 +128,21 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 
 	username := h.config.GitHubUsername
 
-	// Check cache first
 	if cached, ok := h.statsCache.Get(username); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
 
-	// Use singleflight to prevent thundering herd
 	result, err, _ := h.statsGroup.Do(username, func() (interface{}, error) {
 		stats, computeErr := h.githubService.ComputeStats(c.Request.Context(), h.config.GitHubToken, username)
 		if computeErr != nil {
 			return nil, computeErr
 		}
-		// Cache the result
 		h.statsCache.Set(username, stats)
 		return stats, nil
 	})
 
 	if err != nil {
-		// Log error server-side with details, return safe error to client
 		log.Printf("GitHub stats error for user %s: %v", username, err)
 		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to fetch GitHub stats"})
 		return
@@ -116,4 +150,113 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 
 	stats := result.(models.GitHubStats)
 	c.JSON(http.StatusOK, stats)
+}
+
+// ConsolePageSummary is the lightweight response for the console page list.
+type ConsolePageSummary struct {
+	ID          string `json:"id"`
+	SlugID      string `json:"slugId"`
+	Title       string `json:"title"`
+	Icon        string `json:"icon"`
+	IsPublished bool   `json:"isPublished"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+// GetConsolePages returns all pages for the console (requires auth via middleware).
+func (h *Handlers) GetConsolePages(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusOK, []ConsolePageSummary{})
+		return
+	}
+
+	pages, err := h.pageService.ListAllPages(c.Request.Context())
+	if err != nil {
+		log.Printf("console pages error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load pages"})
+		return
+	}
+
+	summaries := make([]ConsolePageSummary, 0, len(pages))
+	for _, p := range pages {
+		summaries = append(summaries, ConsolePageSummary{
+			ID:          p.ID,
+			SlugID:      p.SlugID,
+			Title:       p.Title,
+			Icon:        p.Icon,
+			IsPublished: p.IsPublished,
+			CreatedAt:   p.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:   p.UpdatedAt.Format(time.RFC3339),
+		})
+	}
+
+	c.JSON(http.StatusOK, summaries)
+}
+
+// GetConsolePage returns a single page by ID for the console (requires auth via middleware).
+func (h *Handlers) GetConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+		return
+	}
+
+	id := c.Param("id")
+
+	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		log.Printf("console page error for id %s: %v", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          page.ID,
+		"slugId":      page.SlugID,
+		"title":       page.Title,
+		"icon":        page.Icon,
+		"coverPhoto":  page.CoverPhoto,
+		"contentJson": page.ContentJSON,
+		"textContent": page.TextContent,
+		"isPublished": page.IsPublished,
+		"createdAt":   page.CreatedAt.Format(time.RFC3339),
+		"updatedAt":   page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// GetStats returns aggregate counts (public, no auth required).
+func (h *Handlers) GetStats(c *gin.Context) {
+	pages := 0
+	posts := 0
+	readmes := 0
+
+	if h.pageService != nil {
+		all, err := h.pageService.ListAllPages(c.Request.Context())
+		if err != nil {
+			log.Printf("stats: list all pages error: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load stats"})
+			return
+		}
+		pages = len(all)
+		for _, p := range all {
+			if p.IsPublished {
+				posts++
+			}
+		}
+	}
+
+	for _, p := range store.Projects {
+		if p.ReadmeURL != "" {
+			readmes++
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"pages":   pages,
+		"posts":   posts,
+		"readmes": readmes,
+	})
 }

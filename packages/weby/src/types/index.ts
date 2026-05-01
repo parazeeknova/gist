@@ -46,13 +46,54 @@ export interface BlogManifestPost {
 
 export interface BlogPost {
   description: string;
-  format: "markdown";
   headings?: BlogHeading[];
-  markdown: string;
   publishedAt: string;
   readTimeMinutes: number;
   section: string;
   slug: string;
   tags: string[];
   title: string;
+  content?: Record<string, unknown>;
+  icon?: string;
+  coverPhoto?: string;
+}
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  isOwner: boolean;
+}
+
+export interface BootstrapState {
+  bootstrapped: boolean;
+}
+
+export interface Stats {
+  pages: number;
+  posts: number;
+  readmes: number;
+}
+
+export interface ConsolePage {
+  id: string;
+  slugId: string;
+  title: string;
+  icon: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConsolePageDetail {
+  id: string;
+  slugId: string;
+  title: string;
+  icon: string;
+  coverPhoto: string;
+  contentJson: string;
+  textContent: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

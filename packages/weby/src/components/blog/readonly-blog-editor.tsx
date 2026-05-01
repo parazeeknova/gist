@@ -17,11 +17,11 @@ export interface TiptapHeading {
 }
 
 interface ReadonlyBlogEditorProps {
-  html: string;
+  content: Record<string, unknown> | null;
   onHeadingsExtracted?: (headings: TiptapHeading[]) => void;
 }
 
-export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEditorProps) => {
+export const ReadonlyBlogEditor = ({ content, onHeadingsExtracted }: ReadonlyBlogEditorProps) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const extractHeadings = useCallback(() => {
@@ -43,7 +43,7 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
   }, [onHeadingsExtracted]);
 
   const editor = useEditor({
-    content: html,
+    content: content ?? { content: [], type: "doc" },
     editable: false,
     extensions: [
       StarterKit.configure({
@@ -82,8 +82,8 @@ export const ReadonlyBlogEditor = ({ html, onHeadingsExtracted }: ReadonlyBlogEd
     if (!editor) {
       return;
     }
-    editor.commands.setContent(html);
-  }, [editor, html]);
+    editor.commands.setContent(content ?? { content: [], type: "doc" });
+  }, [editor, content]);
 
   // Collapse blank lines in code blocks
   useEffect(() => {

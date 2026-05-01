@@ -1,12 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getBlogPost } from "../../server/backy";
+import { getBlogPost, BackyError } from "../../server/backy";
 
 export const Route = createFileRoute("/api/blogs/$slug")({
   server: {
     handlers: {
       GET: async ({ params }) => {
-        const post = await getBlogPost(params.slug);
-        return Response.json(post);
+        try {
+          return Response.json(await getBlogPost(params.slug));
+        } catch (error) {
+          if (error instanceof BackyError) {
+            return Response.json({ error: "Blog post not found" }, { status: error.status });
+          }
+          throw error;
+        }
       },
     },
   },

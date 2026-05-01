@@ -6,7 +6,7 @@ export const Route = createFileRoute("/api/blogs")({
     handlers: {
       GET: async () => {
         const manifest = await getBlogManifest();
-        return Response.json(manifest);
+        return Response.json(manifest ?? []);
       },
     },
   },

@@ -1,11 +1,13 @@
 {
   "name": "@verso/backy",
-  "version": "0.0.49",
+  "version": "0.0.63",
   "private": true,
   "scripts": {
     "build": "go build -o bin/backy",
     "check": "./scripts/check.sh",
     "check-types": "go vet ./...",
+    "db:reset": "go run ./cmd/migrate reset",
+    "db:migrate": "go run ./cmd/migrate up",
     "dev": "go run main.go",
     "format": "./scripts/format.sh",
     "start": "./bin/backy",
