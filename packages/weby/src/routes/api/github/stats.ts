@@ -6,6 +6,9 @@ export const Route = createFileRoute("/api/github/stats")({
     handlers: {
       GET: async () => {
         const stats = await getGitHubStats();
+        if (!stats) {
+          return Response.json({ error: "Backend unavailable" }, { status: 502 });
+        }
         return Response.json(stats);
       },
     },

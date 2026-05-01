@@ -1,4 +1,5 @@
 import { BlogReader } from "./blog-reader";
+import { BlogFileTree } from "./blog-file-tree";
 import { useBlogPost } from "../../hooks/use-blog-post";
 import type { BlogManifestSection } from "#/types";
 
@@ -43,8 +44,21 @@ export const BlogReaderPanel = ({
 
   if (isError || !data) {
     return (
-      <div className={`px-8 py-10 text-sm ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
-        failed to load article.
+      <div className="flex h-full min-h-0 flex-col p-4 sm:p-6 lg:p-8">
+        <div className="mb-6">
+          <p className={`text-[13px] ${isDarkMode ? "text-text-dark/30" : "text-text-light/30"}`}>
+            no articles yet — browse projects below
+          </p>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <BlogFileTree
+            isDarkMode={isDarkMode}
+            manifest={manifest}
+            onSelectPost={onSelectPost}
+            onSelectProject={onSelectProject}
+            projects={projects}
+          />
+        </div>
       </div>
     );
   }

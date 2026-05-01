@@ -6,7 +6,7 @@ export const Route = createFileRoute("/api/experience")({
     handlers: {
       GET: async () => {
         const experience = await getExperience();
-        return Response.json(experience);
+        return Response.json(experience ?? []);
       },
     },
   },

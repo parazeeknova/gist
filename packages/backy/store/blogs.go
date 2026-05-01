@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 
 	"github.com/verso/backy/models"
 )
@@ -22,28 +20,7 @@ type blogSource struct {
 	Title           string
 }
 
-// getContentPath returns the absolute path to the content directory
-func getContentPath() string {
-	// Get the directory of the current source file
-	_, filename, _, _ := runtime.Caller(0)
-	// filename is .../packages/backy/store/blogs.go
-	// We want .../packages/backy/content
-	storeDir := filepath.Dir(filename)
-	backyDir := filepath.Dir(storeDir)
-	return filepath.Join(backyDir, "content")
-}
-
-var blogSources = map[string]blogSource{
-	"crdts-101-a-primer": {
-		Description:     "Conflict-free Replicated Data Types (CRDTs) are a class of data structures that allow replicated data to be merged automatically, without conflicts. They are the backbone of many modern distributed systems.",
-		FilePath:        filepath.Join(getContentPath(), "blogs", "distributed-systems", "crdt.md"),
-		PublishedAt:     "2025-08-28",
-		ReadTimeMinutes: 8,
-		Section:         "distributed-systems",
-		Tags:            []string{"distributed-systems", "crdt", "consistency"},
-		Title:           "CRDTs 101: A Primer",
-	},
-}
+var blogSources = map[string]blogSource{}
 
 func GetBlogPost(slug string) (models.BlogPost, error) {
 	source, ok := blogSources[slug]

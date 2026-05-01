@@ -6,6 +6,9 @@ export const Route = createFileRoute("/api/profile")({
     handlers: {
       GET: async () => {
         const profile = await getProfile();
+        if (!profile) {
+          return Response.json({ error: "Backend unavailable" }, { status: 502 });
+        }
         return Response.json(profile);
       },
     },

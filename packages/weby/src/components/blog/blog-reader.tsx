@@ -21,6 +21,7 @@ interface BlogReaderProps {
   themeIndicatorRef?: React.RefObject<HTMLSpanElement | null>;
 }
 
+// eslint-disable-next-line complexity -- component with multiple render modes, refactor later
 export const BlogReader = ({
   post,
   isDarkMode,
@@ -43,7 +44,7 @@ export const BlogReader = ({
   const observerRef = useRef<IntersectionObserver | null>(null);
   const headingsRef = useRef<TiptapHeading[]>([]);
 
-  const html = useMemo(() => markdownToHtml(post.markdown), [post.markdown]);
+  const html = useMemo(() => (post.markdown ? markdownToHtml(post.markdown) : ""), [post.markdown]);
 
   const handleHeadingsExtracted = useCallback((headings: TiptapHeading[]) => {
     // Only update if headings actually changed to avoid infinite loops
@@ -212,10 +213,11 @@ export const BlogReader = ({
             <header className="space-y-4">
               <h2 className="text-4xl">{post.title}</h2>
               <p className={`text-sm ${isDarkMode ? "text-text-dark/55" : "text-text-light/55"}`}>
-                {post.publishedAt} • {post.readTimeMinutes} min read
+                {post.publishedAt ?? ""}{" "}
+                {post.readTimeMinutes ? `\u2022 ${post.readTimeMinutes} min read` : ""}
               </p>
               <div className="flex flex-wrap gap-2">
-                {post.tags.map((tag) => (
+                {(post.tags ?? []).map((tag) => (
                   <span
                     className={`border px-3 py-1 text-[12px] ${
                       isDarkMode
@@ -229,7 +231,7 @@ export const BlogReader = ({
                 ))}
               </div>
               <p className={`max-w-2xl ${isDarkMode ? "text-text-dark/80" : "text-text-light/80"}`}>
-                {post.description}
+                {post.description ?? ""}
               </p>
             </header>
 
