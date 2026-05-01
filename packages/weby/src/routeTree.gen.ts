@@ -9,14 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root";
+import { Route as ConsoleRouteImport } from "./routes/console";
 import { Route as IndexRouteImport } from "./routes/index";
 import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
 import { Route as ApiProfileRouteImport } from "./routes/api/profile";
 import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
 import { Route as ApiBlogsRouteImport } from "./routes/api/blogs";
 import { Route as ApiGithubStatsRouteImport } from "./routes/api/github/stats";
+import { Route as ApiConsolePagesRouteImport } from "./routes/api/console/pages";
 import { Route as ApiBlogsSlugRouteImport } from "./routes/api/blogs.$slug";
+import { Route as ApiAuthRefreshRouteImport } from "./routes/api/auth/refresh";
+import { Route as ApiAuthMeRouteImport } from "./routes/api/auth/me";
+import { Route as ApiAuthLogoutRouteImport } from "./routes/api/auth/logout";
+import { Route as ApiAuthLoginRouteImport } from "./routes/api/auth/login";
+import { Route as ApiAuthBootstrapStateRouteImport } from "./routes/api/auth/bootstrap-state";
+import { Route as ApiConsolePagesIdRouteImport } from "./routes/api/console/pages.$id";
 
+const ConsoleRoute = ConsoleRouteImport.update({
+  id: "/console",
+  path: "/console",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
@@ -47,81 +60,178 @@ const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   path: "/api/github/stats",
   getParentRoute: () => rootRouteImport,
 } as any);
+const ApiConsolePagesRoute = ApiConsolePagesRouteImport.update({
+  id: "/api/console/pages",
+  path: "/api/console/pages",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const ApiBlogsSlugRoute = ApiBlogsSlugRouteImport.update({
   id: "/$slug",
   path: "/$slug",
   getParentRoute: () => ApiBlogsRoute,
 } as any);
+const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
+  id: "/api/auth/refresh",
+  path: "/api/auth/refresh",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
+  id: "/api/auth/me",
+  path: "/api/auth/me",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: "/api/auth/logout",
+  path: "/api/auth/logout",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: "/api/auth/login",
+  path: "/api/auth/login",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
+  id: "/api/auth/bootstrap-state",
+  path: "/api/auth/bootstrap-state",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
+  id: "/$id",
+  path: "/$id",
+  getParentRoute: () => ApiConsolePagesRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/console": typeof ConsoleRoute;
   "/api/blogs": typeof ApiBlogsRouteWithChildren;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
+  "/api/auth/login": typeof ApiAuthLoginRoute;
+  "/api/auth/logout": typeof ApiAuthLogoutRoute;
+  "/api/auth/me": typeof ApiAuthMeRoute;
+  "/api/auth/refresh": typeof ApiAuthRefreshRoute;
   "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
+  "/api/console/pages": typeof ApiConsolePagesRouteWithChildren;
   "/api/github/stats": typeof ApiGithubStatsRoute;
+  "/api/console/pages/$id": typeof ApiConsolePagesIdRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/console": typeof ConsoleRoute;
   "/api/blogs": typeof ApiBlogsRouteWithChildren;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
+  "/api/auth/login": typeof ApiAuthLoginRoute;
+  "/api/auth/logout": typeof ApiAuthLogoutRoute;
+  "/api/auth/me": typeof ApiAuthMeRoute;
+  "/api/auth/refresh": typeof ApiAuthRefreshRoute;
   "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
+  "/api/console/pages": typeof ApiConsolePagesRouteWithChildren;
   "/api/github/stats": typeof ApiGithubStatsRoute;
+  "/api/console/pages/$id": typeof ApiConsolePagesIdRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
+  "/console": typeof ConsoleRoute;
   "/api/blogs": typeof ApiBlogsRouteWithChildren;
   "/api/experience": typeof ApiExperienceRoute;
   "/api/profile": typeof ApiProfileRoute;
   "/api/projects": typeof ApiProjectsRoute;
+  "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
+  "/api/auth/login": typeof ApiAuthLoginRoute;
+  "/api/auth/logout": typeof ApiAuthLogoutRoute;
+  "/api/auth/me": typeof ApiAuthMeRoute;
+  "/api/auth/refresh": typeof ApiAuthRefreshRoute;
   "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
+  "/api/console/pages": typeof ApiConsolePagesRouteWithChildren;
   "/api/github/stats": typeof ApiGithubStatsRoute;
+  "/api/console/pages/$id": typeof ApiConsolePagesIdRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | "/"
+    | "/console"
     | "/api/blogs"
     | "/api/experience"
     | "/api/profile"
     | "/api/projects"
+    | "/api/auth/bootstrap-state"
+    | "/api/auth/login"
+    | "/api/auth/logout"
+    | "/api/auth/me"
+    | "/api/auth/refresh"
     | "/api/blogs/$slug"
-    | "/api/github/stats";
+    | "/api/console/pages"
+    | "/api/github/stats"
+    | "/api/console/pages/$id";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
+    | "/console"
     | "/api/blogs"
     | "/api/experience"
     | "/api/profile"
     | "/api/projects"
+    | "/api/auth/bootstrap-state"
+    | "/api/auth/login"
+    | "/api/auth/logout"
+    | "/api/auth/me"
+    | "/api/auth/refresh"
     | "/api/blogs/$slug"
-    | "/api/github/stats";
+    | "/api/console/pages"
+    | "/api/github/stats"
+    | "/api/console/pages/$id";
   id:
     | "__root__"
     | "/"
+    | "/console"
     | "/api/blogs"
     | "/api/experience"
     | "/api/profile"
     | "/api/projects"
+    | "/api/auth/bootstrap-state"
+    | "/api/auth/login"
+    | "/api/auth/logout"
+    | "/api/auth/me"
+    | "/api/auth/refresh"
     | "/api/blogs/$slug"
-    | "/api/github/stats";
+    | "/api/console/pages"
+    | "/api/github/stats"
+    | "/api/console/pages/$id";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  ConsoleRoute: typeof ConsoleRoute;
   ApiBlogsRoute: typeof ApiBlogsRouteWithChildren;
   ApiExperienceRoute: typeof ApiExperienceRoute;
   ApiProfileRoute: typeof ApiProfileRoute;
   ApiProjectsRoute: typeof ApiProjectsRoute;
+  ApiAuthBootstrapStateRoute: typeof ApiAuthBootstrapStateRoute;
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute;
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute;
+  ApiAuthMeRoute: typeof ApiAuthMeRoute;
+  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute;
+  ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren;
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute;
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/console": {
+      id: "/console";
+      path: "/console";
+      fullPath: "/console";
+      preLoaderRoute: typeof ConsoleRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/": {
       id: "/";
       path: "/";
@@ -164,12 +274,61 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiGithubStatsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/api/console/pages": {
+      id: "/api/console/pages";
+      path: "/api/console/pages";
+      fullPath: "/api/console/pages";
+      preLoaderRoute: typeof ApiConsolePagesRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/api/blogs/$slug": {
       id: "/api/blogs/$slug";
       path: "/$slug";
       fullPath: "/api/blogs/$slug";
       preLoaderRoute: typeof ApiBlogsSlugRouteImport;
       parentRoute: typeof ApiBlogsRoute;
+    };
+    "/api/auth/refresh": {
+      id: "/api/auth/refresh";
+      path: "/api/auth/refresh";
+      fullPath: "/api/auth/refresh";
+      preLoaderRoute: typeof ApiAuthRefreshRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/auth/me": {
+      id: "/api/auth/me";
+      path: "/api/auth/me";
+      fullPath: "/api/auth/me";
+      preLoaderRoute: typeof ApiAuthMeRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/auth/logout": {
+      id: "/api/auth/logout";
+      path: "/api/auth/logout";
+      fullPath: "/api/auth/logout";
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/auth/login": {
+      id: "/api/auth/login";
+      path: "/api/auth/login";
+      fullPath: "/api/auth/login";
+      preLoaderRoute: typeof ApiAuthLoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/auth/bootstrap-state": {
+      id: "/api/auth/bootstrap-state";
+      path: "/api/auth/bootstrap-state";
+      fullPath: "/api/auth/bootstrap-state";
+      preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/api/console/pages/$id": {
+      id: "/api/console/pages/$id";
+      path: "/$id";
+      fullPath: "/api/console/pages/$id";
+      preLoaderRoute: typeof ApiConsolePagesIdRouteImport;
+      parentRoute: typeof ApiConsolePagesRoute;
     };
   }
 }
@@ -184,12 +343,31 @@ const ApiBlogsRouteChildren: ApiBlogsRouteChildren = {
 
 const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(ApiBlogsRouteChildren);
 
+interface ApiConsolePagesRouteChildren {
+  ApiConsolePagesIdRoute: typeof ApiConsolePagesIdRoute;
+}
+
+const ApiConsolePagesRouteChildren: ApiConsolePagesRouteChildren = {
+  ApiConsolePagesIdRoute: ApiConsolePagesIdRoute,
+};
+
+const ApiConsolePagesRouteWithChildren = ApiConsolePagesRoute._addFileChildren(
+  ApiConsolePagesRouteChildren,
+);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ConsoleRoute: ConsoleRoute,
   ApiBlogsRoute: ApiBlogsRouteWithChildren,
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,
+  ApiAuthBootstrapStateRoute: ApiAuthBootstrapStateRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthMeRoute: ApiAuthMeRoute,
+  ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiConsolePagesRoute: ApiConsolePagesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
 };
 export const routeTree = rootRouteImport

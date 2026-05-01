@@ -1,4 +1,14 @@
-import type { BlogManifestSection, BlogPost, ExperienceItem, Profile, Project } from "#/types";
+import type {
+  AuthUser,
+  BlogManifestSection,
+  BlogPost,
+  BootstrapState,
+  ConsolePage,
+  ConsolePageDetail,
+  ExperienceItem,
+  Profile,
+  Project,
+} from "#/types";
 
 const getBackyOrigin = (): string => {
   const origin = process.env.BACKY_ORIGIN;
@@ -8,19 +18,28 @@ const getBackyOrigin = (): string => {
   return "http://localhost:7000/";
 };
 
-const fetchBacky = async <T>(endpoint: string): Promise<T> => {
+const fetchBacky = async <T>(endpoint: string, init?: RequestInit): Promise<T | null> => {
   const origin = getBackyOrigin();
   const url = new URL(`api/${endpoint}`, origin).toString();
 
-  const response = await fetch(url, {
-    headers: { Accept: "application/json" },
-  });
+  const callerHeaders = init?.headers as Record<string, string> | undefined;
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...callerHeaders,
+  };
+
+  const response = await fetch(url, { headers });
 
   if (!response.ok) {
-    throw new Error(`Backy API error: ${response.status}`);
+    return null;
   }
 
   return response.json() as Promise<T>;
+};
+
+const buildBackyUrl = (endpoint: string): string => {
+  const origin = getBackyOrigin();
+  return new URL(`api/${endpoint}`, origin).toString();
 };
 
 export const getProfile = () => fetchBacky<Profile>("profile");
@@ -34,3 +53,49 @@ export const getGitHubStats = () => fetchBacky<unknown>("github/stats");
 export const getBlogPost = (slug: string) => fetchBacky<BlogPost>(`blogs/${slug}`);
 
 export const getBlogManifest = () => fetchBacky<BlogManifestSection[]>("blogs");
+
+export const getBootstrapState = () => fetchBacky<BootstrapState>("auth/bootstrap-state");
+
+export const getAuthMe = (cookieHeader?: string | null) =>
+  fetchBacky<AuthUser>("auth/me", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const postBacky = (endpoint: string, body: unknown): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  return fetch(url, {
+    body: JSON.stringify(body),
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    method: "POST",
+  });
+};
+
+export const postBackyWithCookies = (
+  endpoint: string,
+  body: unknown,
+  cookieHeader?: string | null,
+): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  return fetch(url, {
+    body: JSON.stringify(body),
+    headers,
+    method: "POST",
+  });
+};
+
+export const getConsolePages = (cookieHeader?: string | null) =>
+  fetchBacky<ConsolePage[]>("console/pages", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getConsolePage = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<ConsolePageDetail>(`console/pages/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
