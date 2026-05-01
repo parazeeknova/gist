@@ -6,8 +6,7 @@ import (
 )
 
 func TestConfigFromEnv_DatabaseURL(t *testing.T) {
-	os.Setenv("DATABASE_URL", "postgres://user:pass@host:5432/db?sslmode=disable")
-	defer os.Unsetenv("DATABASE_URL")
+	t.Setenv("DATABASE_URL", "postgres://user:pass@host:5432/db?sslmode=disable")
 
 	cfg, err := ConfigFromEnv()
 	if err != nil {
@@ -20,7 +19,7 @@ func TestConfigFromEnv_DatabaseURL(t *testing.T) {
 }
 
 func TestConfigFromEnv_Missing(t *testing.T) {
-	os.Unsetenv("DATABASE_URL")
+	_ = os.Unsetenv("DATABASE_URL")
 
 	_, err := ConfigFromEnv()
 	if err == nil {
