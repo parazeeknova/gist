@@ -140,6 +140,7 @@ func (s *ImportService) ConvertMarkdownToProseMirror(markdown string) (json.RawM
 
 		if strings.HasPrefix(line, "- ") || isOrderedListItem(line) {
 			var listItems []string
+			isOrdered := isOrderedListItem(line)
 			currentLine := line
 			for i < len(lines) {
 				trimmed := strings.TrimRight(currentLine, "\r")
@@ -147,6 +148,7 @@ func (s *ImportService) ConvertMarkdownToProseMirror(markdown string) (json.RawM
 					listItems = append(listItems, strings.TrimPrefix(trimmed, "- "))
 				} else if isOrderedListItem(trimmed) {
 					listItems = append(listItems, stripOrderedListItem(trimmed))
+					isOrdered = true
 				} else {
 					break
 				}
@@ -170,8 +172,12 @@ func (s *ImportService) ConvertMarkdownToProseMirror(markdown string) (json.RawM
 					},
 				})
 			}
+			listType := "bulletList"
+			if isOrdered {
+				listType = "orderedList"
+			}
 			content = append(content, map[string]any{
-				"type":    "bulletList",
+				"type":    listType,
 				"content": items,
 			})
 			continue
@@ -231,12 +237,14 @@ func (s *ImportService) ConvertMarkdownToProseMirror(markdown string) (json.RawM
 	return json.RawMessage(result), strings.TrimSpace(textContent.String())
 }
 
-// ImportMarkdownFile reads a markdown file, converts it, and persists as a DB page
+// ImportMarkdownFile reads a markdown file, converts it, and persists as a DB page.
+// creatorID is the user ID to record as the page creator (satisfies the FK constraint).
 func (s *ImportService) ImportMarkdownFile(
 	ctx context.Context,
 	slug string,
 	title string,
 	filePath string,
+	creatorID string,
 ) error {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
@@ -253,6 +261,7 @@ func (s *ImportService) ImportMarkdownFile(
 		ContentJSON: contentJSON,
 		TextContent: textContent,
 		IsPublished: true,
+		CreatorID:   creatorID,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}

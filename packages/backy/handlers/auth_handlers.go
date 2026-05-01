@@ -91,7 +91,12 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 
 	pair, err := h.authService.Refresh(c.Request.Context(), rawToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired refresh token"})
+		if errors.Is(err, services.ErrInvalidRefreshToken) {
+			c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired refresh token"})
+			return
+		}
+		log.Printf("refresh error: %v", err)
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "token refresh failed"})
 		return
 	}
 
@@ -103,7 +108,11 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 func (h *AuthHandlers) Logout(c *gin.Context) {
 	rawToken, _ := c.Cookie(auth.GetRefreshTokenCookieName())
 
-	_ = h.authService.Logout(c.Request.Context(), rawToken)
+	if err := h.authService.Logout(c.Request.Context(), rawToken); err != nil {
+		log.Printf("logout error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to revoke session"})
+		return
+	}
 
 	clearAuthCookies(c)
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})

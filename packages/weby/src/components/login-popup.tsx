@@ -117,8 +117,8 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
 
   const { data: stats } = useQuery<Stats>({
     queryFn: async ({ signal }) => {
-      const r = await fetch("/api/stats", { signal });
-      return r.ok ? r.json() : null;
+      const response = await fetch("/api/stats", { signal });
+      return response.ok ? response.json() : null;
     },
     queryKey: ["stats"],
     staleTime: 5 * 60 * 1000,

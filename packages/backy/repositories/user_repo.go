@@ -75,15 +75,33 @@ func (r *UserRepo) CreateUser(ctx context.Context, username, email, passwordHash
 	return userID, nil
 }
 
-// FindUserByUsernameOrEmail looks up a user by either username or email.
+// FindUserByUsernameOrEmail looks up a user by username first, then falls back to email.
+// This avoids nondeterministic results when a username matches another user's email.
 func (r *UserRepo) FindUserByUsernameOrEmail(ctx context.Context, identifier string) (*models.AuthUser, error) {
 	query := `SELECT id, username, email, is_owner, is_active,
 	          COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
 	          COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
-	          FROM users WHERE username = $1 OR email = $1`
+	          FROM users WHERE username = $1`
 
 	var u models.AuthUser
 	err := r.pool.QueryRow(ctx, query, identifier).Scan(
+		&u.ID, &u.Username, &u.Email, &u.IsOwner, &u.IsActive,
+		&u.CreatedAt, &u.UpdatedAt,
+	)
+	if err == nil {
+		return &u, nil
+	}
+	if err != pgx.ErrNoRows {
+		return nil, fmt.Errorf("find user by username: %w", err)
+	}
+
+	// No match by username, try email.
+	query = `SELECT id, username, email, is_owner, is_active,
+	         COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
+	         COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
+	         FROM users WHERE email = $1`
+
+	err = r.pool.QueryRow(ctx, query, identifier).Scan(
 		&u.ID, &u.Username, &u.Email, &u.IsOwner, &u.IsActive,
 		&u.CreatedAt, &u.UpdatedAt,
 	)
@@ -91,7 +109,7 @@ func (r *UserRepo) FindUserByUsernameOrEmail(ctx context.Context, identifier str
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("find user: %w", err)
+		return nil, fmt.Errorf("find user by email: %w", err)
 	}
 	return &u, nil
 }

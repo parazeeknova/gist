@@ -1,7 +1,6 @@
 package database
 
 import (
-	"os"
 	"testing"
 )
 
@@ -19,7 +18,7 @@ func TestConfigFromEnv_DatabaseURL(t *testing.T) {
 }
 
 func TestConfigFromEnv_Missing(t *testing.T) {
-	_ = os.Unsetenv("DATABASE_URL")
+	t.Setenv("DATABASE_URL", "")
 
 	_, err := ConfigFromEnv()
 	if err == nil {

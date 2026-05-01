@@ -13,8 +13,16 @@ export const useAuth = () => {
         if (error instanceof DOMException && error.name === "AbortError") {
           throw error;
         }
-        queryClient.setQueryData(["auth"], null);
-        return null;
+        // Only clear the cached auth state on explicit unauthenticated responses.
+        // Network errors, 5xx, etc. should not flush the cache.
+        if (
+          error instanceof Error &&
+          (error.message.startsWith("HTTP 401") || error.message.startsWith("HTTP 403"))
+        ) {
+          queryClient.setQueryData(["auth"], null);
+          return null;
+        }
+        throw error;
       }
     },
     queryKey: ["auth"],

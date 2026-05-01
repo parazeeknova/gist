@@ -19,26 +19,39 @@ const getBackyOrigin = (): string => {
   return "http://localhost:7000/";
 };
 
-const fetchBacky = async <T>(endpoint: string, init?: RequestInit): Promise<T | null> => {
+export class BackyError extends Error {
+  body: string;
+  ok = false as const;
+  status: number;
+
+  constructor(status: number, body: string) {
+    super(`Backy HTTP ${status}`);
+    this.body = body;
+    this.name = "BackyError";
+    this.status = status;
+  }
+}
+
+const fetchBacky = async <T>(endpoint: string, init?: RequestInit): Promise<T> => {
   const origin = getBackyOrigin();
   const url = new URL(`api/${endpoint}`, origin).toString();
 
-  const callerHeaders = init?.headers as Record<string, string> | undefined;
-  const mergedHeaders: Record<string, string> = {
-    Accept: "application/json",
-    ...callerHeaders,
-  };
+  // Normalize headers via the Headers API to handle all HeadersInit shapes
+  // (plain object, Headers instance, [string,string][]).
+  const normalized = new Headers(init?.headers);
+  normalized.set("Accept", "application/json");
 
   const { headers: _, ...restInit } = init ?? {};
   const mergedInit: RequestInit = {
     ...restInit,
-    headers: mergedHeaders,
+    headers: normalized,
   };
 
   const response = await fetch(url, mergedInit);
 
   if (!response.ok) {
-    return null;
+    const body = await response.text().catch(() => "");
+    throw new BackyError(response.status, body);
   }
 
   return response.json() as Promise<T>;

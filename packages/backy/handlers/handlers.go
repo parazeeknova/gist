@@ -52,6 +52,14 @@ func (h *Handlers) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+// MigrationStatus is a handler that signals to infrastructure tooling
+// that DB migrations have completed successfully.
+// Returns 200 with {"status":"complete"} so CI health checks can
+// gate deployment on migration readiness rather than just /health.
+func (h *Handlers) MigrationStatus(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "complete"})
+}
+
 // GetProfile returns profile data
 func (h *Handlers) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, store.Profile)

@@ -20,6 +20,7 @@ var (
 	ErrUserInactive        = errors.New("user account is inactive")
 	ErrUserNotFound        = errors.New("user not found")
 	ErrAlreadyBootstrapped = errors.New("system already bootstrapped")
+	ErrInvalidRefreshToken = errors.New("invalid or expired refresh token")
 )
 
 // TokenPair holds the access and refresh tokens returned after authentication.
@@ -168,6 +169,8 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 	}
 
 	tokenHash := sha256Hash(rawRefreshToken)
+
+	// Look up the session first for user info.
 	session, err := s.sessionRepo.GetSessionByRefreshToken(ctx, tokenHash)
 	if err != nil {
 		return nil, fmt.Errorf("lookup session: %w", err)
@@ -180,7 +183,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 		} else if replayed && replayedSessionID != "" {
 			_ = s.sessionRepo.RevokeAllSessionTokens(ctx, replayedSessionID)
 		}
-		return nil, fmt.Errorf("invalid or expired refresh token")
+		return nil, ErrInvalidRefreshToken
 	}
 
 	newRawToken, newTokenHash, err := auth.GenerateRefreshToken()
@@ -191,9 +194,18 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 	refreshTTL := auth.GetRefreshTokenTTL()
 	newExpiresAt := time.Now().Add(refreshTTL)
 
+	// RotateRefreshToken uses FOR UPDATE and validates the old token hash
+	// atomically, so a concurrent rotation will fail and we detect it below.
 	newSessionID, err := s.sessionRepo.RotateRefreshToken(ctx, tokenHash, newTokenHash, newExpiresAt)
 	if err != nil {
-		return nil, fmt.Errorf("rotate refresh token: %w", err)
+		// Token was consumed by a concurrent request — treat as replay
+		replayed, replayedSessionID, replayErr := s.sessionRepo.IsReplayedToken(ctx, tokenHash)
+		if replayErr != nil {
+			log.Printf("replay token check error: %v", replayErr)
+		} else if replayed && replayedSessionID != "" {
+			_ = s.sessionRepo.RevokeAllSessionTokens(ctx, replayedSessionID)
+		}
+		return nil, ErrInvalidRefreshToken
 	}
 
 	_ = s.sessionRepo.UpdateSessionLastSeen(ctx, newSessionID)
@@ -222,14 +234,34 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 	}, nil
 }
 
-// Logout revokes a refresh token, effectively ending the session.
+// Logout revokes a refresh token and the underlying session so all access
+// tokens bound to the session become invalid immediately.
 func (s *AuthService) Logout(ctx context.Context, rawRefreshToken string) error {
 	if rawRefreshToken == "" {
 		return nil
 	}
 
 	tokenHash := sha256Hash(rawRefreshToken)
-	return s.sessionRepo.RevokeRefreshToken(ctx, tokenHash)
+
+	// Look up the session associated with this token so we can revoke it too.
+	session, err := s.sessionRepo.GetSessionByRefreshToken(ctx, tokenHash)
+	if err != nil {
+		return fmt.Errorf("lookup session for logout: %w", err)
+	}
+
+	// Revoke the refresh token first.
+	if revokeErr := s.sessionRepo.RevokeRefreshToken(ctx, tokenHash); revokeErr != nil {
+		return fmt.Errorf("revoke refresh token: %w", revokeErr)
+	}
+
+	// If we found a session, also revoke the session row so ValidateSession fails.
+	if session != nil {
+		if revokeErr := s.sessionRepo.RevokeSession(ctx, session.ID); revokeErr != nil {
+			return fmt.Errorf("revoke session: %w", revokeErr)
+		}
+	}
+
+	return nil
 }
 
 // ValidateSession checks whether a session is still active (not expired, not revoked).

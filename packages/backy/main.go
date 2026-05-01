@@ -65,11 +65,11 @@ func main() {
 	dbErr := database.InitPool(context.Background(), dbCfg)
 	dbAvailable := dbErr == nil
 	if !dbAvailable {
-		log.Printf("database init warning (blog endpoints will fall back to file-based store): %v", dbErr)
+		log.Printf("database init warning (blog endpoints will be unavailable): %v", dbErr)
 	} else {
 		pool := database.GetPool()
 		if err := database.MigrateUp(context.Background(), pool); err != nil {
-			log.Printf("migration warning: %v", err)
+			log.Fatalf("migration failed: %v", err)
 		}
 	}
 
@@ -118,6 +118,10 @@ func main() {
 
 	// Health check
 	r.GET("/health", h.Health)
+
+	// Internal infrastructure endpoint — signals migrations are complete.
+	// CI health checks should poll this instead of /health.
+	r.GET("/internal/migrations/status", h.MigrationStatus)
 
 	// API routes
 	api := r.Group("/api")

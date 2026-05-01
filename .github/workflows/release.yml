@@ -238,18 +238,18 @@ jobs:
             -d '{ "applicationId": "${{ secrets.DOKPLOY_APP_ID }}" }' \
             --fail --silent --show-error
 
-      - name: Wait for health check
+      - name: Wait for migration readiness
         run: |
-          BACKY_URL="${{ secrets.BACKY_HEALTH_URL }}"
-          echo "Waiting for backy to become healthy..."
+          BACKY_URL="${{ secrets.BACKY_MIGRATION_URL }}"
+          echo "Waiting for backy migrations to complete..."
           for i in $(seq 1 12); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$BACKY_URL" || echo "000")
             if [ "$STATUS" = "200" ]; then
-              echo "Backy is healthy (migrations complete)"
+              echo "Backy migrations complete"
               exit 0
             fi
             echo "attempt $i/12: status=$STATUS, waiting..."
             sleep 5
           done
-          echo "Health check failed after 12 attempts"
+          echo "Migration readiness check failed after 12 attempts"
           exit 1

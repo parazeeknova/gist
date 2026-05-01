@@ -30,6 +30,29 @@ export const BlogReaderPanel = ({
   themeButtonRef,
   themeIndicatorRef,
 }: BlogReaderPanelProps) => {
+  // When no slug is available (e.g. initial mount before a blog is selected),
+  // show the empty state immediately without making a doomed API call.
+  if (!slug) {
+    return (
+      <div className="flex h-full min-h-0 flex-col p-4 sm:p-6 lg:p-8">
+        <div className="mb-6">
+          <p className={`text-[13px] ${isDarkMode ? "text-text-dark/30" : "text-text-light/30"}`}>
+            no articles yet — browse projects below
+          </p>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <BlogFileTree
+            isDarkMode={isDarkMode}
+            manifest={manifest}
+            onSelectPost={onSelectPost}
+            onSelectProject={onSelectProject}
+            projects={projects}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const { data, isError, isPending } = useBlogPost(slug);
 
   if (isPending) {

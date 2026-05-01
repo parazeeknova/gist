@@ -33,3 +33,4 @@ CREATE TABLE IF NOT EXISTS page_history (
 
 CREATE INDEX IF NOT EXISTS idx_page_history_page_id ON page_history (page_id);
 CREATE INDEX IF NOT EXISTS idx_page_history_created_at ON page_history (created_at);
+CREATE INDEX IF NOT EXISTS idx_page_history_page_id_created_at ON page_history (page_id, created_at DESC);

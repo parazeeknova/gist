@@ -215,7 +215,7 @@ func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 		return fmt.Errorf("updating page %q: %w", p.SlugID, err)
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("page %q: not found", p.SlugID)
+		return fmt.Errorf("%w: page %q", ErrPageNotFound, p.SlugID)
 	}
 
 	return nil

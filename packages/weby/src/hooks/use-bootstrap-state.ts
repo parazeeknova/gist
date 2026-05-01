@@ -18,10 +18,17 @@ export const useBootstrapState = () =>
     staleTime: 5 * 60 * 1000,
   });
 
-export const useIsBootstrapped = (): boolean | undefined => {
-  const { data } = useBootstrapState();
-  if (data === undefined) {
-    return undefined;
-  }
-  return data.bootstrapped;
+export interface IsBootstrappedResult {
+  bootstrapped: boolean | undefined;
+  loading: boolean;
+  error: Error | null;
+}
+
+export const useIsBootstrapped = (): IsBootstrappedResult => {
+  const { data, isLoading, error } = useBootstrapState();
+  return {
+    bootstrapped: data?.bootstrapped,
+    error: error instanceof Error ? error : null,
+    loading: Boolean(isLoading && !data && !error),
+  };
 };
