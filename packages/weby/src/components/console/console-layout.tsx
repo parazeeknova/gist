@@ -61,7 +61,10 @@ export const ConsoleLayout = () => {
       <div className="relative flex flex-1 overflow-hidden">
         <aside
           ref={sidebarRef}
-          className={`absolute inset-y-0 left-0 z-40 md:relative md:shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+          className={`absolute inset-y-0 left-0 z-40 md:relative md:shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")}`}
+          style={{
+            backgroundColor: isDarkMode ? "#171717" : "#e8e8e8",
+          }}
         >
           <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto">
             <div
@@ -114,7 +117,7 @@ export const ConsoleLayout = () => {
               <GearSixIcon size={12} />
               settings
             </button>
-            <p className={`text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
+            <p className={`px-1 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
               powered by{" "}
               <a
                 className="underline"
@@ -123,6 +126,10 @@ export const ConsoleLayout = () => {
                 target="_blank"
               >
                 verso
+              </a>{" "}
+              know more at{" "}
+              <a className="underline" href="/about" target="_blank" rel="noopener noreferrer">
+                here
               </a>
             </p>
           </div>

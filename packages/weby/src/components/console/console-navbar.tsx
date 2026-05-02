@@ -99,10 +99,13 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
 
   return (
     <nav
-      className={`relative flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+      className={`relative flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")}`}
+      style={{
+        backgroundColor: isDarkMode ? "#1a1a1a" : "#e5e5e5",
+      }}
     >
       {/* Left: sidebar toggle + brand + desktop nav links */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 md:gap-3">
         <button
           className={`flex items-center lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
           onClick={onToggleSidebar}
@@ -111,9 +114,10 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           {sidebarOpen ? <SidebarSimpleIcon size={14} /> : <SidebarIcon size={14} />}
         </button>
         <a
-          className={`lowercase ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
+          className={`flex items-center gap-1.5 lowercase mr-1 md:mr-3 ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
           href="/"
         >
+          <img alt="verso" className="h-3.5 w-3.5" src="/verso.svg" />
           verso
         </a>
         {NAV_ROUTES.map((route, i) => [
@@ -157,6 +161,16 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
 
       {/* Right: notification + profile dropdown + mobile hamburger */}
       <div className="flex items-center gap-3">
+        {/* Theme toggle — desktop only */}
+        <button
+          aria-label="Toggle theme"
+          className={`hidden md:block lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
+          onClick={toggleTheme}
+          type="button"
+        >
+          {isDarkMode ? "light" : "dark"}
+        </button>
+
         {/* Notification dropdown */}
         <div className="relative" ref={notiRef}>
           <button
@@ -227,14 +241,6 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
                     </p>
                   )}
                 </div>
-
-                <button
-                  className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={toggleTheme}
-                  type="button"
-                >
-                  {isDarkMode ? "light" : "dark"} mode
-                </button>
 
                 <button
                   className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
