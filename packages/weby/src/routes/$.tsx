@@ -55,4 +55,26 @@ const NotFound = () => {
 
 export const Route = createFileRoute("/$")({
   component: NotFound,
+  head: () => ({
+    links: [
+      {
+        href: "/$",
+        rel: "canonical",
+      },
+    ],
+    meta: [
+      { title: "page not found — verso" },
+      { content: "this page could not be found.", name: "description" },
+      { content: "noindex", name: "robots" },
+      { content: "page not found — verso", property: "og:title" },
+      { content: "this page could not be found.", property: "og:description" },
+      { content: "website", property: "og:type" },
+      { content: "/verso-og.png", property: "og:image" },
+      { content: "1200", property: "og:image:width" },
+      { content: "630", property: "og:image:height" },
+      { content: "image/png", property: "og:image:type" },
+      { content: "summary_large_image", property: "twitter:card" },
+      { content: "page not found — verso", property: "twitter:title" },
+    ],
+  }),
 });

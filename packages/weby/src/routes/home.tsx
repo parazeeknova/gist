@@ -67,4 +67,13 @@ const Console = function Console() {
 
 export const Route = createFileRoute("/home")({
   component: Console,
+  head: () => ({
+    links: [{ href: "/home", rel: "canonical" }],
+    meta: [
+      { title: "verso — console" },
+      { content: "noindex, nofollow", name: "robots" },
+      { content: "verso — console", property: "og:title" },
+      { content: "website", property: "og:type" },
+    ],
+  }),
 });

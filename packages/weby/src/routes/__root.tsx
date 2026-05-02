@@ -146,7 +146,7 @@ export const Route = createRootRoute({
         property: "og:description",
       },
       {
-        content: "/android-chrome-512x512.png",
+        content: "/verso-og.png",
         property: "og:image",
       },
       {
@@ -166,7 +166,7 @@ export const Route = createRootRoute({
         property: "twitter:description",
       },
       {
-        content: "/android-chrome-512x512.png",
+        content: "/verso-og.png",
         property: "twitter:image",
       },
       {

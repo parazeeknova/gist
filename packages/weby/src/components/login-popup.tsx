@@ -78,29 +78,30 @@ const AccountPanel = ({
       </div>
     )}
 
-    <button
-      className={`w-full py-1.5 text-[13px] lowercase ${
-        isDarkMode
-          ? "border border-border-dark bg-white/5 text-text-dark hover:bg-white/10"
-          : "border border-border-light bg-black/3 text-text-light hover:bg-black/5"
-      }`}
-      onClick={onNavigateConsole}
-      type="button"
+    <div
+      className={`flex gap-0 border-t pt-3 ${isDarkMode ? "border-border-dark" : "border-border-light"}`}
     >
-      console
-    </button>
-
-    <button
-      className={`w-full py-1.5 text-[13px] lowercase ${
-        isDarkMode
-          ? "border border-border-dark bg-white/5 text-red-300 hover:bg-red-400/10"
-          : "border border-border-light bg-black/3 text-red-600 hover:bg-red-500/10"
-      }`}
-      onClick={onLogout}
-      type="button"
-    >
-      logout
-    </button>
+      <button
+        className={`flex-1 py-1.5 text-[13px] lowercase ${
+          isDarkMode
+            ? "text-text-dark/50 hover:text-text-dark/80"
+            : "text-text-light/50 hover:text-text-light/80"
+        }`}
+        onClick={onNavigateConsole}
+        type="button"
+      >
+        console
+      </button>
+      <button
+        className={`flex-1 py-1.5 text-[13px] lowercase ${
+          isDarkMode ? "text-red-300/60 hover:text-red-300" : "text-red-600/60 hover:text-red-600"
+        }`}
+        onClick={onLogout}
+        type="button"
+      >
+        logout
+      </button>
+    </div>
   </div>
 );
 
@@ -231,12 +232,7 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
               }`}
             >
               powered by{" "}
-              <a
-                href="https://github.com/parazeeknova/verso"
-                className="underline"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href="/about" className="underline" target="_blank" rel="noopener noreferrer">
                 verso
               </a>{" "}
               a self hosted knowledge base
@@ -271,10 +267,10 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <div>
                       <input
                         aria-label="Username or email"
-                        className={`w-full border px-2 py-1.5 text-[13px] lowercase outline-none ${
+                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
                           isDarkMode
-                            ? "border-border-dark bg-white/5 text-text-dark placeholder:text-text-dark/30"
-                            : "border-border-light bg-black/3 text-text-light placeholder:text-text-light/30"
+                            ? "border-border-dark placeholder:text-text-dark/30"
+                            : "border-border-light placeholder:text-text-light/30"
                         }`}
                         name={field.name}
                         onBlur={field.handleBlur}
@@ -305,10 +301,10 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <div>
                       <input
                         aria-label="Password"
-                        className={`w-full border px-2 py-1.5 text-[13px] lowercase outline-none ${
+                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
                           isDarkMode
-                            ? "border-border-dark bg-white/5 text-text-dark placeholder:text-text-dark/30"
-                            : "border-border-light bg-black/3 text-text-light placeholder:text-text-light/30"
+                            ? "border-border-dark placeholder:text-text-dark/30"
+                            : "border-border-light placeholder:text-text-light/30"
                         }`}
                         name={field.name}
                         onBlur={field.handleBlur}
@@ -341,8 +337,8 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <button
                       className={`w-full py-1.5 text-[13px] lowercase ${
                         isDarkMode
-                          ? "border border-border-dark bg-white/5 text-text-dark hover:bg-white/10"
-                          : "border border-border-light bg-black/3 text-text-light hover:bg-black/5"
+                          ? "text-text-dark/50 hover:text-text-dark/80"
+                          : "text-text-light/50 hover:text-text-light/80"
                       } disabled:opacity-30`}
                       disabled={!canSubmit}
                       type="submit"
@@ -373,10 +369,10 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <div>
                       <input
                         aria-label="Username"
-                        className={`w-full border px-2 py-1.5 text-[13px] lowercase outline-none ${
+                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
                           isDarkMode
-                            ? "border-border-dark bg-white/5 text-text-dark placeholder:text-text-dark/30"
-                            : "border-border-light bg-black/3 text-text-light placeholder:text-text-light/30"
+                            ? "border-border-dark placeholder:text-text-dark/30"
+                            : "border-border-light placeholder:text-text-light/30"
                         }`}
                         name={field.name}
                         onBlur={field.handleBlur}
@@ -407,10 +403,10 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <div>
                       <input
                         aria-label="Email"
-                        className={`w-full border px-2 py-1.5 text-[13px] lowercase outline-none ${
+                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
                           isDarkMode
-                            ? "border-border-dark bg-white/5 text-text-dark placeholder:text-text-dark/30"
-                            : "border-border-light bg-black/3 text-text-light placeholder:text-text-light/30"
+                            ? "border-border-dark placeholder:text-text-dark/30"
+                            : "border-border-light placeholder:text-text-light/30"
                         }`}
                         name={field.name}
                         onBlur={field.handleBlur}
@@ -442,10 +438,10 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <div>
                       <input
                         aria-label="Password"
-                        className={`w-full border px-2 py-1.5 text-[13px] lowercase outline-none ${
+                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
                           isDarkMode
-                            ? "border-border-dark bg-white/5 text-text-dark placeholder:text-text-dark/30"
-                            : "border-border-light bg-black/3 text-text-light placeholder:text-text-light/30"
+                            ? "border-border-dark placeholder:text-text-dark/30"
+                            : "border-border-light placeholder:text-text-light/30"
                         }`}
                         name={field.name}
                         onBlur={field.handleBlur}
@@ -480,8 +476,8 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                     <button
                       className={`w-full py-1.5 text-[13px] lowercase ${
                         isDarkMode
-                          ? "border border-border-dark bg-white/5 text-text-dark hover:bg-white/10"
-                          : "border border-border-light bg-black/3 text-text-light hover:bg-black/5"
+                          ? "text-text-dark/50 hover:text-text-dark/80"
+                          : "text-text-light/50 hover:text-text-light/80"
                       } disabled:opacity-30`}
                       disabled={!canSubmit}
                       type="submit"
