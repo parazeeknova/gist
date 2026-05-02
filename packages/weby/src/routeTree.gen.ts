@@ -8,376 +8,420 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as ConsoleRouteImport } from "./routes/console";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as ApiStatsRouteImport } from "./routes/api/stats";
-import { Route as ApiProjectsRouteImport } from "./routes/api/projects";
-import { Route as ApiProfileRouteImport } from "./routes/api/profile";
-import { Route as ApiExperienceRouteImport } from "./routes/api/experience";
-import { Route as ApiBlogsRouteImport } from "./routes/api/blogs";
-import { Route as ApiGithubStatsRouteImport } from "./routes/api/github/stats";
-import { Route as ApiConsolePagesRouteImport } from "./routes/api/console/pages";
-import { Route as ApiBlogsSlugRouteImport } from "./routes/api/blogs.$slug";
-import { Route as ApiAuthRefreshRouteImport } from "./routes/api/auth/refresh";
-import { Route as ApiAuthMeRouteImport } from "./routes/api/auth/me";
-import { Route as ApiAuthLogoutRouteImport } from "./routes/api/auth/logout";
-import { Route as ApiAuthLoginRouteImport } from "./routes/api/auth/login";
-import { Route as ApiAuthBootstrapStateRouteImport } from "./routes/api/auth/bootstrap-state";
-import { Route as ApiConsolePagesIdRouteImport } from "./routes/api/console/pages.$id";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as SplatRouteImport } from './routes/$'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiStatsRouteImport } from './routes/api/stats'
+import { Route as ApiProjectsRouteImport } from './routes/api/projects'
+import { Route as ApiProfileRouteImport } from './routes/api/profile'
+import { Route as ApiExperienceRouteImport } from './routes/api/experience'
+import { Route as ApiBlogsRouteImport } from './routes/api/blogs'
+import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
+import { Route as ApiConsolePagesRouteImport } from './routes/api/console/pages'
+import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs.$slug'
+import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
+import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
+import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
+import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
 
-const ConsoleRoute = ConsoleRouteImport.update({
-  id: "/console",
-  path: "/console",
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiStatsRoute = ApiStatsRouteImport.update({
-  id: "/api/stats",
-  path: "/api/stats",
+  id: '/api/stats',
+  path: '/api/stats',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiProjectsRoute = ApiProjectsRouteImport.update({
-  id: "/api/projects",
-  path: "/api/projects",
+  id: '/api/projects',
+  path: '/api/projects',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiProfileRoute = ApiProfileRouteImport.update({
-  id: "/api/profile",
-  path: "/api/profile",
+  id: '/api/profile',
+  path: '/api/profile',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiExperienceRoute = ApiExperienceRouteImport.update({
-  id: "/api/experience",
-  path: "/api/experience",
+  id: '/api/experience',
+  path: '/api/experience',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiBlogsRoute = ApiBlogsRouteImport.update({
-  id: "/api/blogs",
-  path: "/api/blogs",
+  id: '/api/blogs',
+  path: '/api/blogs',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
-  id: "/api/github/stats",
-  path: "/api/github/stats",
+  id: '/api/github/stats',
+  path: '/api/github/stats',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiConsolePagesRoute = ApiConsolePagesRouteImport.update({
-  id: "/api/console/pages",
-  path: "/api/console/pages",
+  id: '/api/console/pages',
+  path: '/api/console/pages',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiBlogsSlugRoute = ApiBlogsSlugRouteImport.update({
-  id: "/$slug",
-  path: "/$slug",
+  id: '/$slug',
+  path: '/$slug',
   getParentRoute: () => ApiBlogsRoute,
-} as any);
+} as any)
 const ApiAuthRefreshRoute = ApiAuthRefreshRouteImport.update({
-  id: "/api/auth/refresh",
-  path: "/api/auth/refresh",
+  id: '/api/auth/refresh',
+  path: '/api/auth/refresh',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
-  id: "/api/auth/me",
-  path: "/api/auth/me",
+  id: '/api/auth/me',
+  path: '/api/auth/me',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
-  id: "/api/auth/logout",
-  path: "/api/auth/logout",
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
-  id: "/api/auth/login",
-  path: "/api/auth/login",
+  id: '/api/auth/login',
+  path: '/api/auth/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
-  id: "/api/auth/bootstrap-state",
-  path: "/api/auth/bootstrap-state",
+  id: '/api/auth/bootstrap-state',
+  path: '/api/auth/bootstrap-state',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
-  id: "/$id",
-  path: "/$id",
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => ApiConsolePagesRoute,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/console": typeof ConsoleRoute;
-  "/api/blogs": typeof ApiBlogsRouteWithChildren;
-  "/api/experience": typeof ApiExperienceRoute;
-  "/api/profile": typeof ApiProfileRoute;
-  "/api/projects": typeof ApiProjectsRoute;
-  "/api/stats": typeof ApiStatsRoute;
-  "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
-  "/api/auth/login": typeof ApiAuthLoginRoute;
-  "/api/auth/logout": typeof ApiAuthLogoutRoute;
-  "/api/auth/me": typeof ApiAuthMeRoute;
-  "/api/auth/refresh": typeof ApiAuthRefreshRoute;
-  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
-  "/api/console/pages": typeof ApiConsolePagesRouteWithChildren;
-  "/api/github/stats": typeof ApiGithubStatsRoute;
-  "/api/console/pages/$id": typeof ApiConsolePagesIdRoute;
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
+  '/home': typeof HomeRoute
+  '/api/blogs': typeof ApiBlogsRouteWithChildren
+  '/api/experience': typeof ApiExperienceRoute
+  '/api/profile': typeof ApiProfileRoute
+  '/api/projects': typeof ApiProjectsRoute
+  '/api/stats': typeof ApiStatsRoute
+  '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
+  '/api/github/stats': typeof ApiGithubStatsRoute
+  '/api/console/pages/$id': typeof ApiConsolePagesIdRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/console": typeof ConsoleRoute;
-  "/api/blogs": typeof ApiBlogsRouteWithChildren;
-  "/api/experience": typeof ApiExperienceRoute;
-  "/api/profile": typeof ApiProfileRoute;
-  "/api/projects": typeof ApiProjectsRoute;
-  "/api/stats": typeof ApiStatsRoute;
-  "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
-  "/api/auth/login": typeof ApiAuthLoginRoute;
-  "/api/auth/logout": typeof ApiAuthLogoutRoute;
-  "/api/auth/me": typeof ApiAuthMeRoute;
-  "/api/auth/refresh": typeof ApiAuthRefreshRoute;
-  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
-  "/api/console/pages": typeof ApiConsolePagesRouteWithChildren;
-  "/api/github/stats": typeof ApiGithubStatsRoute;
-  "/api/console/pages/$id": typeof ApiConsolePagesIdRoute;
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
+  '/home': typeof HomeRoute
+  '/api/blogs': typeof ApiBlogsRouteWithChildren
+  '/api/experience': typeof ApiExperienceRoute
+  '/api/profile': typeof ApiProfileRoute
+  '/api/projects': typeof ApiProjectsRoute
+  '/api/stats': typeof ApiStatsRoute
+  '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
+  '/api/github/stats': typeof ApiGithubStatsRoute
+  '/api/console/pages/$id': typeof ApiConsolePagesIdRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/console": typeof ConsoleRoute;
-  "/api/blogs": typeof ApiBlogsRouteWithChildren;
-  "/api/experience": typeof ApiExperienceRoute;
-  "/api/profile": typeof ApiProfileRoute;
-  "/api/projects": typeof ApiProjectsRoute;
-  "/api/stats": typeof ApiStatsRoute;
-  "/api/auth/bootstrap-state": typeof ApiAuthBootstrapStateRoute;
-  "/api/auth/login": typeof ApiAuthLoginRoute;
-  "/api/auth/logout": typeof ApiAuthLogoutRoute;
-  "/api/auth/me": typeof ApiAuthMeRoute;
-  "/api/auth/refresh": typeof ApiAuthRefreshRoute;
-  "/api/blogs/$slug": typeof ApiBlogsSlugRoute;
-  "/api/console/pages": typeof ApiConsolePagesRouteWithChildren;
-  "/api/github/stats": typeof ApiGithubStatsRoute;
-  "/api/console/pages/$id": typeof ApiConsolePagesIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
+  '/home': typeof HomeRoute
+  '/api/blogs': typeof ApiBlogsRouteWithChildren
+  '/api/experience': typeof ApiExperienceRoute
+  '/api/profile': typeof ApiProfileRoute
+  '/api/projects': typeof ApiProjectsRoute
+  '/api/stats': typeof ApiStatsRoute
+  '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
+  '/api/auth/refresh': typeof ApiAuthRefreshRoute
+  '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
+  '/api/github/stats': typeof ApiGithubStatsRoute
+  '/api/console/pages/$id': typeof ApiConsolePagesIdRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/console"
-    | "/api/blogs"
-    | "/api/experience"
-    | "/api/profile"
-    | "/api/projects"
-    | "/api/stats"
-    | "/api/auth/bootstrap-state"
-    | "/api/auth/login"
-    | "/api/auth/logout"
-    | "/api/auth/me"
-    | "/api/auth/refresh"
-    | "/api/blogs/$slug"
-    | "/api/console/pages"
-    | "/api/github/stats"
-    | "/api/console/pages/$id";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/$'
+    | '/about'
+    | '/home'
+    | '/api/blogs'
+    | '/api/experience'
+    | '/api/profile'
+    | '/api/projects'
+    | '/api/stats'
+    | '/api/auth/bootstrap-state'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/blogs/$slug'
+    | '/api/console/pages'
+    | '/api/github/stats'
+    | '/api/console/pages/$id'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/console"
-    | "/api/blogs"
-    | "/api/experience"
-    | "/api/profile"
-    | "/api/projects"
-    | "/api/stats"
-    | "/api/auth/bootstrap-state"
-    | "/api/auth/login"
-    | "/api/auth/logout"
-    | "/api/auth/me"
-    | "/api/auth/refresh"
-    | "/api/blogs/$slug"
-    | "/api/console/pages"
-    | "/api/github/stats"
-    | "/api/console/pages/$id";
+    | '/'
+    | '/$'
+    | '/about'
+    | '/home'
+    | '/api/blogs'
+    | '/api/experience'
+    | '/api/profile'
+    | '/api/projects'
+    | '/api/stats'
+    | '/api/auth/bootstrap-state'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/blogs/$slug'
+    | '/api/console/pages'
+    | '/api/github/stats'
+    | '/api/console/pages/$id'
   id:
-    | "__root__"
-    | "/"
-    | "/console"
-    | "/api/blogs"
-    | "/api/experience"
-    | "/api/profile"
-    | "/api/projects"
-    | "/api/stats"
-    | "/api/auth/bootstrap-state"
-    | "/api/auth/login"
-    | "/api/auth/logout"
-    | "/api/auth/me"
-    | "/api/auth/refresh"
-    | "/api/blogs/$slug"
-    | "/api/console/pages"
-    | "/api/github/stats"
-    | "/api/console/pages/$id";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/about'
+    | '/home'
+    | '/api/blogs'
+    | '/api/experience'
+    | '/api/profile'
+    | '/api/projects'
+    | '/api/stats'
+    | '/api/auth/bootstrap-state'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
+    | '/api/auth/refresh'
+    | '/api/blogs/$slug'
+    | '/api/console/pages'
+    | '/api/github/stats'
+    | '/api/console/pages/$id'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  ConsoleRoute: typeof ConsoleRoute;
-  ApiBlogsRoute: typeof ApiBlogsRouteWithChildren;
-  ApiExperienceRoute: typeof ApiExperienceRoute;
-  ApiProfileRoute: typeof ApiProfileRoute;
-  ApiProjectsRoute: typeof ApiProjectsRoute;
-  ApiStatsRoute: typeof ApiStatsRoute;
-  ApiAuthBootstrapStateRoute: typeof ApiAuthBootstrapStateRoute;
-  ApiAuthLoginRoute: typeof ApiAuthLoginRoute;
-  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute;
-  ApiAuthMeRoute: typeof ApiAuthMeRoute;
-  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute;
-  ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren;
-  ApiGithubStatsRoute: typeof ApiGithubStatsRoute;
+  IndexRoute: typeof IndexRoute
+  SplatRoute: typeof SplatRoute
+  AboutRoute: typeof AboutRoute
+  HomeRoute: typeof HomeRoute
+  ApiBlogsRoute: typeof ApiBlogsRouteWithChildren
+  ApiExperienceRoute: typeof ApiExperienceRoute
+  ApiProfileRoute: typeof ApiProfileRoute
+  ApiProjectsRoute: typeof ApiProjectsRoute
+  ApiStatsRoute: typeof ApiStatsRoute
+  ApiAuthBootstrapStateRoute: typeof ApiAuthBootstrapStateRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthMeRoute: typeof ApiAuthMeRoute
+  ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren
+  ApiGithubStatsRoute: typeof ApiGithubStatsRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/console": {
-      id: "/console";
-      path: "/console";
-      fullPath: "/console";
-      preLoaderRoute: typeof ConsoleRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/stats": {
-      id: "/api/stats";
-      path: "/api/stats";
-      fullPath: "/api/stats";
-      preLoaderRoute: typeof ApiStatsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/projects": {
-      id: "/api/projects";
-      path: "/api/projects";
-      fullPath: "/api/projects";
-      preLoaderRoute: typeof ApiProjectsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/profile": {
-      id: "/api/profile";
-      path: "/api/profile";
-      fullPath: "/api/profile";
-      preLoaderRoute: typeof ApiProfileRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/experience": {
-      id: "/api/experience";
-      path: "/api/experience";
-      fullPath: "/api/experience";
-      preLoaderRoute: typeof ApiExperienceRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/blogs": {
-      id: "/api/blogs";
-      path: "/api/blogs";
-      fullPath: "/api/blogs";
-      preLoaderRoute: typeof ApiBlogsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/github/stats": {
-      id: "/api/github/stats";
-      path: "/api/github/stats";
-      fullPath: "/api/github/stats";
-      preLoaderRoute: typeof ApiGithubStatsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/console/pages": {
-      id: "/api/console/pages";
-      path: "/api/console/pages";
-      fullPath: "/api/console/pages";
-      preLoaderRoute: typeof ApiConsolePagesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/blogs/$slug": {
-      id: "/api/blogs/$slug";
-      path: "/$slug";
-      fullPath: "/api/blogs/$slug";
-      preLoaderRoute: typeof ApiBlogsSlugRouteImport;
-      parentRoute: typeof ApiBlogsRoute;
-    };
-    "/api/auth/refresh": {
-      id: "/api/auth/refresh";
-      path: "/api/auth/refresh";
-      fullPath: "/api/auth/refresh";
-      preLoaderRoute: typeof ApiAuthRefreshRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/auth/me": {
-      id: "/api/auth/me";
-      path: "/api/auth/me";
-      fullPath: "/api/auth/me";
-      preLoaderRoute: typeof ApiAuthMeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/auth/logout": {
-      id: "/api/auth/logout";
-      path: "/api/auth/logout";
-      fullPath: "/api/auth/logout";
-      preLoaderRoute: typeof ApiAuthLogoutRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/auth/login": {
-      id: "/api/auth/login";
-      path: "/api/auth/login";
-      fullPath: "/api/auth/login";
-      preLoaderRoute: typeof ApiAuthLoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/auth/bootstrap-state": {
-      id: "/api/auth/bootstrap-state";
-      path: "/api/auth/bootstrap-state";
-      fullPath: "/api/auth/bootstrap-state";
-      preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/console/pages/$id": {
-      id: "/api/console/pages/$id";
-      path: "/$id";
-      fullPath: "/api/console/pages/$id";
-      preLoaderRoute: typeof ApiConsolePagesIdRouteImport;
-      parentRoute: typeof ApiConsolePagesRoute;
-    };
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stats': {
+      id: '/api/stats'
+      path: '/api/stats'
+      fullPath: '/api/stats'
+      preLoaderRoute: typeof ApiStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/projects': {
+      id: '/api/projects'
+      path: '/api/projects'
+      fullPath: '/api/projects'
+      preLoaderRoute: typeof ApiProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile': {
+      id: '/api/profile'
+      path: '/api/profile'
+      fullPath: '/api/profile'
+      preLoaderRoute: typeof ApiProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/experience': {
+      id: '/api/experience'
+      path: '/api/experience'
+      fullPath: '/api/experience'
+      preLoaderRoute: typeof ApiExperienceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blogs': {
+      id: '/api/blogs'
+      path: '/api/blogs'
+      fullPath: '/api/blogs'
+      preLoaderRoute: typeof ApiBlogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/github/stats': {
+      id: '/api/github/stats'
+      path: '/api/github/stats'
+      fullPath: '/api/github/stats'
+      preLoaderRoute: typeof ApiGithubStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/pages': {
+      id: '/api/console/pages'
+      path: '/api/console/pages'
+      fullPath: '/api/console/pages'
+      preLoaderRoute: typeof ApiConsolePagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blogs/$slug': {
+      id: '/api/blogs/$slug'
+      path: '/$slug'
+      fullPath: '/api/blogs/$slug'
+      preLoaderRoute: typeof ApiBlogsSlugRouteImport
+      parentRoute: typeof ApiBlogsRoute
+    }
+    '/api/auth/refresh': {
+      id: '/api/auth/refresh'
+      path: '/api/auth/refresh'
+      fullPath: '/api/auth/refresh'
+      preLoaderRoute: typeof ApiAuthRefreshRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/me': {
+      id: '/api/auth/me'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me'
+      preLoaderRoute: typeof ApiAuthMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/bootstrap-state': {
+      id: '/api/auth/bootstrap-state'
+      path: '/api/auth/bootstrap-state'
+      fullPath: '/api/auth/bootstrap-state'
+      preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/pages/$id': {
+      id: '/api/console/pages/$id'
+      path: '/$id'
+      fullPath: '/api/console/pages/$id'
+      preLoaderRoute: typeof ApiConsolePagesIdRouteImport
+      parentRoute: typeof ApiConsolePagesRoute
+    }
   }
 }
 
 interface ApiBlogsRouteChildren {
-  ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute;
+  ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute
 }
 
 const ApiBlogsRouteChildren: ApiBlogsRouteChildren = {
   ApiBlogsSlugRoute: ApiBlogsSlugRoute,
-};
+}
 
-const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(ApiBlogsRouteChildren);
+const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
+  ApiBlogsRouteChildren,
+)
 
 interface ApiConsolePagesRouteChildren {
-  ApiConsolePagesIdRoute: typeof ApiConsolePagesIdRoute;
+  ApiConsolePagesIdRoute: typeof ApiConsolePagesIdRoute
 }
 
 const ApiConsolePagesRouteChildren: ApiConsolePagesRouteChildren = {
   ApiConsolePagesIdRoute: ApiConsolePagesIdRoute,
-};
+}
 
 const ApiConsolePagesRouteWithChildren = ApiConsolePagesRoute._addFileChildren(
   ApiConsolePagesRouteChildren,
-);
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ConsoleRoute: ConsoleRoute,
+  SplatRoute: SplatRoute,
+  AboutRoute: AboutRoute,
+  HomeRoute: HomeRoute,
   ApiBlogsRoute: ApiBlogsRouteWithChildren,
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
@@ -390,16 +434,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
   ApiConsolePagesRoute: ApiConsolePagesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { createStart } from "@tanstack/react-start";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

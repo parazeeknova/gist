@@ -48,9 +48,16 @@
   }
   html {
     -ms-overflow-style: none;
+    background-color: var(--color-bg);
     font-family: "Ubuntu Mono", monospace;
-    text-transform: lowercase;
+    scroll-behavior: smooth;
     scrollbar-width: none;
+    text-transform: lowercase;
+    transition: background-color 0.5s ease-out;
+  }
+
+  body {
+    background-color: var(--color-bg);
   }
 
   html::-webkit-scrollbar {
