@@ -73,7 +73,7 @@ const RootShell = ({ children }: { children: React.ReactNode }) => (
     <head>
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){var t=localStorage.getItem("theme")||"dark";document.documentElement.dataset.theme=t})()`,
+          __html: `(function(){var t='dark';try{t=localStorage.getItem('theme')||'dark'}catch(e){}document.documentElement.dataset.theme=t})()`,
         }}
       />
       <HeadContent />
@@ -146,7 +146,8 @@ export const Route = createRootRoute({
         property: "og:description",
       },
       {
-        content: "/verso-og.png",
+        content:
+          "http://cdn.itssingularity.com/images/2026/05/02/52d60e02dc868234b4c03f50270ba3f0.png",
         property: "og:image",
       },
       {
@@ -166,7 +167,8 @@ export const Route = createRootRoute({
         property: "twitter:description",
       },
       {
-        content: "/verso-og.png",
+        content:
+          "http://cdn.itssingularity.com/images/2026/05/02/52d60e02dc868234b4c03f50270ba3f0.png",
         property: "twitter:image",
       },
       {

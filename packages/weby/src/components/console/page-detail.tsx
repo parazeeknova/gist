@@ -1,29 +1,33 @@
-import type { ConsolePageDetail } from "#/types";
-import { useQuery } from "@tanstack/react-query";
-import { fetchProtected } from "../../hooks/fetch-protected";
+import { ClockCounterClockwiseIcon } from "@phosphor-icons/react";
+import { useState } from "react";
 import { useTheme } from "../../hooks/use-theme";
+import {
+  useConsolePage,
+  useDeletePage,
+  usePublishPage,
+  useUnpublishPage,
+} from "../../hooks/use-console-mutations";
+import { PageEditor } from "./page-editor";
+import { PageHistory } from "./page-history";
 
 interface PageDetailProps {
   pageId: string;
+  onDeleted?: () => void;
 }
 
-const useConsolePage = (pageId: string) =>
-  useQuery<ConsolePageDetail>({
-    queryFn: ({ signal }) =>
-      fetchProtected<ConsolePageDetail>(`/api/console/pages/${pageId}`, { signal }),
-    queryKey: ["consolePage", pageId],
-    staleTime: 30 * 1000,
-  });
-
-export const PageDetail = ({ pageId }: PageDetailProps) => {
+export const PageDetail = ({ pageId, onDeleted }: PageDetailProps) => {
   const { data: page, isPending, isError } = useConsolePage(pageId);
+  const deletePage = useDeletePage();
+  const publishPage = usePublishPage();
+  const unpublishPage = useUnpublishPage();
   const { isDarkMode } = useTheme();
+  const [showHistory, setShowHistory] = useState(false);
 
-  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  const themeClass = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   if (isPending) {
     return (
-      <p className={`text-[13px] ${t("text-text-dark/40", "text-text-light/40")}`}>
+      <p className={`text-[13px] ${themeClass("text-text-dark/40", "text-text-light/40")}`}>
         loading page...
       </p>
     );
@@ -35,43 +39,88 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
 
   if (!page) {
     return (
-      <p className={`text-[13px] ${t("text-text-dark/40", "text-text-light/40")}`}>
+      <p className={`text-[13px] ${themeClass("text-text-dark/40", "text-text-light/40")}`}>
         page not found
       </p>
     );
   }
 
   return (
-    <article className="mx-auto max-w-2xl px-4">
-      <header className="mb-6 space-y-3">
+    <div>
+      <div className="mx-auto max-w-2xl px-4 mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-3 text-[11px]">
+          <span
+            className={`rounded px-2 py-0.5 ${
+              page.isPublished
+                ? themeClass("bg-green-500/20 text-green-400", "bg-green-500/10 text-green-700")
+                : themeClass("bg-yellow-500/20 text-yellow-400", "bg-yellow-500/10 text-yellow-700")
+            }`}
+          >
+            {page.isPublished ? "published" : "draft"}
+          </span>
+          <span className={themeClass("text-text-dark/40", "text-text-light/40")}>
+            /{page.slugId}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
-          <span className="text-xl">{page.icon}</span>
-          <h2 className={`text-lg font-medium ${t("text-text-dark", "text-text-light")}`}>
-            {page.title}
-          </h2>
+          <button
+            className={`text-[11px] rounded px-2 py-1 transition-colors ${themeClass(
+              "text-text-dark/50 hover:text-text-dark hover:bg-white/10",
+              "text-text-light/50 hover:text-text-light hover:bg-black/10",
+            )}`}
+            onClick={() => setShowHistory((prev) => !prev)}
+            type="button"
+            title="Page history"
+          >
+            <ClockCounterClockwiseIcon size={12} />
+          </button>
+          {page.isPublished ? (
+            <button
+              className={`text-[11px] rounded px-2 py-1 transition-colors ${themeClass(
+                "text-text-dark/50 hover:text-text-dark hover:bg-white/10",
+                "text-text-light/50 hover:text-text-light hover:bg-black/10",
+              )}`}
+              disabled={unpublishPage.isPending}
+              onClick={() => unpublishPage.mutate(page.id)}
+              type="button"
+            >
+              unpublish
+            </button>
+          ) : (
+            <button
+              className={`text-[11px] rounded px-2 py-1 transition-colors ${themeClass(
+                "text-text-dark/50 hover:text-green-400 hover:bg-white/10",
+                "text-text-light/50 hover:text-green-700 hover:bg-black/10",
+              )}`}
+              disabled={publishPage.isPending}
+              onClick={() => publishPage.mutate(page.id)}
+              type="button"
+            >
+              publish
+            </button>
+          )}
+          <button
+            className={`text-[11px] rounded px-2 py-1 transition-colors ${themeClass(
+              "text-text-dark/50 hover:text-red-400 hover:bg-white/10",
+              "text-text-light/50 hover:text-red-600 hover:bg-black/10",
+            )}`}
+            disabled={deletePage.isPending}
+            onClick={() => {
+              // eslint-disable-next-line no-alert
+              if (confirm(`Delete "${page.title}" and all its children? This cannot be undone.`)) {
+                deletePage.mutate(page.id, {
+                  onSuccess: () => onDeleted?.(),
+                });
+              }
+            }}
+            type="button"
+          >
+            delete
+          </button>
         </div>
-        <div
-          className={`flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] ${t("text-text-dark/40", "text-text-light/40")}`}
-        >
-          <span>{page.isPublished ? "published" : "draft"}</span>
-          <span>slug: {page.slugId}</span>
-          <span>updated: {new Date(page.updatedAt).toISOString().slice(0, 10)}</span>
-        </div>
-        {page.coverPhoto && (
-          <img
-            alt={`Cover for ${page.title}`}
-            className={`w-full rounded border object-cover ${t("border-border-dark", "border-border-light")}`}
-            src={page.coverPhoto}
-          />
-        )}
-      </header>
-      <div className="max-w-none">
-        <pre
-          className={`whitespace-pre-wrap wrap-break-word rounded border p-4 text-[13px] ${t("border-border-dark bg-black/20 text-text-dark/70", "border-border-light bg-black/5 text-text-light/70")}`}
-        >
-          {page.textContent}
-        </pre>
       </div>
-    </article>
+
+      {showHistory ? <PageHistory pageId={page.id} /> : <PageEditor page={page} />}
+    </div>
   );
 };

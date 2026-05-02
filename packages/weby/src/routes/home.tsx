@@ -6,17 +6,6 @@ import { useTheme } from "../hooks/use-theme";
 import { ConsoleLayout } from "../components/console/console-layout";
 
 const Console = function Console() {
-  // Sync theme init before anything reads it
-  if (typeof document !== "undefined" && !document.documentElement.dataset.theme) {
-    const saved = typeof localStorage === "undefined" ? null : localStorage.getItem("theme");
-    document.documentElement.dataset.theme = saved === "light" ? "light" : "dark";
-  }
-  // Set body bg to match theme (prevents white flash behind loader)
-  if (typeof document !== "undefined") {
-    document.body.style.backgroundColor =
-      document.documentElement.dataset.theme === "light" ? "#eeeeee" : "#111111";
-  }
-
   const { data: user, isPending } = useAuth();
   const navigate = useNavigate();
   const { isDarkMode } = useTheme();
@@ -25,7 +14,14 @@ const Console = function Console() {
 
   // Keep body background in sync with theme
   useEffect(() => {
-    document.body.style.backgroundColor = isDarkMode ? "#111111" : "#eeeeee";
+    if (typeof document !== "undefined") {
+      document.body.style.backgroundColor = isDarkMode ? "#111111" : "#eeeeee";
+    }
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.style.backgroundColor = "";
+      }
+    };
   }, [isDarkMode]);
 
   useEffect(() => {

@@ -32,7 +32,12 @@ const ensureInitialized = () => {
   }
   initialized = true;
   if (typeof document !== "undefined" && !document.documentElement.dataset.theme) {
-    const stored = localStorage.getItem("theme") || "dark";
+    let stored = "dark";
+    try {
+      stored = localStorage.getItem("theme") || "dark";
+    } catch {
+      // Storage unavailable (e.g., Safari private mode)
+    }
     document.documentElement.dataset.theme = stored;
     notify();
   }
@@ -48,8 +53,10 @@ export const useTheme = () => {
   const toggleTheme = useCallback(() => {
     const next = isDarkMode ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    if (typeof localStorage !== "undefined") {
+    try {
       localStorage.setItem("theme", next);
+    } catch {
+      // Storage unavailable (e.g., Safari private mode)
     }
     notify();
   }, [isDarkMode]);

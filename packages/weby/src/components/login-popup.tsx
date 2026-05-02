@@ -119,7 +119,10 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
   const { data: stats } = useQuery<Stats>({
     queryFn: async ({ signal }) => {
       const response = await fetch("/api/stats", { signal });
-      return response.ok ? response.json() : null;
+      if (!response.ok) {
+        throw new Error("Failed to fetch stats");
+      }
+      return response.json() as Promise<Stats>;
     },
     queryKey: ["stats"],
     staleTime: 5 * 60 * 1000,
@@ -498,7 +501,7 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                 }}
                 onNavigateConsole={() => {
                   setOpen(false);
-                  navigate({ to: "/home" });
+                  void navigate({ to: "/home" });
                 }}
                 stats={stats ?? undefined}
                 user={user}

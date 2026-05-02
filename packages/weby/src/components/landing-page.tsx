@@ -476,28 +476,38 @@ const InteractivePreview = () => {
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
-  const scheduleTick = () => {
-    timerRef.current = setTimeout(() => {
-      const elapsed = Date.now() - startTimeRef.current;
-      const pct = Math.min((elapsed / DURATION) * 100, 100);
-      setProgress(pct);
-      if (pct >= 100) {
-        setActive((a) => (a + 1) % DEMOS.length);
-      } else {
-        scheduleTick();
-      }
-    }, 30);
-  };
+  const cancelledRef = useRef(false);
 
   useEffect(() => {
+    cancelledRef.current = false;
     startTimeRef.current = Date.now();
+
+    const scheduleTick = () => {
+      if (cancelledRef.current) {
+        return;
+      }
+      timerRef.current = setTimeout(() => {
+        if (cancelledRef.current) {
+          return;
+        }
+        const elapsed = Date.now() - startTimeRef.current;
+        const pct = Math.min((elapsed / DURATION) * 100, 100);
+        setProgress(pct);
+        if (pct >= 100) {
+          setActive((a) => (a + 1) % DEMOS.length);
+        } else {
+          scheduleTick();
+        }
+      }, 30);
+    };
+
     scheduleTick();
     return () => {
+      cancelledRef.current = true;
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
   useEffect(() => {

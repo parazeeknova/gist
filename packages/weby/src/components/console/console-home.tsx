@@ -47,7 +47,9 @@ export const ConsoleHome = () => {
   const subMessage = useMemo(() => subMessages[Math.floor(Math.random() * subMessages.length)], []);
 
   const mySpaces = placeholderSpaces;
-  const recentDocs = (pages ?? []).slice(0, 6);
+  const recentDocs = [...(pages ?? [])]
+    .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 6);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col px-4 pt-12">

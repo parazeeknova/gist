@@ -41,7 +41,10 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   const { data: stats } = useQuery<Stats>({
     queryFn: async ({ signal }) => {
       const r = await fetch("/api/stats", { signal });
-      return r.ok ? r.json() : null;
+      if (!r.ok) {
+        throw new Error("Failed to fetch stats");
+      }
+      return r.json() as Promise<Stats>;
     },
     queryKey: ["stats"],
     staleTime: 5 * 60 * 1000,
@@ -99,10 +102,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
 
   return (
     <nav
-      className={`relative flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")}`}
-      style={{
-        backgroundColor: isDarkMode ? "#1a1a1a" : "#e5e5e5",
-      }}
+      className={`relative flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")} ${isDarkMode ? "bg-[#1a1a1a]" : "bg-[#e5e5e5]"}`}
     >
       {/* Left: sidebar toggle + brand + desktop nav links */}
       <div className="flex items-center gap-2 md:gap-3">

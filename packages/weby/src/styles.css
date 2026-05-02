@@ -53,7 +53,6 @@
     scroll-behavior: smooth;
     scrollbar-width: none;
     text-transform: lowercase;
-    transition: background-color 0.5s ease-out;
   }
 
   body {

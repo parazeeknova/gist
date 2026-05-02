@@ -18,7 +18,7 @@ export const ConsoleLayout = () => {
     }
     return window.innerWidth >= 768;
   });
-  const [activeTab, setActiveTab] = useState<"spaces" | "public" | "profile">("spaces");
+  const [activeTab, setActiveTab] = useState<"spaces" | "favorites" | "profile">("spaces");
   const sidebarRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
 
@@ -42,6 +42,10 @@ export const ConsoleLayout = () => {
     });
   }, [sidebarOpen]);
 
+  const handlePageDeleted = useCallback(() => {
+    setSelectedPageId(null);
+  }, []);
+
   useEffect(() => {
     if (sidebarRef.current) {
       const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
@@ -61,10 +65,7 @@ export const ConsoleLayout = () => {
       <div className="relative flex flex-1 overflow-hidden">
         <aside
           ref={sidebarRef}
-          className={`absolute inset-y-0 left-0 z-40 md:relative md:shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")}`}
-          style={{
-            backgroundColor: isDarkMode ? "#171717" : "#e8e8e8",
-          }}
+          className={`absolute inset-y-0 left-0 z-40 md:relative md:shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")} ${isDarkMode ? "bg-[#171717]" : "bg-[#e8e8e8]"}`}
         >
           <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto">
             <div
@@ -79,8 +80,8 @@ export const ConsoleLayout = () => {
               </button>
               <span className={t("text-text-dark/20", "text-text-light/20")}>|</span>
               <button
-                className={`${activeTab === "public" ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-                onClick={() => setActiveTab("public")}
+                className={`${activeTab === "favorites" ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+                onClick={() => setActiveTab("favorites")}
                 type="button"
               >
                 favorites
@@ -136,7 +137,11 @@ export const ConsoleLayout = () => {
         </aside>
 
         <main className="min-h-0 flex-1 overflow-y-auto relative">
-          {selectedPageId ? <PageDetail pageId={selectedPageId} /> : <ConsoleHome />}
+          {selectedPageId ? (
+            <PageDetail pageId={selectedPageId} onDeleted={handlePageDeleted} />
+          ) : (
+            <ConsoleHome />
+          )}
         </main>
       </div>
     </div>

@@ -6,7 +6,7 @@ export const Route = createFileRoute("/api/stats")({
     handlers: {
       GET: async () => {
         const stats = await getStats();
-        return Response.json(stats ?? { pages: 0, posts: 0 });
+        return Response.json(stats ?? { pages: 0, posts: 0, readmes: 0 });
       },
     },
   },
