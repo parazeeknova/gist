@@ -102,6 +102,7 @@ type Page struct {
 	Position        string          `json:"position"`
 	IsPublished     bool            `json:"is_published"`
 	ParentPageID    *string         `json:"parent_page_id,omitempty"`
+	SpaceID         string          `json:"space_id"`
 	CreatorID       string          `json:"creator_id"`
 	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
@@ -117,9 +118,20 @@ type PageTreeItem struct {
 	Position     string  `json:"position"`
 	IsPublished  bool    `json:"isPublished"`
 	ParentPageID *string `json:"parentPageId,omitempty"`
+	SpaceID      string  `json:"spaceId"`
 	HasChildren  bool    `json:"hasChildren"`
 	CreatedAt    string  `json:"createdAt"`
 	UpdatedAt    string  `json:"updatedAt"`
+}
+
+// Space represents a space grouping pages together.
+type Space struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Icon      string `json:"icon"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 // PageHistory represents a page history entry

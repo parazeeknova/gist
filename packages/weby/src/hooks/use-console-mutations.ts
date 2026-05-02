@@ -6,16 +6,21 @@ import type {
   PageHistoryItem,
   PageTreeItem,
   RestorePageInput,
+  Space,
   UpdatePageInput,
 } from "#/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
 
 // Page tree
-export const usePageTree = () =>
+export const usePageTree = (spaceId: string) =>
   useQuery<PageTreeItem[]>({
-    queryFn: ({ signal }) => fetchProtected<PageTreeItem[]>("/api/console/pages/tree", { signal }),
-    queryKey: ["pageTree"],
+    queryFn: ({ signal }) =>
+      fetchProtected<PageTreeItem[]>(
+        `/api/console/pages/tree?spaceId=${encodeURIComponent(spaceId)}`,
+        { signal },
+      ),
+    queryKey: ["pageTree", spaceId],
     staleTime: 30 * 1000,
   });
 
@@ -178,6 +183,43 @@ export const useRestorePage = () => {
       queryClient.invalidateQueries({ queryKey: ["consolePage", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["pageHistory", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
+      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+    },
+  });
+};
+
+// Spaces
+export const useSpaces = () =>
+  useQuery<Space[]>({
+    queryFn: ({ signal }) => fetchProtected<Space[]>("/api/console/spaces", { signal }),
+    queryKey: ["spaces"],
+    staleTime: 60 * 1000,
+  });
+
+export const useCreateSpace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; slug: string; icon?: string }) =>
+      fetchProtected<Space>("/api/console/spaces", {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useDeleteSpace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
     },
   });

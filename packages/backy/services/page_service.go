@@ -96,7 +96,7 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 	}
 
 	if page.Position == "" {
-		lastPos, posErr := s.pageRepo.LastPosition(ctx, page.ParentPageID)
+		lastPos, posErr := s.pageRepo.LastPosition(ctx, page.SpaceID, page.ParentPageID)
 		if posErr != nil {
 			return fmt.Errorf("getting last position: %w", posErr)
 		}
@@ -105,12 +105,12 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 
 	_, err = tx.Exec(ctx,
 		`INSERT INTO pages (id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		                   text_content, position, is_published, parent_page_id, creator_id,
+		                   text_content, position, is_published, parent_page_id, space_id, creator_id,
 		                   last_updated_by_id, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 		page.ID, page.SlugID, page.Title, page.Icon, page.CoverPhoto,
 		contentJSONBytes, page.YDoc, page.TextContent, page.Position, page.IsPublished,
-		page.ParentPageID, page.CreatorID, page.LastUpdatedByID,
+		page.ParentPageID, page.SpaceID, page.CreatorID, page.LastUpdatedByID,
 		page.CreatedAt, page.UpdatedAt,
 	)
 	if err != nil {
@@ -142,13 +142,13 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 	var contentJSONBytes []byte
 	err = tx.QueryRow(ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&current.ID, &current.SlugID, &current.Title, &current.Icon, &current.CoverPhoto,
 		&contentJSONBytes, &current.YDoc, &current.TextContent, &current.Position, &current.IsPublished,
-		&current.ParentPageID, &current.CreatorID, &current.LastUpdatedByID,
+		&current.ParentPageID, &current.SpaceID, &current.CreatorID, &current.LastUpdatedByID,
 		&current.CreatedAt, &current.UpdatedAt,
 	)
 	if err != nil {
@@ -255,13 +255,13 @@ func (s *PageService) setPublished(ctx context.Context, pageID string, userID st
 	var contentJSONBytes []byte
 	err = tx.QueryRow(ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
 		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.CreatorID, &page.LastUpdatedByID,
+		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
 		&page.CreatedAt, &page.UpdatedAt,
 	)
 	if err != nil {
@@ -299,9 +299,9 @@ func (s *PageService) setPublished(ctx context.Context, pageID string, userID st
 	return page, nil
 }
 
-// ListRootPages returns root-level pages as tree items.
-func (s *PageService) ListRootPages(ctx context.Context) ([]models.PageTreeItem, error) {
-	return s.pageRepo.ListRoots(ctx)
+// ListRootPages returns root-level pages in a space as tree items.
+func (s *PageService) ListRootPages(ctx context.Context, spaceID string) ([]models.PageTreeItem, error) {
+	return s.pageRepo.ListRoots(ctx, spaceID)
 }
 
 // ListChildPages returns child pages of a parent as tree items.
@@ -309,9 +309,9 @@ func (s *PageService) ListChildPages(ctx context.Context, parentID string) ([]mo
 	return s.pageRepo.ListChildren(ctx, parentID)
 }
 
-// ListTree returns all pages as a flat tree.
-func (s *PageService) ListTree(ctx context.Context) ([]models.PageTreeItem, error) {
-	return s.pageRepo.ListTree(ctx)
+// ListTree returns all pages in a space as a flat tree.
+func (s *PageService) ListTree(ctx context.Context, spaceID string) ([]models.PageTreeItem, error) {
+	return s.pageRepo.ListTree(ctx, spaceID)
 }
 
 // MovePage repositions a page within the tree (changes parent and/or position).
@@ -327,13 +327,13 @@ func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *
 	var contentJSONBytes []byte
 	err = tx.QueryRow(ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
 		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.CreatorID, &page.LastUpdatedByID,
+		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
 		&page.CreatedAt, &page.UpdatedAt,
 	)
 	if err != nil {
@@ -413,13 +413,13 @@ func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID 
 	var contentJSONBytes []byte
 	err = tx.QueryRow(ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
 		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.CreatorID, &page.LastUpdatedByID,
+		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
 		&page.CreatedAt, &page.UpdatedAt,
 	)
 	if err != nil {
@@ -548,13 +548,13 @@ func (s *PageService) deletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx,
 	var contentJSONBytes []byte
 	err = tx.QueryRow(ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
 		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.CreatorID, &page.LastUpdatedByID,
+		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
 		&page.CreatedAt, &page.UpdatedAt,
 	)
 	if err != nil {

@@ -96,6 +96,7 @@ export interface ConsolePageDetail {
   position: string;
   isPublished: boolean;
   parentPageId: string | null;
+  spaceId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,6 +109,7 @@ export interface PageTreeItem {
   position: string;
   isPublished: boolean;
   parentPageId: string | null;
+  spaceId: string;
   hasChildren: boolean;
   createdAt: string;
   updatedAt: string;
@@ -128,6 +130,7 @@ export interface CreatePageInput {
   slugId: string;
   title: string;
   icon?: string;
+  spaceId: string;
   parentPageId?: string;
 }
 
@@ -146,4 +149,13 @@ export interface MovePageInput {
 
 export interface RestorePageInput {
   historyId: string;
+}
+
+export interface Space {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  createdAt: string;
+  updatedAt: string;
 }

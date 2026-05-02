@@ -1,13 +1,20 @@
 import type { PageTreeItem } from "#/types";
 import { CaretDownIcon, CaretRightIcon, PlusIcon } from "@phosphor-icons/react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTheme } from "../../hooks/use-theme";
-import { useCreatePage, useDeletePage, usePageTree } from "../../hooks/use-console-mutations";
+import {
+  useCreatePage,
+  useDeletePage,
+  usePageTree,
+  useSpaces,
+} from "../../hooks/use-console-mutations";
 
 interface PageListProps {
   onSelectPage: (id: string) => void;
   selectedPageId: string | null;
   activeTab: "spaces" | "favorites" | "profile";
+  selectedSpaceId: string;
+  onSelectSpace: (id: string) => void;
 }
 
 interface TreeNodeProps {
@@ -129,8 +136,14 @@ const TreeNode = ({
   );
 };
 
-export const PageList = ({ onSelectPage, selectedPageId, activeTab }: PageListProps) => {
-  const { data: treeItems, isPending, isError } = usePageTree();
+export const PageList = ({
+  onSelectPage,
+  selectedPageId,
+  selectedSpaceId,
+  onSelectSpace,
+}: PageListProps) => {
+  const { data: treeItems, isPending, isError } = usePageTree(selectedSpaceId);
+  const { data: spaces } = useSpaces();
   const createPage = useCreatePage();
   const deletePage = useDeletePage();
   const { isDarkMode } = useTheme();
@@ -141,18 +154,26 @@ export const PageList = ({ onSelectPage, selectedPageId, activeTab }: PageListPr
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
-  const emptyMessages: Record<PageListProps["activeTab"], string> = {
-    favorites: "nothing's public yet",
-    profile: "shh, privacy",
-    spaces: "no spaces yet",
-  };
+  // Auto-select first space
+  useEffect(() => {
+    if (!selectedSpaceId && spaces && spaces.length > 0) {
+      onSelectSpace(spaces[0].id);
+    }
+  }, [spaces, selectedSpaceId, onSelectSpace]);
+
+  const spaceList = spaces ?? [];
 
   const handleCreate = useCallback(() => {
-    if (!newSlugId.trim() || !newTitle.trim()) {
+    if (!newSlugId.trim() || !newTitle.trim() || !selectedSpaceId) {
       return;
     }
     createPage.mutate(
-      { parentPageId: createParentId, slugId: newSlugId.trim(), title: newTitle.trim() },
+      {
+        parentPageId: createParentId,
+        slugId: newSlugId.trim(),
+        spaceId: selectedSpaceId,
+        title: newTitle.trim(),
+      },
       {
         onSuccess: (data) => {
           setShowCreateForm(false);
@@ -163,7 +184,7 @@ export const PageList = ({ onSelectPage, selectedPageId, activeTab }: PageListPr
         },
       },
     );
-  }, [newSlugId, newTitle, createParentId, createPage, onSelectPage]);
+  }, [newSlugId, newTitle, createParentId, selectedSpaceId, createPage, onSelectPage]);
 
   const handleAddChild = useCallback((parentId: string) => {
     setCreateParentId(parentId);
@@ -174,142 +195,178 @@ export const PageList = ({ onSelectPage, selectedPageId, activeTab }: PageListPr
 
   const rootItems = treeItems?.filter((item) => item.parentPageId === null) ?? [];
 
-  if (isPending) {
-    return (
-      <p
-        className={`flex-1 flex items-center justify-center text-[13px] ${t("text-text-dark/40", "text-text-light/40")}`}
-      >
-        loading pages...
-      </p>
-    );
-  }
-
-  if (isError) {
-    return (
-      <p className="flex-1 flex items-center justify-center text-[13px] text-red-400">
-        failed to load pages
-      </p>
-    );
-  }
-
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className="mb-2 flex items-center justify-between">
-        <span className={`text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}>
-          {treeItems?.length ?? 0} pages
-        </span>
-        <button
-          className={`flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 transition-colors ${t(
-            "text-text-dark/50 hover:text-text-dark hover:bg-white/10",
-            "text-text-light/50 hover:text-text-light hover:bg-black/10",
+      {/* Space Selector */}
+      <div className="mb-2">
+        <select
+          className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none lowercase ${t(
+            "border-border-dark text-text-dark/70",
+            "border-border-light text-text-light/70",
           )}`}
-          onClick={() => {
-            setCreateParentId(undefined);
-            setNewSlugId("");
-            setNewTitle("");
-            setShowCreateForm(true);
-          }}
-          type="button"
+          onChange={(e) => onSelectSpace(e.target.value)}
+          value={selectedSpaceId}
         >
-          <PlusIcon size={10} />
-          new
-        </button>
+          {spaceList.length === 0 && (
+            <option value="" disabled>
+              no spaces
+            </option>
+          )}
+          {spaceList.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {showCreateForm && (
-        <div
-          className={`mb-3 rounded border p-3 space-y-2 ${t("border-border-dark", "border-border-light")}`}
-        >
-          <input
-            autoFocus
-            className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none ${t(
-              "border-border-dark text-text-dark placeholder-text-dark/30",
-              "border-border-light text-text-light placeholder-text-light/30",
-            )}`}
-            onChange={(e) => setNewSlugId(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreate();
-              }
-              if (e.key === "Escape") {
-                setShowCreateForm(false);
-              }
-            }}
-            placeholder="slug (e.g. notes/getting-started)"
-            value={newSlugId}
-          />
-          <input
-            className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none ${t(
-              "border-border-dark text-text-dark placeholder-text-dark/30",
-              "border-border-light text-text-light placeholder-text-light/30",
-            )}`}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                handleCreate();
-              }
-              if (e.key === "Escape") {
-                setShowCreateForm(false);
-              }
-            }}
-            placeholder="title"
-            value={newTitle}
-          />
-          {createParentId && (
-            <p className={`text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}>
-              will be created as a child page
-            </p>
-          )}
-          <div className="flex gap-2">
+      {selectedSpaceId ? (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <span className={`text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+              {treeItems?.length ?? 0} pages
+            </span>
             <button
-              className={`text-[11px] rounded px-2 py-1 transition-colors ${t(
-                "bg-white/10 text-text-dark/80 hover:bg-white/20",
-                "bg-black/10 text-text-light/80 hover:bg-black/20",
-              )}`}
-              disabled={createPage.isPending || !newSlugId.trim() || !newTitle.trim()}
-              onClick={handleCreate}
-              type="button"
-            >
-              {createPage.isPending ? "creating..." : "create"}
-            </button>
-            <button
-              className={`text-[11px] rounded px-2 py-1 transition-colors ${t(
-                "text-text-dark/40 hover:text-text-dark",
-                "text-text-light/40 hover:text-text-light",
+              className={`flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 transition-colors ${t(
+                "text-text-dark/50 hover:text-text-dark hover:bg-white/10",
+                "text-text-light/50 hover:text-text-light hover:bg-black/10",
               )}`}
               onClick={() => {
-                setShowCreateForm(false);
                 setCreateParentId(undefined);
+                setNewSlugId("");
+                setNewTitle("");
+                setShowCreateForm(true);
               }}
               type="button"
             >
-              cancel
+              <PlusIcon size={10} />
+              new
             </button>
           </div>
-        </div>
-      )}
 
-      {!treeItems || treeItems.length === 0 ? (
+          {showCreateForm && (
+            <div
+              className={`mb-3 rounded border p-3 space-y-2 ${t("border-border-dark", "border-border-light")}`}
+            >
+              <input
+                autoFocus
+                className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none ${t(
+                  "border-border-dark text-text-dark placeholder-text-dark/30",
+                  "border-border-light text-text-light placeholder-text-light/30",
+                )}`}
+                onChange={(e) => setNewSlugId(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleCreate();
+                  }
+                  if (e.key === "Escape") {
+                    setShowCreateForm(false);
+                  }
+                }}
+                placeholder="slug (e.g. getting-started)"
+                value={newSlugId}
+              />
+              <input
+                className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none ${t(
+                  "border-border-dark text-text-dark placeholder-text-dark/30",
+                  "border-border-light text-text-light placeholder-text-light/30",
+                )}`}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleCreate();
+                  }
+                  if (e.key === "Escape") {
+                    setShowCreateForm(false);
+                  }
+                }}
+                placeholder="title"
+                value={newTitle}
+              />
+              {createParentId && (
+                <p className={`text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+                  will be created as a child page
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  className={`text-[11px] rounded px-2 py-1 transition-colors ${t(
+                    "bg-white/10 text-text-dark/80 hover:bg-white/20",
+                    "bg-black/10 text-text-light/80 hover:bg-black/20",
+                  )}`}
+                  disabled={createPage.isPending || !newSlugId.trim() || !newTitle.trim()}
+                  onClick={handleCreate}
+                  type="button"
+                >
+                  {createPage.isPending ? "creating..." : "create"}
+                </button>
+                <button
+                  className={`text-[11px] rounded px-2 py-1 transition-colors ${t(
+                    "text-text-dark/40 hover:text-text-dark",
+                    "text-text-light/40 hover:text-text-light",
+                  )}`}
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setCreateParentId(undefined);
+                  }}
+                  type="button"
+                >
+                  cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {(() => {
+            if (isPending) {
+              return (
+                <p
+                  className={`flex-1 flex items-center justify-center text-[13px] ${t("text-text-dark/40", "text-text-light/40")}`}
+                >
+                  loading pages...
+                </p>
+              );
+            }
+            if (isError) {
+              return (
+                <p className="flex-1 flex items-center justify-center text-[13px] text-red-400">
+                  failed to load pages
+                </p>
+              );
+            }
+            if (!treeItems || treeItems.length === 0) {
+              return (
+                <p
+                  className={`flex-1 flex items-center justify-center text-[13px] ${t("text-text-dark/40", "text-text-light/40")}`}
+                >
+                  no pages yet
+                </p>
+              );
+            }
+            return (
+              <ul className="space-y-0 overflow-y-auto flex-1">
+                {rootItems.map((item) => (
+                  <TreeNode
+                    allItems={treeItems}
+                    depth={0}
+                    item={item}
+                    key={item.id}
+                    onAddChild={handleAddChild}
+                    onDelete={(id) => deletePage.mutate(id)}
+                    onSelectPage={onSelectPage}
+                    selectedPageId={selectedPageId}
+                  />
+                ))}
+              </ul>
+            );
+          })()}
+        </>
+      ) : (
         <p
           className={`flex-1 flex items-center justify-center text-[13px] ${t("text-text-dark/40", "text-text-light/40")}`}
         >
-          {emptyMessages[activeTab]}
+          select a space
         </p>
-      ) : (
-        <ul className="space-y-0 overflow-y-auto flex-1">
-          {rootItems.map((item) => (
-            <TreeNode
-              allItems={treeItems ?? []}
-              depth={0}
-              item={item}
-              key={item.id}
-              onAddChild={handleAddChild}
-              onDelete={(id) => deletePage.mutate(id)}
-              onSelectPage={onSelectPage}
-              selectedPageId={selectedPageId}
-            />
-          ))}
-        </ul>
       )}
     </div>
   );

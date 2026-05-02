@@ -27,7 +27,7 @@ func NewPageRepo(pool *pgxpool.Pool) *PageRepo {
 func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE slug_id = $1 AND is_published = true`
@@ -38,7 +38,7 @@ func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, err
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
 		&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 		&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-		&p.ParentPageID, &p.CreatorID, &p.LastUpdatedByID,
+		&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -57,7 +57,7 @@ func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, err
 func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE is_published = true
@@ -77,7 +77,7 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 		if err := rows.Scan(
 			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-			&p.ParentPageID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
 			&p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page row: %w", err)
@@ -99,7 +99,7 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		ORDER BY created_at DESC`
@@ -118,7 +118,7 @@ func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 		if err := rows.Scan(
 			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-			&p.ParentPageID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
 			&p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page row: %w", err)
@@ -140,7 +140,7 @@ func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE id = $1`
@@ -151,7 +151,7 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 		&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-		&p.ParentPageID, &p.CreatorID, &p.LastUpdatedByID,
+		&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -175,14 +175,14 @@ func (r *PageRepo) Insert(ctx context.Context, p models.Page) error {
 
 	query := `
 		INSERT INTO pages (id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		                   text_content, position, is_published, parent_page_id, creator_id,
+		                   text_content, position, is_published, parent_page_id, space_id, creator_id,
 		                   last_updated_by_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
 
 	_, err := r.pool.Exec(ctx, query,
 		p.ID, p.SlugID, p.Title, p.Icon, p.CoverPhoto,
 		contentJSONBytes, p.YDoc, p.TextContent, p.Position, p.IsPublished,
-		p.ParentPageID, p.CreatorID, p.LastUpdatedByID,
+		p.ParentPageID, p.SpaceID, p.CreatorID, p.LastUpdatedByID,
 		p.CreatedAt, p.UpdatedAt,
 	)
 	if err != nil {
@@ -233,17 +233,17 @@ func (r *PageRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// ListRoots returns all root pages (parent_page_id IS NULL) ordered by position.
-func (r *PageRepo) ListRoots(ctx context.Context) ([]models.PageTreeItem, error) {
+// ListRoots returns all root pages (parent_page_id IS NULL) in a space, ordered by position.
+func (r *PageRepo) ListRoots(ctx context.Context, spaceID string) ([]models.PageTreeItem, error) {
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
-		       p.parent_page_id, p.created_at, p.updated_at,
+		       p.parent_page_id, p.space_id, p.created_at, p.updated_at,
 		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
 		FROM pages p
-		WHERE p.parent_page_id IS NULL
+		WHERE p.parent_page_id IS NULL AND p.space_id = $1
 		ORDER BY p.position COLLATE "C"`
 
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.pool.Query(ctx, query, spaceID)
 	if err != nil {
 		return nil, fmt.Errorf("listing root pages: %w", err)
 	}
@@ -256,7 +256,7 @@ func (r *PageRepo) ListRoots(ctx context.Context) ([]models.PageTreeItem, error)
 func (r *PageRepo) ListChildren(ctx context.Context, parentID string) ([]models.PageTreeItem, error) {
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
-		       p.parent_page_id, p.created_at, p.updated_at,
+		       p.parent_page_id, p.space_id, p.created_at, p.updated_at,
 		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
 		FROM pages p
 		WHERE p.parent_page_id = $1
@@ -271,18 +271,19 @@ func (r *PageRepo) ListChildren(ctx context.Context, parentID string) ([]models.
 	return scanPageTreeItems(rows)
 }
 
-// ListTree returns all pages formatted as a flat tree.
-func (r *PageRepo) ListTree(ctx context.Context) ([]models.PageTreeItem, error) {
+// ListTree returns all pages in a space formatted as a flat tree.
+func (r *PageRepo) ListTree(ctx context.Context, spaceID string) ([]models.PageTreeItem, error) {
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
-		       p.parent_page_id, p.created_at, p.updated_at,
+		       p.parent_page_id, p.space_id, p.created_at, p.updated_at,
 		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
 		FROM pages p
+		WHERE p.space_id = $1
 		ORDER BY
 			CASE WHEN p.parent_page_id IS NULL THEN p.position ELSE (SELECT pp.position FROM pages pp WHERE pp.id = p.parent_page_id) END COLLATE "C",
 			p.position COLLATE "C"`
 
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.pool.Query(ctx, query, spaceID)
 	if err != nil {
 		return nil, fmt.Errorf("listing page tree: %w", err)
 	}
@@ -291,24 +292,25 @@ func (r *PageRepo) ListTree(ctx context.Context) ([]models.PageTreeItem, error) 
 	return scanPageTreeItems(rows)
 }
 
-// LastPosition returns the position of the last child under a parent (or last root if parentID is nil).
-func (r *PageRepo) LastPosition(ctx context.Context, parentID *string) (*string, error) {
+// LastPosition returns the position of the last child under a parent in a space.
+func (r *PageRepo) LastPosition(ctx context.Context, spaceID string, parentID *string) (*string, error) {
 	var query string
 	var args []any
 
 	if parentID != nil {
 		query = `
 			SELECT position FROM pages
-			WHERE parent_page_id = $1
+			WHERE space_id = $1 AND parent_page_id = $2
 			ORDER BY position COLLATE "C" DESC
 			LIMIT 1`
-		args = append(args, *parentID)
+		args = append(args, spaceID, *parentID)
 	} else {
 		query = `
 			SELECT position FROM pages
-			WHERE parent_page_id IS NULL
+			WHERE space_id = $1 AND parent_page_id IS NULL
 			ORDER BY position COLLATE "C" DESC
 			LIMIT 1`
+		args = append(args, spaceID)
 	}
 
 	var position *string
@@ -323,6 +325,16 @@ func (r *PageRepo) LastPosition(ctx context.Context, parentID *string) (*string,
 	return position, nil
 }
 
+// CountPagesInSpace returns the number of pages in a space.
+func (r *PageRepo) CountPagesInSpace(ctx context.Context, spaceID string) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1`, spaceID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("counting pages in space %q: %w", spaceID, err)
+	}
+	return count, nil
+}
+
 func scanPageTreeItems(rows pgx.Rows) ([]models.PageTreeItem, error) {
 	var items []models.PageTreeItem
 	for rows.Next() {
@@ -330,13 +342,12 @@ func scanPageTreeItems(rows pgx.Rows) ([]models.PageTreeItem, error) {
 		var createdAt, updatedAt any
 		if err := rows.Scan(
 			&item.ID, &item.SlugID, &item.Title, &item.Icon, &item.Position,
-			&item.IsPublished, &item.ParentPageID, &createdAt, &updatedAt,
+			&item.IsPublished, &item.ParentPageID, &item.SpaceID, &createdAt, &updatedAt,
 			&item.HasChildren,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page tree row: %w", err)
 		}
 
-		// Format timestamps.
 		if t, ok := createdAt.(interface{ Format(string) string }); ok {
 			item.CreatedAt = t.Format("2006-01-02T15:04:05Z07:00")
 		}

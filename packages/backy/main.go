@@ -88,8 +88,10 @@ func main() {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
 		pageHistoryRepo := repositories.NewPageHistoryRepo(pool)
+		spaceRepo := repositories.NewSpaceRepo(pool)
 		pageService := services.NewPageService(pageRepo, pageHistoryRepo)
-		h = handlers.NewWithDB(cfg, pageService)
+		spaceService := services.NewSpaceService(spaceRepo, pageRepo)
+		h = handlers.NewWithDB(cfg, pageService, spaceService)
 	} else {
 		h = handlers.New(cfg)
 	}
@@ -190,6 +192,12 @@ func main() {
 		console := api.Group("/console")
 		console.Use(middleware.AuthRequired(authService))
 		{
+			// Spaces
+			console.GET("/spaces", h.GetSpaces)
+			console.POST("/spaces", h.CreateSpace)
+			console.PUT("/spaces/:id", h.UpdateSpace)
+			console.DELETE("/spaces/:id", h.DeleteSpace)
+
 			// Page CRUD
 			console.GET("/pages", h.GetConsolePages)
 			console.POST("/pages", h.CreateConsolePage)

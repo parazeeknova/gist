@@ -13,6 +13,7 @@ import type {
   Profile,
   Project,
   RestorePageInput,
+  Space,
   Stats,
   UpdatePageInput,
 } from "#/types";
@@ -228,4 +229,29 @@ export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: 
       "Content-Type": "application/json",
     },
     method: "POST",
+  });
+
+// Space functions
+export const getSpaces = (cookieHeader?: string | null) =>
+  fetchBacky<Space[]>("console/spaces", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const createSpace = (
+  input: { name: string; slug: string; icon?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Space>("console/spaces", {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const deleteSpace = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/spaces/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
   });

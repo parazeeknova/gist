@@ -1,4 +1,4 @@
-import { GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
+import { BugIcon, GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "../../hooks/use-theme";
@@ -12,6 +12,7 @@ const SIDEBAR_WIDTH = 280;
 export const ConsoleLayout = () => {
   const { isDarkMode } = useTheme();
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === "undefined") {
       return true;
@@ -99,6 +100,8 @@ export const ConsoleLayout = () => {
               activeTab={activeTab}
               onSelectPage={(id) => setSelectedPageId(id)}
               selectedPageId={selectedPageId}
+              selectedSpaceId={selectedSpaceId}
+              onSelectSpace={setSelectedSpaceId}
             />
           </div>
           <div
@@ -117,6 +120,13 @@ export const ConsoleLayout = () => {
             >
               <GearSixIcon size={12} />
               settings
+            </button>
+            <button
+              className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+              type="button"
+            >
+              <BugIcon size={12} />
+              debug
             </button>
             <p className={`px-1 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
               powered by{" "}

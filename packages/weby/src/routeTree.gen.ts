@@ -19,6 +19,7 @@ import { Route as ApiProfileRouteImport } from './routes/api/profile'
 import { Route as ApiExperienceRouteImport } from './routes/api/experience'
 import { Route as ApiBlogsRouteImport } from './routes/api/blogs'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
+import { Route as ApiConsoleSpacesRouteImport } from './routes/api/console/spaces'
 import { Route as ApiConsolePagesRouteImport } from './routes/api/console/pages'
 import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs.$slug'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
@@ -26,6 +27,7 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
+import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces.$id'
 import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
 import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages.$id.unpublish'
@@ -86,6 +88,11 @@ const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   path: '/api/github/stats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiConsoleSpacesRoute = ApiConsoleSpacesRouteImport.update({
+  id: '/api/console/spaces',
+  path: '/api/console/spaces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiConsolePagesRoute = ApiConsolePagesRouteImport.update({
   id: '/api/console/pages',
   path: '/api/console/pages',
@@ -120,6 +127,11 @@ const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
   id: '/api/auth/bootstrap-state',
   path: '/api/auth/bootstrap-state',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsoleSpacesIdRoute = ApiConsoleSpacesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiConsoleSpacesRoute,
 } as any)
 const ApiConsolePagesTreeRoute = ApiConsolePagesTreeRouteImport.update({
   id: '/tree',
@@ -190,9 +202,11 @@ export interface FileRoutesByFullPath {
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
+  '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
+  '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -218,9 +232,11 @@ export interface FileRoutesByTo {
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
+  '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
+  '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -247,9 +263,11 @@ export interface FileRoutesById {
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
+  '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
+  '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -277,9 +295,11 @@ export interface FileRouteTypes {
     | '/api/auth/refresh'
     | '/api/blogs/$slug'
     | '/api/console/pages'
+    | '/api/console/spaces'
     | '/api/github/stats'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
+    | '/api/console/spaces/$id'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -305,9 +325,11 @@ export interface FileRouteTypes {
     | '/api/auth/refresh'
     | '/api/blogs/$slug'
     | '/api/console/pages'
+    | '/api/console/spaces'
     | '/api/github/stats'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
+    | '/api/console/spaces/$id'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -333,9 +355,11 @@ export interface FileRouteTypes {
     | '/api/auth/refresh'
     | '/api/blogs/$slug'
     | '/api/console/pages'
+    | '/api/console/spaces'
     | '/api/github/stats'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
+    | '/api/console/spaces/$id'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -361,6 +385,7 @@ export interface RootRouteChildren {
   ApiAuthMeRoute: typeof ApiAuthMeRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
   ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren
+  ApiConsoleSpacesRoute: typeof ApiConsoleSpacesRouteWithChildren
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute
 }
 
@@ -436,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiGithubStatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/console/spaces': {
+      id: '/api/console/spaces'
+      path: '/api/console/spaces'
+      fullPath: '/api/console/spaces'
+      preLoaderRoute: typeof ApiConsoleSpacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/console/pages': {
       id: '/api/console/pages'
       path: '/api/console/pages'
@@ -484,6 +516,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/bootstrap-state'
       preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/console/spaces/$id': {
+      id: '/api/console/spaces/$id'
+      path: '/$id'
+      fullPath: '/api/console/spaces/$id'
+      preLoaderRoute: typeof ApiConsoleSpacesIdRouteImport
+      parentRoute: typeof ApiConsoleSpacesRoute
     }
     '/api/console/pages/tree': {
       id: '/api/console/pages/tree'
@@ -613,6 +652,17 @@ const ApiConsolePagesRouteWithChildren = ApiConsolePagesRoute._addFileChildren(
   ApiConsolePagesRouteChildren,
 )
 
+interface ApiConsoleSpacesRouteChildren {
+  ApiConsoleSpacesIdRoute: typeof ApiConsoleSpacesIdRoute
+}
+
+const ApiConsoleSpacesRouteChildren: ApiConsoleSpacesRouteChildren = {
+  ApiConsoleSpacesIdRoute: ApiConsoleSpacesIdRoute,
+}
+
+const ApiConsoleSpacesRouteWithChildren =
+  ApiConsoleSpacesRoute._addFileChildren(ApiConsoleSpacesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
@@ -629,6 +679,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthMeRoute: ApiAuthMeRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
   ApiConsolePagesRoute: ApiConsolePagesRouteWithChildren,
+  ApiConsoleSpacesRoute: ApiConsoleSpacesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
 }
 export const routeTree = rootRouteImport
