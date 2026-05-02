@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/verso/backy/auth"
+	"github.com/verso/backy/logger"
 	"github.com/verso/backy/services"
 )
 
@@ -68,7 +68,7 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 			c.JSON(http.StatusConflict, auth.ErrorResponse{Error: "system already bootstrapped"})
 			return
 		}
-		log.Printf("login error: %v", err)
+		logger.Log.Error().Err(err).Msg("login error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "authentication failed"})
 		return
 	}
@@ -95,7 +95,7 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired refresh token"})
 			return
 		}
-		log.Printf("refresh error: %v", err)
+		logger.Log.Error().Err(err).Msg("refresh error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "token refresh failed"})
 		return
 	}
@@ -109,7 +109,7 @@ func (h *AuthHandlers) Logout(c *gin.Context) {
 	rawToken, _ := c.Cookie(auth.GetRefreshTokenCookieName())
 
 	if err := h.authService.Logout(c.Request.Context(), rawToken); err != nil {
-		log.Printf("logout error: %v", err)
+		logger.Log.Error().Err(err).Msg("logout error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to revoke session"})
 		return
 	}
@@ -136,7 +136,7 @@ func (h *AuthHandlers) Me(c *gin.Context) {
 	if accessClaims.SessionID != "" {
 		active, checkErr := h.authService.ValidateSession(c.Request.Context(), accessClaims.SessionID)
 		if checkErr != nil {
-			log.Printf("session validation error for user %s: %v", accessClaims.UserID, checkErr)
+			logger.Log.Error().Str("user_id", accessClaims.UserID).Err(checkErr).Msg("session validation error")
 			c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session validation failed"})
 			return
 		}
@@ -152,7 +152,7 @@ func (h *AuthHandlers) Me(c *gin.Context) {
 			c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
 			return
 		}
-		log.Printf("get me error for user %s: %v", accessClaims.UserID, err)
+		logger.Log.Error().Str("user_id", accessClaims.UserID).Err(err).Msg("get me error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to retrieve user"})
 		return
 	}

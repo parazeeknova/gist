@@ -93,7 +93,57 @@ export interface ConsolePageDetail {
   coverPhoto: string;
   contentJson: string;
   textContent: string;
+  position: string;
   isPublished: boolean;
+  parentPageId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PageTreeItem {
+  id: string;
+  slugId: string;
+  title: string;
+  icon: string;
+  position: string;
+  isPublished: boolean;
+  parentPageId: string | null;
+  hasChildren: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageHistoryItem {
+  id: string;
+  pageId: string;
+  title: string;
+  contentJson: string;
+  textContent: string;
+  operation: string;
+  createdById: string;
+  createdAt: string;
+}
+
+export interface CreatePageInput {
+  slugId: string;
+  title: string;
+  icon?: string;
+  parentPageId?: string;
+}
+
+export interface UpdatePageInput {
+  title?: string;
+  icon?: string;
+  coverPhoto?: string;
+  contentJson?: string;
+  textContent?: string;
+}
+
+export interface MovePageInput {
+  parentPageId?: string | null;
+  position?: string;
+}
+
+export interface RestorePageInput {
+  historyId: string;
 }

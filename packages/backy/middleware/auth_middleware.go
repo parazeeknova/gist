@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/verso/backy/auth"
+	"github.com/verso/backy/logger"
 	"github.com/verso/backy/services"
 )
 
@@ -37,7 +37,7 @@ func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
 		if claims.SessionID != "" {
 			active, checkErr := authService.ValidateSession(c.Request.Context(), claims.SessionID)
 			if checkErr != nil {
-				log.Printf("session validation error for user %s: %v", claims.UserID, checkErr)
+				logger.Log.Error().Str("user_id", claims.UserID).Err(checkErr).Msg("session validation error")
 				c.AbortWithStatusJSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session validation failed"})
 				return
 			}

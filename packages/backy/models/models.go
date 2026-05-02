@@ -99,12 +99,27 @@ type Page struct {
 	ContentJSON     json.RawMessage `json:"content_json"`
 	YDoc            []byte          `json:"ydoc,omitempty"`
 	TextContent     string          `json:"text_content"`
+	Position        string          `json:"position"`
 	IsPublished     bool            `json:"is_published"`
 	ParentPageID    *string         `json:"parent_page_id,omitempty"`
 	CreatorID       string          `json:"creator_id"`
 	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
+}
+
+// PageTreeItem represents a page node in the tree view.
+type PageTreeItem struct {
+	ID           string  `json:"id"`
+	SlugID       string  `json:"slugId"`
+	Title        string  `json:"title"`
+	Icon         string  `json:"icon"`
+	Position     string  `json:"position"`
+	IsPublished  bool    `json:"isPublished"`
+	ParentPageID *string `json:"parentPageId,omitempty"`
+	HasChildren  bool    `json:"hasChildren"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    string  `json:"updatedAt"`
 }
 
 // PageHistory represents a page history entry

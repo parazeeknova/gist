@@ -1,14 +1,18 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/verso/backy/cache"
+	"github.com/verso/backy/logger"
+	"github.com/verso/backy/middleware"
 	"github.com/verso/backy/models"
+	"github.com/verso/backy/repositories"
 	"github.com/verso/backy/services"
 	"github.com/verso/backy/store"
 	"golang.org/x/sync/singleflight"
@@ -54,8 +58,6 @@ func (h *Handlers) Health(c *gin.Context) {
 
 // MigrationStatus is a handler that signals to infrastructure tooling
 // that DB migrations have completed successfully.
-// Returns 200 with {"status":"complete"} so CI health checks can
-// gate deployment on migration readiness rather than just /health.
 func (h *Handlers) MigrationStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "complete"})
 }
@@ -90,7 +92,7 @@ func (h *Handlers) GetBlogPost(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "blog post not found"})
 			return
 		}
-		log.Printf("blog post load error for slug %s: %v", slug, err)
+		logger.Log.Error().Str("slug", slug).Err(err).Msg("blog post load error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog post"})
 		return
 	}
@@ -107,7 +109,7 @@ func (h *Handlers) GetBlogManifest(c *gin.Context) {
 
 	manifest, err := h.pageService.GetBlogManifest(c.Request.Context())
 	if err != nil {
-		log.Printf("blog manifest error: %v", err)
+		logger.Log.Error().Err(err).Msg("blog manifest error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load blog manifest"})
 		return
 	}
@@ -143,7 +145,7 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 	})
 
 	if err != nil {
-		log.Printf("GitHub stats error for user %s: %v", username, err)
+		logger.Log.Error().Str("user", username).Err(err).Msg("GitHub stats error")
 		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to fetch GitHub stats"})
 		return
 	}
@@ -172,7 +174,7 @@ func (h *Handlers) GetConsolePages(c *gin.Context) {
 
 	pages, err := h.pageService.ListAllPages(c.Request.Context())
 	if err != nil {
-		log.Printf("console pages error: %v", err)
+		logger.Log.Error().Err(err).Msg("console pages error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load pages"})
 		return
 	}
@@ -208,21 +210,443 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		log.Printf("console page error for id %s: %v", id, err)
+		logger.Log.Error().Str("id", id).Err(err).Msg("console page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
+		"id":           page.ID,
+		"slugId":       page.SlugID,
+		"title":        page.Title,
+		"icon":         page.Icon,
+		"coverPhoto":   page.CoverPhoto,
+		"contentJson":  page.ContentJSON,
+		"textContent":  page.TextContent,
+		"position":     page.Position,
+		"isPublished":  page.IsPublished,
+		"parentPageId": page.ParentPageID,
+		"createdAt":    page.CreatedAt.Format(time.RFC3339),
+		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// --- Console Page Mutations ---
+
+// CreateConsolePageRequest is the request body for creating a page.
+type CreateConsolePageRequest struct {
+	SlugID       string  `json:"slugId" binding:"required"`
+	Title        string  `json:"title" binding:"required"`
+	Icon         string  `json:"icon"`
+	ParentPageID *string `json:"parentPageId"`
+}
+
+// CreateConsolePage handles POST /api/console/pages.
+func (h *Handlers) CreateConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	var req CreateConsolePageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := middleware.GetCurrentUserID(c)
+	now := time.Now().UTC()
+
+	page := models.Page{
+		ID:           uuid.New().String(),
+		SlugID:       req.SlugID,
+		Title:        req.Title,
+		Icon:         req.Icon,
+		ParentPageID: req.ParentPageID,
+		CreatorID:    userID,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		ContentJSON:  json.RawMessage("{}"),
+	}
+
+	if err := h.pageService.CreatePage(c.Request.Context(), page); err != nil {
+		logger.Log.Error().Err(err).Msg("create page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create page"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"id":           page.ID,
+		"slugId":       page.SlugID,
+		"title":        page.Title,
+		"icon":         page.Icon,
+		"contentJson":  page.ContentJSON,
+		"textContent":  page.TextContent,
+		"position":     page.Position,
+		"isPublished":  page.IsPublished,
+		"parentPageId": page.ParentPageID,
+		"createdAt":    page.CreatedAt.Format(time.RFC3339),
+		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// UpdateConsolePageRequest is the request body for updating a page.
+type UpdateConsolePageRequest struct {
+	Title       *string          `json:"title"`
+	Icon        *string          `json:"icon"`
+	CoverPhoto  *string          `json:"coverPhoto"`
+	ContentJSON *json.RawMessage `json:"contentJson"`
+	TextContent *string          `json:"textContent"`
+}
+
+// UpdateConsolePage handles PUT /api/console/pages/:id.
+func (h *Handlers) UpdateConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	var req UpdateConsolePageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	input := services.UpdatePageInput{
+		Title:       req.Title,
+		Icon:        req.Icon,
+		CoverPhoto:  req.CoverPhoto,
+		ContentJSON: req.ContentJSON,
+		TextContent: req.TextContent,
+	}
+
+	page, err := h.pageService.UpdatePage(c.Request.Context(), id, userID, input)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("update page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":           page.ID,
+		"slugId":       page.SlugID,
+		"title":        page.Title,
+		"icon":         page.Icon,
+		"coverPhoto":   page.CoverPhoto,
+		"contentJson":  page.ContentJSON,
+		"textContent":  page.TextContent,
+		"position":     page.Position,
+		"isPublished":  page.IsPublished,
+		"parentPageId": page.ParentPageID,
+		"createdAt":    page.CreatedAt.Format(time.RFC3339),
+		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// DeleteConsolePage handles DELETE /api/console/pages/:id.
+func (h *Handlers) DeleteConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	if err := h.pageService.DeletePage(c.Request.Context(), id, userID); err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("delete page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+// PublishConsolePage handles POST /api/console/pages/:id/publish.
+func (h *Handlers) PublishConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	page, err := h.pageService.PublishPage(c.Request.Context(), id, userID)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("publish page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to publish page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
 		"id":          page.ID,
-		"slugId":      page.SlugID,
+		"isPublished": page.IsPublished,
+		"updatedAt":   page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// UnpublishConsolePage handles POST /api/console/pages/:id/unpublish.
+func (h *Handlers) UnpublishConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	page, err := h.pageService.UnpublishPage(c.Request.Context(), id, userID)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("unpublish page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to unpublish page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          page.ID,
+		"isPublished": page.IsPublished,
+		"updatedAt":   page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// --- Page Tree Endpoints ---
+
+// GetConsolePageTree handles GET /api/console/pages/tree.
+func (h *Handlers) GetConsolePageTree(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusOK, []models.PageTreeItem{})
+		return
+	}
+
+	tree, err := h.pageService.ListTree(c.Request.Context())
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("page tree error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page tree"})
+		return
+	}
+
+	if tree == nil {
+		tree = []models.PageTreeItem{}
+	}
+
+	c.JSON(http.StatusOK, tree)
+}
+
+// GetConsolePageChildren handles GET /api/console/pages/:id/children.
+func (h *Handlers) GetConsolePageChildren(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusOK, []models.PageTreeItem{})
+		return
+	}
+
+	id := c.Param("id")
+	children, err := h.pageService.ListChildPages(c.Request.Context(), id)
+	if err != nil {
+		logger.Log.Error().Str("id", id).Err(err).Msg("page children error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load children"})
+		return
+	}
+
+	if children == nil {
+		children = []models.PageTreeItem{}
+	}
+
+	c.JSON(http.StatusOK, children)
+}
+
+// MoveConsolePageRequest is the request body for moving a page.
+type MoveConsolePageRequest struct {
+	ParentPageID *string `json:"parentPageId"`
+	Position     *string `json:"position"`
+}
+
+// MoveConsolePage handles PUT /api/console/pages/:id/move.
+func (h *Handlers) MoveConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	var req MoveConsolePageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	page, err := h.pageService.MovePage(c.Request.Context(), id, req.ParentPageID, req.Position, userID)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("move page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to move page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":           page.ID,
+		"position":     page.Position,
+		"parentPageId": page.ParentPageID,
+		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
+// --- Page History Endpoints ---
+
+// GetConsolePageHistory handles GET /api/console/pages/:id/history.
+func (h *Handlers) GetConsolePageHistory(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusOK, []models.PageHistory{})
+		return
+	}
+
+	id := c.Param("id")
+
+	// Verify the page exists first.
+	if _, err := h.pageService.GetPageByID(c.Request.Context(), id); err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("page history error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load history"})
+		return
+	}
+
+	history, err := h.pageService.GetPageHistory(c.Request.Context(), id)
+	if err != nil {
+		logger.Log.Error().Str("id", id).Err(err).Msg("page history list error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load history"})
+		return
+	}
+
+	if history == nil {
+		history = []models.PageHistory{}
+	}
+
+	// Transform to camelCase JSON.
+	type historyItem struct {
+		ID          string          `json:"id"`
+		PageID      string          `json:"pageId"`
+		Title       string          `json:"title"`
+		ContentJSON json.RawMessage `json:"contentJson"`
+		TextContent string          `json:"textContent"`
+		Operation   string          `json:"operation"`
+		CreatedByID string          `json:"createdById"`
+		CreatedAt   string          `json:"createdAt"`
+	}
+
+	result := make([]historyItem, 0, len(history))
+	for _, h := range history {
+		result = append(result, historyItem{
+			ID:          h.ID,
+			PageID:      h.PageID,
+			Title:       h.Title,
+			ContentJSON: h.ContentJSON,
+			TextContent: h.TextContent,
+			Operation:   h.Operation,
+			CreatedByID: h.CreatedByID,
+			CreatedAt:   h.CreatedAt.Format(time.RFC3339),
+		})
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GetConsolePageHistoryEntry handles GET /api/console/pages/:id/history/:historyId.
+func (h *Handlers) GetConsolePageHistoryEntry(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	historyID := c.Param("historyId")
+
+	entry, err := h.pageService.GetHistoryEntry(c.Request.Context(), historyID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageHistoryNotFound) || errors.Is(err, services.ErrHistoryNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
+			return
+		}
+		logger.Log.Error().Str("id", historyID).Err(err).Msg("history entry error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load history entry"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          entry.ID,
+		"pageId":      entry.PageID,
+		"title":       entry.Title,
+		"contentJson": entry.ContentJSON,
+		"textContent": entry.TextContent,
+		"operation":   entry.Operation,
+		"createdById": entry.CreatedByID,
+		"createdAt":   entry.CreatedAt.Format(time.RFC3339),
+	})
+}
+
+// RestoreConsolePage handles POST /api/console/pages/:id/restore.
+func (h *Handlers) RestoreConsolePage(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	var req struct {
+		HistoryID string `json:"historyId" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "historyId is required"})
+		return
+	}
+
+	page, err := h.pageService.RestorePage(c.Request.Context(), pageID, req.HistoryID, userID)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, repositories.ErrPageHistoryNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
+			return
+		}
+		logger.Log.Error().Str("id", pageID).Err(err).Msg("restore page error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to restore page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          page.ID,
 		"title":       page.Title,
-		"icon":        page.Icon,
-		"coverPhoto":  page.CoverPhoto,
 		"contentJson": page.ContentJSON,
 		"textContent": page.TextContent,
-		"isPublished": page.IsPublished,
-		"createdAt":   page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":   page.UpdatedAt.Format(time.RFC3339),
 	})
 }
@@ -236,7 +660,7 @@ func (h *Handlers) GetStats(c *gin.Context) {
 	if h.pageService != nil {
 		all, err := h.pageService.ListAllPages(c.Request.Context())
 		if err != nil {
-			log.Printf("stats: list all pages error: %v", err)
+			logger.Log.Error().Err(err).Msg("stats: list all pages error")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load stats"})
 			return
 		}

@@ -2,17 +2,19 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
 
 	"github.com/verso/backy/auth"
 	"github.com/verso/backy/database"
 	"github.com/verso/backy/handlers"
+	"github.com/verso/backy/logger"
 	"github.com/verso/backy/middleware"
 	"github.com/verso/backy/repositories"
 	"github.com/verso/backy/services"
@@ -21,9 +23,11 @@ import (
 func main() {
 	_ = godotenv.Load()
 
+	log := logger.Log
+
 	// Validate JWT secret before starting
 	if err := auth.ValidateSecret(); err != nil {
-		log.Fatalf("JWT secret validation failed: %v", err)
+		log.Fatal().Err(err).Msg("JWT secret validation failed")
 	}
 
 	port := os.Getenv("PORT")
@@ -53,23 +57,23 @@ func main() {
 
 	for _, origin := range allowOrigins {
 		if origin == "*" {
-			log.Fatal("CORS wildcard '*' cannot be used with AllowCredentials=true. Please specify explicit origins or set AllowCredentials to false.")
+			log.Fatal().Msg("CORS wildcard '*' cannot be used with AllowCredentials=true. Please specify explicit origins or set AllowCredentials to false.")
 		}
 	}
 
 	// Initialize database pool
 	dbCfg, err := database.ConfigFromEnv()
 	if err != nil {
-		log.Fatalf("database config: %v", err)
+		log.Fatal().Err(err).Msg("database config error")
 	}
 	dbErr := database.InitPool(context.Background(), dbCfg)
 	dbAvailable := dbErr == nil
 	if !dbAvailable {
-		log.Printf("database init warning (blog endpoints will be unavailable): %v", dbErr)
+		log.Warn().Err(dbErr).Msg("database init warning, blog endpoints will be unavailable")
 	} else {
 		pool := database.GetPool()
 		if err := database.MigrateUp(context.Background(), pool); err != nil {
-			log.Fatalf("migration failed: %v", err)
+			log.Fatal().Err(err).Msg("migration failed")
 		}
 	}
 
@@ -94,7 +98,51 @@ func main() {
 	authService := services.NewAuthService()
 	authHandlers := handlers.NewAuthHandlers(authService)
 
-	r := gin.Default()
+	r := gin.New()
+
+	// Zerolog request logging middleware
+	r.Use(func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+		rawQuery := c.Request.URL.RawQuery
+
+		c.Next()
+
+		latency := time.Since(start)
+		statusCode := c.Writer.Status()
+		method := c.Request.Method
+		clientIP := c.ClientIP()
+
+		var ev *zerolog.Event
+		switch {
+		case statusCode >= 500:
+			ev = log.Error()
+		case statusCode >= 400:
+			ev = log.Warn()
+		default:
+			ev = log.Info()
+		}
+
+		ev.
+			Str("method", method).
+			Str("path", path).
+			Str("query", rawQuery).
+			Int("status", statusCode).
+			Dur("latency", latency).
+			Str("ip", clientIP).
+			Int("body_size", c.Writer.Size()).
+			Msg("request")
+	})
+
+	// Recovery middleware with zerolog
+	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered any) {
+		log.Error().
+			Any("panic", recovered).
+			Str("method", c.Request.Method).
+			Str("path", c.Request.URL.Path).
+			Msg("panic recovered")
+		c.AbortWithStatus(500)
+	}))
 
 	trustedProxies := os.Getenv("TRUSTED_PROXIES")
 	var proxyList []string
@@ -104,7 +152,7 @@ func main() {
 		proxyList = strings.Split(trustedProxies, ",")
 	}
 	if err := r.SetTrustedProxies(proxyList); err != nil {
-		log.Fatalf("failed to set trusted proxies: %v", err)
+		log.Fatal().Err(err).Msg("failed to set trusted proxies")
 	}
 
 	r.Use(cors.New(cors.Config{
@@ -120,7 +168,6 @@ func main() {
 	r.GET("/health", h.Health)
 
 	// Internal infrastructure endpoint — signals migrations are complete.
-	// CI health checks should poll this instead of /health.
 	r.GET("/internal/migrations/status", h.MigrationStatus)
 
 	// API routes
@@ -143,13 +190,32 @@ func main() {
 		console := api.Group("/console")
 		console.Use(middleware.AuthRequired(authService))
 		{
+			// Page CRUD
 			console.GET("/pages", h.GetConsolePages)
+			console.POST("/pages", h.CreateConsolePage)
 			console.GET("/pages/:id", h.GetConsolePage)
+			console.PUT("/pages/:id", h.UpdateConsolePage)
+			console.DELETE("/pages/:id", h.DeleteConsolePage)
+
+			// Publish / Unpublish
+			console.POST("/pages/:id/publish", h.PublishConsolePage)
+			console.POST("/pages/:id/unpublish", h.UnpublishConsolePage)
+
+			// Page Tree
+			console.GET("/pages/tree", h.GetConsolePageTree)
+			console.GET("/pages/:id/children", h.GetConsolePageChildren)
+			console.PUT("/pages/:id/move", h.MoveConsolePage)
+
+			// Page History
+			console.GET("/pages/:id/history", h.GetConsolePageHistory)
+			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
+			console.POST("/pages/:id/restore", h.RestoreConsolePage)
 		}
 	}
 
+	log.Info().Str("port", port).Msg("server starting")
 	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("server failed: %v", err)
+		log.Fatal().Err(err).Msg("server failed")
 	}
 }
 

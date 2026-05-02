@@ -3,11 +3,15 @@ package repositories
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/verso/backy/models"
 )
+
+var ErrPageHistoryNotFound = errors.New("page history not found")
 
 // PageHistoryRepo handles database operations for page history
 type PageHistoryRepo struct {
@@ -40,6 +44,33 @@ func (r *PageHistoryRepo) Insert(ctx context.Context, h models.PageHistory) erro
 	}
 
 	return nil
+}
+
+// GetByID fetches a single history entry by its primary key.
+func (r *PageHistoryRepo) GetByID(ctx context.Context, id string) (models.PageHistory, error) {
+	query := `
+		SELECT id, page_id, title, content_json, ydoc, text_content,
+		       operation, created_by_id, created_at
+		FROM page_history
+		WHERE id = $1`
+
+	var h models.PageHistory
+	var contentJSONBytes []byte
+
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&h.ID, &h.PageID, &h.Title, &contentJSONBytes, &h.YDoc,
+		&h.TextContent, &h.Operation, &h.CreatedByID, &h.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.PageHistory{}, ErrPageHistoryNotFound
+		}
+		return models.PageHistory{}, fmt.Errorf("getting history by id %q: %w", id, err)
+	}
+
+	h.ContentJSON = json.RawMessage(contentJSONBytes)
+
+	return h, nil
 }
 
 // ListByPageID returns all history entries for a page, ordered by created_at desc

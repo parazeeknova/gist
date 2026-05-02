@@ -5,11 +5,18 @@ import type {
   BootstrapState,
   ConsolePage,
   ConsolePageDetail,
+  CreatePageInput,
   ExperienceItem,
+  MovePageInput,
+  PageHistoryItem,
+  PageTreeItem,
   Profile,
   Project,
+  RestorePageInput,
   Stats,
+  UpdatePageInput,
 } from "#/types";
+import { logger } from "#/lib/logger";
 
 const getBackyOrigin = (): string => {
   const origin = process.env.BACKY_ORIGIN;
@@ -47,10 +54,19 @@ const fetchBacky = async <T>(endpoint: string, init?: RequestInit): Promise<T> =
     headers: normalized,
   };
 
+  const start = Date.now();
+  const method = mergedInit.method ?? "GET";
   const response = await fetch(url, mergedInit);
+  const latency = Date.now() - start;
+
+  logger[response.ok ? "info" : "warn"](
+    { endpoint, latencyMs: latency, method, status: response.status },
+    "backy request",
+  );
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
+    logger.error({ body, endpoint, method, status: response.status }, "backy request failed");
     throw new BackyError(response.status, body);
   }
 
@@ -120,4 +136,96 @@ export const getConsolePages = (cookieHeader?: string | null) =>
 export const getConsolePage = (id: string, cookieHeader?: string | null) =>
   fetchBacky<ConsolePageDetail>(`console/pages/${id}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+// Console page mutations
+export const createConsolePage = (input: CreatePageInput, cookieHeader?: string | null) =>
+  fetchBacky<ConsolePageDetail>("console/pages", {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const updateConsolePage = (
+  id: string,
+  input: UpdatePageInput,
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<ConsolePageDetail>(`console/pages/${id}`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const deleteConsolePage = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/pages/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const publishConsolePage = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ id: string; isPublished: boolean; updatedAt: string }>(
+    `console/pages/${id}/publish`,
+    {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+      method: "POST",
+    },
+  );
+
+export const unpublishConsolePage = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ id: string; isPublished: boolean; updatedAt: string }>(
+    `console/pages/${id}/unpublish`,
+    {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+      method: "POST",
+    },
+  );
+
+export const getPageTree = (cookieHeader?: string | null) =>
+  fetchBacky<PageTreeItem[]>("console/pages/tree", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getPageChildren = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<PageTreeItem[]>(`console/pages/${id}/children`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const movePage = (id: string, input: MovePageInput, cookieHeader?: string | null) =>
+  fetchBacky<{ id: string; position: string; parentPageId: string | null; updatedAt: string }>(
+    `console/pages/${id}/move`,
+    {
+      body: JSON.stringify(input),
+      headers: {
+        ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+        "Content-Type": "application/json",
+      },
+      method: "PUT",
+    },
+  );
+
+export const getPageHistory = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<PageHistoryItem[]>(`console/pages/${id}/history`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getPageHistoryEntry = (id: string, historyId: string, cookieHeader?: string | null) =>
+  fetchBacky<PageHistoryItem>(`console/pages/${id}/history/${historyId}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: string | null) =>
+  fetchBacky<ConsolePageDetail>(`console/pages/${id}/restore`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
   });

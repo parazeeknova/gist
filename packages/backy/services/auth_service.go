@@ -6,11 +6,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/verso/backy/auth"
+	"github.com/verso/backy/logger"
 	"github.com/verso/backy/repositories"
 )
 
@@ -102,7 +102,7 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 
 	createdAt, err := time.Parse(time.RFC3339, dbUser.CreatedAt)
 	if err != nil {
-		log.Printf("parse created_at for user %s: %v", dbUser.ID, err)
+		logger.Log.Error().Str("user_id", dbUser.ID).Err(err).Msg("parse created_at")
 		createdAt = time.Time{}
 	}
 	userResp := &auth.UserResponse{
@@ -179,7 +179,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 		// Check if this is a replay of a previously rotated or revoked token
 		replayed, replayedSessionID, replayErr := s.sessionRepo.IsReplayedToken(ctx, tokenHash)
 		if replayErr != nil {
-			log.Printf("replay token check error: %v", replayErr)
+			logger.Log.Error().Err(replayErr).Msg("replay token check error")
 		} else if replayed && replayedSessionID != "" {
 			_ = s.sessionRepo.RevokeAllSessionTokens(ctx, replayedSessionID)
 		}
@@ -201,7 +201,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 		// Token was consumed by a concurrent request — treat as replay
 		replayed, replayedSessionID, replayErr := s.sessionRepo.IsReplayedToken(ctx, tokenHash)
 		if replayErr != nil {
-			log.Printf("replay token check error: %v", replayErr)
+			logger.Log.Error().Err(replayErr).Msg("replay token check error")
 		} else if replayed && replayedSessionID != "" {
 			_ = s.sessionRepo.RevokeAllSessionTokens(ctx, replayedSessionID)
 		}
@@ -286,7 +286,7 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 
 	createdAt, err := time.Parse(time.RFC3339, dbUser.CreatedAt)
 	if err != nil {
-		log.Printf("parse created_at for user %s: %v", dbUser.ID, err)
+		logger.Log.Error().Str("user_id", dbUser.ID).Err(err).Msg("parse created_at")
 		createdAt = time.Time{}
 	}
 	return &auth.UserResponse{

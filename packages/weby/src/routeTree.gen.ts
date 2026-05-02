@@ -26,7 +26,15 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
+import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
+import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages.$id.unpublish'
+import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages.$id.restore'
+import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages.$id.publish'
+import { Route as ApiConsolePagesIdMoveRouteImport } from './routes/api/console/pages.$id.move'
+import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/console/pages.$id.history'
+import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages.$id.children'
+import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages.$id.history.$historyId'
 
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
@@ -113,11 +121,57 @@ const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
   path: '/api/auth/bootstrap-state',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiConsolePagesTreeRoute = ApiConsolePagesTreeRouteImport.update({
+  id: '/tree',
+  path: '/tree',
+  getParentRoute: () => ApiConsolePagesRoute,
+} as any)
 const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiConsolePagesRoute,
 } as any)
+const ApiConsolePagesIdUnpublishRoute =
+  ApiConsolePagesIdUnpublishRouteImport.update({
+    id: '/unpublish',
+    path: '/unpublish',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdRestoreRoute =
+  ApiConsolePagesIdRestoreRouteImport.update({
+    id: '/restore',
+    path: '/restore',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdPublishRoute =
+  ApiConsolePagesIdPublishRouteImport.update({
+    id: '/publish',
+    path: '/publish',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdMoveRoute = ApiConsolePagesIdMoveRouteImport.update({
+  id: '/move',
+  path: '/move',
+  getParentRoute: () => ApiConsolePagesIdRoute,
+} as any)
+const ApiConsolePagesIdHistoryRoute =
+  ApiConsolePagesIdHistoryRouteImport.update({
+    id: '/history',
+    path: '/history',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdChildrenRoute =
+  ApiConsolePagesIdChildrenRouteImport.update({
+    id: '/children',
+    path: '/children',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdHistoryHistoryIdRoute =
+  ApiConsolePagesIdHistoryHistoryIdRouteImport.update({
+    id: '/$historyId',
+    path: '/$historyId',
+    getParentRoute: () => ApiConsolePagesIdHistoryRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -137,7 +191,15 @@ export interface FileRoutesByFullPath {
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
-  '/api/console/pages/$id': typeof ApiConsolePagesIdRoute
+  '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
+  '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
+  '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
+  '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
+  '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
+  '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
+  '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
+  '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -157,7 +219,15 @@ export interface FileRoutesByTo {
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
-  '/api/console/pages/$id': typeof ApiConsolePagesIdRoute
+  '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
+  '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
+  '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
+  '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
+  '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
+  '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
+  '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
+  '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -178,7 +248,15 @@ export interface FileRoutesById {
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
-  '/api/console/pages/$id': typeof ApiConsolePagesIdRoute
+  '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
+  '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
+  '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
+  '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
+  '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
+  '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
+  '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
+  '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -201,6 +279,14 @@ export interface FileRouteTypes {
     | '/api/console/pages'
     | '/api/github/stats'
     | '/api/console/pages/$id'
+    | '/api/console/pages/tree'
+    | '/api/console/pages/$id/children'
+    | '/api/console/pages/$id/history'
+    | '/api/console/pages/$id/move'
+    | '/api/console/pages/$id/publish'
+    | '/api/console/pages/$id/restore'
+    | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/history/$historyId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -221,6 +307,14 @@ export interface FileRouteTypes {
     | '/api/console/pages'
     | '/api/github/stats'
     | '/api/console/pages/$id'
+    | '/api/console/pages/tree'
+    | '/api/console/pages/$id/children'
+    | '/api/console/pages/$id/history'
+    | '/api/console/pages/$id/move'
+    | '/api/console/pages/$id/publish'
+    | '/api/console/pages/$id/restore'
+    | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/history/$historyId'
   id:
     | '__root__'
     | '/'
@@ -241,6 +335,14 @@ export interface FileRouteTypes {
     | '/api/console/pages'
     | '/api/github/stats'
     | '/api/console/pages/$id'
+    | '/api/console/pages/tree'
+    | '/api/console/pages/$id/children'
+    | '/api/console/pages/$id/history'
+    | '/api/console/pages/$id/move'
+    | '/api/console/pages/$id/publish'
+    | '/api/console/pages/$id/restore'
+    | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/history/$historyId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -383,12 +485,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/console/pages/tree': {
+      id: '/api/console/pages/tree'
+      path: '/tree'
+      fullPath: '/api/console/pages/tree'
+      preLoaderRoute: typeof ApiConsolePagesTreeRouteImport
+      parentRoute: typeof ApiConsolePagesRoute
+    }
     '/api/console/pages/$id': {
       id: '/api/console/pages/$id'
       path: '/$id'
       fullPath: '/api/console/pages/$id'
       preLoaderRoute: typeof ApiConsolePagesIdRouteImport
       parentRoute: typeof ApiConsolePagesRoute
+    }
+    '/api/console/pages/$id/unpublish': {
+      id: '/api/console/pages/$id/unpublish'
+      path: '/unpublish'
+      fullPath: '/api/console/pages/$id/unpublish'
+      preLoaderRoute: typeof ApiConsolePagesIdUnpublishRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/restore': {
+      id: '/api/console/pages/$id/restore'
+      path: '/restore'
+      fullPath: '/api/console/pages/$id/restore'
+      preLoaderRoute: typeof ApiConsolePagesIdRestoreRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/publish': {
+      id: '/api/console/pages/$id/publish'
+      path: '/publish'
+      fullPath: '/api/console/pages/$id/publish'
+      preLoaderRoute: typeof ApiConsolePagesIdPublishRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/move': {
+      id: '/api/console/pages/$id/move'
+      path: '/move'
+      fullPath: '/api/console/pages/$id/move'
+      preLoaderRoute: typeof ApiConsolePagesIdMoveRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/history': {
+      id: '/api/console/pages/$id/history'
+      path: '/history'
+      fullPath: '/api/console/pages/$id/history'
+      preLoaderRoute: typeof ApiConsolePagesIdHistoryRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/children': {
+      id: '/api/console/pages/$id/children'
+      path: '/children'
+      fullPath: '/api/console/pages/$id/children'
+      preLoaderRoute: typeof ApiConsolePagesIdChildrenRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/history/$historyId': {
+      id: '/api/console/pages/$id/history/$historyId'
+      path: '/$historyId'
+      fullPath: '/api/console/pages/$id/history/$historyId'
+      preLoaderRoute: typeof ApiConsolePagesIdHistoryHistoryIdRouteImport
+      parentRoute: typeof ApiConsolePagesIdHistoryRoute
     }
   }
 }
@@ -405,12 +563,50 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
   ApiBlogsRouteChildren,
 )
 
+interface ApiConsolePagesIdHistoryRouteChildren {
+  ApiConsolePagesIdHistoryHistoryIdRoute: typeof ApiConsolePagesIdHistoryHistoryIdRoute
+}
+
+const ApiConsolePagesIdHistoryRouteChildren: ApiConsolePagesIdHistoryRouteChildren =
+  {
+    ApiConsolePagesIdHistoryHistoryIdRoute:
+      ApiConsolePagesIdHistoryHistoryIdRoute,
+  }
+
+const ApiConsolePagesIdHistoryRouteWithChildren =
+  ApiConsolePagesIdHistoryRoute._addFileChildren(
+    ApiConsolePagesIdHistoryRouteChildren,
+  )
+
+interface ApiConsolePagesIdRouteChildren {
+  ApiConsolePagesIdChildrenRoute: typeof ApiConsolePagesIdChildrenRoute
+  ApiConsolePagesIdHistoryRoute: typeof ApiConsolePagesIdHistoryRouteWithChildren
+  ApiConsolePagesIdMoveRoute: typeof ApiConsolePagesIdMoveRoute
+  ApiConsolePagesIdPublishRoute: typeof ApiConsolePagesIdPublishRoute
+  ApiConsolePagesIdRestoreRoute: typeof ApiConsolePagesIdRestoreRoute
+  ApiConsolePagesIdUnpublishRoute: typeof ApiConsolePagesIdUnpublishRoute
+}
+
+const ApiConsolePagesIdRouteChildren: ApiConsolePagesIdRouteChildren = {
+  ApiConsolePagesIdChildrenRoute: ApiConsolePagesIdChildrenRoute,
+  ApiConsolePagesIdHistoryRoute: ApiConsolePagesIdHistoryRouteWithChildren,
+  ApiConsolePagesIdMoveRoute: ApiConsolePagesIdMoveRoute,
+  ApiConsolePagesIdPublishRoute: ApiConsolePagesIdPublishRoute,
+  ApiConsolePagesIdRestoreRoute: ApiConsolePagesIdRestoreRoute,
+  ApiConsolePagesIdUnpublishRoute: ApiConsolePagesIdUnpublishRoute,
+}
+
+const ApiConsolePagesIdRouteWithChildren =
+  ApiConsolePagesIdRoute._addFileChildren(ApiConsolePagesIdRouteChildren)
+
 interface ApiConsolePagesRouteChildren {
-  ApiConsolePagesIdRoute: typeof ApiConsolePagesIdRoute
+  ApiConsolePagesIdRoute: typeof ApiConsolePagesIdRouteWithChildren
+  ApiConsolePagesTreeRoute: typeof ApiConsolePagesTreeRoute
 }
 
 const ApiConsolePagesRouteChildren: ApiConsolePagesRouteChildren = {
-  ApiConsolePagesIdRoute: ApiConsolePagesIdRoute,
+  ApiConsolePagesIdRoute: ApiConsolePagesIdRouteWithChildren,
+  ApiConsolePagesTreeRoute: ApiConsolePagesTreeRoute,
 }
 
 const ApiConsolePagesRouteWithChildren = ApiConsolePagesRoute._addFileChildren(
