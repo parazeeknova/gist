@@ -177,6 +177,7 @@ type AuthUser struct {
 	ID        string `json:"id"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
+	Name      string `json:"name"`
 	IsOwner   bool   `json:"is_owner"`
 	IsActive  bool   `json:"is_active"`
 	CreatedAt string `json:"created_at"`

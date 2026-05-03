@@ -54,7 +54,16 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 		return
 	}
 
-	userResp, pair, err := h.authService.Login(c.Request.Context(), req.UsernameOrEmail, req.Password, req.Email)
+	var bootstrapParams *services.BootstrapParams
+	if req.Email != "" {
+		bootstrapParams = &services.BootstrapParams{
+			Name:          req.Name,
+			WorkspaceName: req.WorkspaceName,
+			SpaceName:     req.SpaceName,
+		}
+	}
+
+	userResp, pair, err := h.authService.Login(c.Request.Context(), req.UsernameOrEmail, req.Password, req.Email, bootstrapParams)
 	if err != nil {
 		if errors.Is(err, services.ErrNotBootstrapped) {
 			c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "system not bootstrapped"})

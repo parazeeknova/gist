@@ -21,17 +21,8 @@ func (h *Handlers) GetSpaces(c *gin.Context) {
 
 	workspaceID := c.Query("workspaceId")
 	if workspaceID == "" {
-		if h.workspaceService == nil {
-			c.JSON(http.StatusOK, []models.Space{})
-			return
-		}
-		defaultID, err := h.workspaceService.GetDefaultWorkspaceID(c.Request.Context())
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("list spaces: failed to get default workspace")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve default workspace"})
-			return
-		}
-		workspaceID = defaultID
+		c.JSON(http.StatusOK, []models.Space{})
+		return
 	}
 
 	spaces, err := h.spaceService.ListSpaces(c.Request.Context(), workspaceID)

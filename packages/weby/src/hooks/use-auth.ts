@@ -34,10 +34,26 @@ export const useAuth = () => {
 export const useAuthActions = () => {
   const queryClient = useQueryClient();
 
-  const login = async (usernameOrEmail: string, password: string, email?: string) => {
+  const login = async (
+    usernameOrEmail: string,
+    password: string,
+    email?: string,
+    name?: string,
+    workspaceName?: string,
+    spaceName?: string,
+  ) => {
     const body: Record<string, string> = { password, usernameOrEmail };
     if (email) {
       body.email = email;
+    }
+    if (name) {
+      body.name = name;
+    }
+    if (workspaceName) {
+      body.workspaceName = workspaceName;
+    }
+    if (spaceName) {
+      body.spaceName = spaceName;
     }
     const res = await fetch("/api/auth/login", {
       body: JSON.stringify(body),
@@ -49,6 +65,7 @@ export const useAuthActions = () => {
       throw new Error((err as { error?: string }).error ?? "Login failed");
     }
     await queryClient.invalidateQueries({ queryKey: ["auth"] });
+    await queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
     return res.json() as Promise<unknown>;
   };
 

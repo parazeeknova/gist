@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/verso/backy/database"
 	"github.com/verso/backy/models"
 )
 
@@ -20,9 +21,9 @@ type SpaceRepo struct {
 	pool *pgxpool.Pool
 }
 
-// NewSpaceRepo creates a new space repository
-func NewSpaceRepo(pool *pgxpool.Pool) *SpaceRepo {
-	return &SpaceRepo{pool: pool}
+// NewSpaceRepo creates a new space repository using the global pool.
+func NewSpaceRepo() *SpaceRepo {
+	return &SpaceRepo{pool: database.GetPool()}
 }
 
 // GetByID fetches a space by its primary key.

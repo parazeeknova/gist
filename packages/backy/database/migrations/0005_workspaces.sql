@@ -13,17 +13,6 @@ ALTER TABLE spaces ADD COLUMN IF NOT EXISTS workspace_id UUID REFERENCES workspa
 -- Add workspace_id to pages
 ALTER TABLE pages ADD COLUMN IF NOT EXISTS workspace_id UUID REFERENCES workspaces(id) ON DELETE RESTRICT;
 
--- Seed default workspace
-INSERT INTO workspaces (id, name, slug, icon)
-VALUES (gen_random_uuid(), 'Personal', 'personal', '')
-ON CONFLICT (slug) DO NOTHING;
-
--- Seed default space
-INSERT INTO spaces (id, name, slug, icon, workspace_id)
-SELECT gen_random_uuid(), 'Notes', 'notes', '', (SELECT id FROM workspaces WHERE slug = 'personal' LIMIT 1)
-WHERE NOT EXISTS (SELECT 1 FROM spaces)
-ON CONFLICT (slug) DO NOTHING;
-
 -- Backfill spaces
 UPDATE spaces SET workspace_id = (SELECT id FROM workspaces WHERE slug = 'personal' LIMIT 1)
 WHERE workspace_id IS NULL;

@@ -1,32 +1,15 @@
 import { DatabaseIcon, GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useThrottledCallback } from "@tanstack/react-pacer";
 import { gsap } from "gsap";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "../../hooks/use-theme";
+import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
 import { PageList } from "./pages/list";
 
 const SIDEBAR_WIDTH = 280;
-
-interface ConsoleContextValue {
-  selectedPageId: string | null;
-  setSelectedPageId: (id: string | null) => void;
-  selectedWorkspaceId: string;
-  setSelectedWorkspaceId: (id: string) => void;
-  selectedSpaceId: string;
-  setSelectedSpaceId: (id: string) => void;
-}
-
-const ConsoleContext = createContext<ConsoleContextValue | null>(null);
-
-export const useConsoleContext = () => {
-  const ctx = useContext(ConsoleContext);
-  if (!ctx) {
-    throw new Error("useConsoleContext must be used within ConsoleLayout");
-  }
-  return ctx;
-};
 
 export const ConsoleLayout = () => {
   const { isDarkMode } = useTheme();
@@ -78,25 +61,28 @@ export const ConsoleLayout = () => {
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
-  const toggleSidebar = useCallback(() => {
-    if (animatingRef.current || !sidebarRef.current) {
-      return;
-    }
-    animatingRef.current = true;
-    const open = !sidebarOpen;
-    setSidebarOpen(open);
-    gsap.to(sidebarRef.current, {
-      duration: 0.25,
-      ease: "power2.inOut",
-      onComplete: () => {
-        animatingRef.current = false;
-      },
-      opacity: open ? 1 : 0,
-      paddingLeft: open ? 16 : 0,
-      paddingRight: open ? 16 : 0,
-      width: open ? SIDEBAR_WIDTH : 0,
-    });
-  }, [sidebarOpen]);
+  const toggleSidebar = useThrottledCallback(
+    () => {
+      if (animatingRef.current || !sidebarRef.current) {
+        return;
+      }
+      animatingRef.current = true;
+      const open = !sidebarOpen;
+      setSidebarOpen(open);
+      gsap.to(sidebarRef.current, {
+        duration: 0.25,
+        ease: "power2.inOut",
+        onComplete: () => {
+          animatingRef.current = false;
+        },
+        opacity: open ? 1 : 0,
+        paddingLeft: open ? 16 : 0,
+        paddingRight: open ? 16 : 0,
+        width: open ? SIDEBAR_WIDTH : 0,
+      });
+    },
+    { wait: 300 },
+  );
 
   useEffect(() => {
     if (sidebarRef.current) {

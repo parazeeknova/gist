@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/verso/backy/database"
 	"github.com/verso/backy/models"
 )
 
@@ -20,9 +21,9 @@ type WorkspaceRepo struct {
 	pool *pgxpool.Pool
 }
 
-// NewWorkspaceRepo creates a new workspace repository
-func NewWorkspaceRepo(pool *pgxpool.Pool) *WorkspaceRepo {
-	return &WorkspaceRepo{pool: pool}
+// NewWorkspaceRepo creates a new workspace repository using the global pool.
+func NewWorkspaceRepo() *WorkspaceRepo {
+	return &WorkspaceRepo{pool: database.GetPool()}
 }
 
 // GetByID fetches a workspace by its primary key.

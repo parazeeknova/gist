@@ -1,10 +1,13 @@
 import { gsap } from "gsap";
 import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
+import { useDebouncedState } from "@tanstack/react-pacer";
 import { useEffect, useRef, useState } from "react";
 import type { Stats } from "#/types";
 import { useAuth, useAuthActions } from "#/hooks/use-auth";
 import { useTheme } from "#/hooks/use-theme";
+import { useWorkspaces } from "#/hooks/use-console-mutations";
+import { useConsoleContext } from "./console-context";
 import {
   BellIcon,
   ListIcon,
@@ -30,10 +33,17 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   const { data: user } = useAuth();
   const { logout } = useAuthActions();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { selectedWorkspaceId } = useConsoleContext();
+  const { data: workspaces } = useWorkspaces();
+
+  const selectedWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
+  const workspaceName = selectedWorkspace?.name ?? user?.username ?? "...";
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notiOpen, setNotiOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useDebouncedState("", {
+    wait: 300,
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notiRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -216,7 +226,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
             onClick={() => setDropdownOpen((o) => !o)}
             type="button"
           >
-            @{user?.username}
+            @{workspaceName}
           </button>
 
           {dropdownOpen && (

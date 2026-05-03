@@ -6,11 +6,13 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/verso/backy/auth"
 	"github.com/verso/backy/logger"
+	"github.com/verso/backy/models"
 	"github.com/verso/backy/repositories"
 )
 
@@ -31,15 +33,19 @@ type TokenPair struct {
 
 // AuthService handles authentication business logic.
 type AuthService struct {
-	userRepo    *repositories.UserRepo
-	sessionRepo *repositories.SessionRepo
+	userRepo      *repositories.UserRepo
+	sessionRepo   *repositories.SessionRepo
+	workspaceRepo *repositories.WorkspaceRepo
+	spaceRepo     *repositories.SpaceRepo
 }
 
 // NewAuthService creates a new AuthService.
 func NewAuthService() *AuthService {
 	return &AuthService{
-		userRepo:    repositories.NewUserRepo(),
-		sessionRepo: repositories.NewSessionRepo(),
+		userRepo:      repositories.NewUserRepo(),
+		sessionRepo:   repositories.NewSessionRepo(),
+		workspaceRepo: repositories.NewWorkspaceRepo(),
+		spaceRepo:     repositories.NewSpaceRepo(),
 	}
 }
 
@@ -57,17 +63,24 @@ func (s *AuthService) IsBootstrapped(ctx context.Context) (bool, error) {
 	return count > 0, nil
 }
 
+// BootstrapParams holds the extra fields needed for the first-time bootstrap flow.
+type BootstrapParams struct {
+	Name          string
+	WorkspaceName string
+	SpaceName     string
+}
+
 // Login authenticates a user by username or email and password.
 // When the system is not yet bootstrapped (no users exist) and email is provided,
 // it creates the first owner user instead of performing a normal login.
-func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, email string) (*auth.UserResponse, *TokenPair, error) {
+func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, email string, bootstrapParams *BootstrapParams) (*auth.UserResponse, *TokenPair, error) {
 	bootstrapped, err := s.IsBootstrapped(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	if !bootstrapped && email != "" {
-		return s.bootstrap(ctx, usernameOrEmail, email, password)
+		return s.bootstrap(ctx, usernameOrEmail, email, password, bootstrapParams)
 	}
 
 	if !bootstrapped {
@@ -109,6 +122,7 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 		ID:        uid,
 		Username:  dbUser.Username,
 		Email:     dbUser.Email,
+		Name:      dbUser.Name,
 		IsOwner:   dbUser.IsOwner,
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,
@@ -126,18 +140,55 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 // The user creation is transactional so concurrent bootstrap attempts are
 // safe — the second caller hits a unique constraint and gets an
 // ErrAlreadyBootstrapped error.
-func (s *AuthService) bootstrap(ctx context.Context, username, email, password string) (*auth.UserResponse, *TokenPair, error) {
+func (s *AuthService) bootstrap(ctx context.Context, username, email, password string, params *BootstrapParams) (*auth.UserResponse, *TokenPair, error) {
 	passwordHash, err := auth.HashPassword(password)
 	if err != nil {
 		return nil, nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	userID, err := s.userRepo.CreateUser(ctx, username, email, passwordHash, true)
+	name := ""
+	if params != nil {
+		name = params.Name
+	}
+
+	userID, err := s.userRepo.CreateUser(ctx, username, email, name, passwordHash, true)
 	if err != nil {
 		if errors.Is(err, repositories.ErrDuplicateUser) {
 			return nil, nil, ErrAlreadyBootstrapped
 		}
 		return nil, nil, fmt.Errorf("create bootstrap user: %w", err)
+	}
+
+	// Create workspace if provided.
+	workspaceID := ""
+	if params != nil && params.WorkspaceName != "" {
+		workspaceSlug := slugify(params.WorkspaceName)
+		w := models.Workspace{
+			ID:   uuid.New().String(),
+			Name: params.WorkspaceName,
+			Slug: workspaceSlug,
+			Icon: "",
+		}
+		if err := s.workspaceRepo.Insert(ctx, w); err != nil {
+			logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
+		} else {
+			workspaceID = w.ID
+		}
+	}
+
+	// Create space if workspace was created and space name is provided.
+	if workspaceID != "" && params != nil && params.SpaceName != "" {
+		spaceSlug := slugify(params.SpaceName)
+		sp := models.Space{
+			ID:          uuid.New().String(),
+			Name:        params.SpaceName,
+			Slug:        spaceSlug,
+			Icon:        "",
+			WorkspaceID: workspaceID,
+		}
+		if err := s.spaceRepo.Insert(ctx, sp); err != nil {
+			logger.Log.Error().Err(err).Msg("bootstrap: failed to create space")
+		}
 	}
 
 	uid, err := uuid.Parse(userID)
@@ -149,6 +200,7 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		ID:        uid,
 		Username:  username,
 		Email:     email,
+		Name:      name,
 		IsOwner:   true,
 		IsActive:  true,
 		CreatedAt: time.Now(),
@@ -160,6 +212,18 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 	}
 
 	return userResp, pair, nil
+}
+
+func slugify(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // Refresh rotates a refresh token and returns new token pairs.
@@ -293,6 +357,7 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 		ID:        uid,
 		Username:  dbUser.Username,
 		Email:     dbUser.Email,
+		Name:      dbUser.Name,
 		IsOwner:   dbUser.IsOwner,
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,

@@ -1,5 +1,7 @@
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
+import { useRateLimitedCallback } from "@tanstack/react-pacer";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -41,6 +43,306 @@ const validatePassword = (value: string): string | undefined => {
     return "min 8 chars";
   }
   return undefined;
+};
+
+interface BootstrapValues {
+  email: string;
+  name: string;
+  password: string;
+  spaceName: string;
+  username: string;
+  workspaceName: string;
+}
+
+interface BootstrapFlowProps {
+  isDarkMode: boolean;
+  onSubmit: (values: BootstrapValues) => void;
+  serverError: string | null;
+}
+
+const BootstrapFlow = ({ isDarkMode, onSubmit, serverError }: BootstrapFlowProps) => {
+  const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+  const form = useForm({
+    defaultValues: {
+      email: "",
+      name: "",
+      password: "",
+      spaceName: "",
+      username: "",
+      workspaceName: "",
+    } as BootstrapValues,
+    onSubmit: ({ value }) => {
+      onSubmit(value);
+    },
+  });
+
+  const handleContinue = () => {
+    const u = form.getFieldValue("username");
+    const e = form.getFieldValue("email");
+    const p = form.getFieldValue("password");
+    if (validateUsername(u) || validateEmail(e) || validatePassword(p)) {
+      form.validateAllFields("change");
+      return false;
+    }
+    setStep(2);
+    return true;
+  };
+
+  return (
+    <form
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (step === 1) {
+          handleContinue();
+        } else {
+          form.handleSubmit();
+        }
+      }}
+    >
+      {step === 1 && (
+        <>
+          <form.Field
+            name="username"
+            validators={{
+              onChange: ({ value }) => validateUsername(value),
+            }}
+          >
+            {(field) => (
+              <div>
+                <input
+                  aria-label="Username"
+                  className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
+                    isDarkMode
+                      ? "border-border-dark placeholder:text-text-dark/30"
+                      : "border-border-light placeholder:text-text-light/30"
+                  }`}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="username"
+                  value={field.state.value}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className={`mt-1 text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field
+            name="email"
+            validators={{
+              onChange: ({ value }) => validateEmail(value),
+            }}
+          >
+            {(field) => (
+              <div>
+                <input
+                  aria-label="Email"
+                  className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
+                    isDarkMode
+                      ? "border-border-dark placeholder:text-text-dark/30"
+                      : "border-border-light placeholder:text-text-light/30"
+                  }`}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="email"
+                  type="email"
+                  value={field.state.value}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className={`mt-1 text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field
+            name="password"
+            validators={{
+              onChange: ({ value }) => validatePassword(value),
+            }}
+          >
+            {(field) => (
+              <div>
+                <div className="relative">
+                  <input
+                    aria-label="Password"
+                    className={`w-full border-b py-1.5 pr-7 text-[13px] lowercase outline-none bg-transparent ${
+                      isDarkMode
+                        ? "border-border-dark placeholder:text-text-dark/30"
+                        : "border-border-light placeholder:text-text-light/30"
+                    }`}
+                    name={field.name}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="password"
+                    type={showPassword ? "text" : "password"}
+                    value={field.state.value}
+                  />
+                  <button
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className={`absolute right-0 top-1/2 -translate-y-1/2 ${
+                      isDarkMode
+                        ? "text-text-dark/30 hover:text-text-dark/60"
+                        : "text-text-light/30 hover:text-text-light/60"
+                    }`}
+                    onClick={() => setShowPassword((s) => !s)}
+                    type="button"
+                  >
+                    {showPassword ? <EyeSlashIcon size={14} /> : <EyeIcon size={14} />}
+                  </button>
+                </div>
+                {field.state.meta.errors.length > 0 && (
+                  <p className={`mt-1 text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <button
+            className={`w-full py-1.5 text-[13px] lowercase ${
+              isDarkMode
+                ? "text-text-dark/50 hover:text-text-dark/80"
+                : "text-text-light/50 hover:text-text-light/80"
+            } disabled:opacity-30`}
+            type="submit"
+          >
+            continue
+          </button>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <form.Field
+            name="name"
+            validators={{
+              onChange: ({ value }) => (value.length < 1 ? "required" : undefined),
+            }}
+          >
+            {(field) => (
+              <div>
+                <input
+                  aria-label="Name"
+                  className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
+                    isDarkMode
+                      ? "border-border-dark placeholder:text-text-dark/30"
+                      : "border-border-light placeholder:text-text-light/30"
+                  }`}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="your name"
+                  value={field.state.value}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className={`mt-1 text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field
+            name="workspaceName"
+            validators={{
+              onChange: ({ value }) => (value.length < 1 ? "required" : undefined),
+            }}
+          >
+            {(field) => (
+              <div>
+                <input
+                  aria-label="Workspace name"
+                  className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
+                    isDarkMode
+                      ? "border-border-dark placeholder:text-text-dark/30"
+                      : "border-border-light placeholder:text-text-light/30"
+                  }`}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="workspace name"
+                  value={field.state.value}
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className={`mt-1 text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
+                    {field.state.meta.errors.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          <form.Field name="spaceName">
+            {(field) => (
+              <div>
+                <input
+                  aria-label="Space name (optional)"
+                  className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
+                    isDarkMode
+                      ? "border-border-dark placeholder:text-text-dark/30"
+                      : "border-border-light placeholder:text-text-light/30"
+                  }`}
+                  name={field.name}
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  placeholder="space name (optional)"
+                  value={field.state.value}
+                />
+              </div>
+            )}
+          </form.Field>
+
+          {serverError && (
+            <p className={`text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
+              {serverError}
+            </p>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              className={`flex-1 py-1.5 text-[13px] lowercase ${
+                isDarkMode
+                  ? "text-text-dark/50 hover:text-text-dark/80"
+                  : "text-text-light/50 hover:text-text-light/80"
+              }`}
+              onClick={() => setStep(1)}
+              type="button"
+            >
+              back
+            </button>
+            <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+              {([canSubmit, isSubmitting]) => (
+                <button
+                  className={`flex-1 py-1.5 text-[13px] lowercase ${
+                    isDarkMode
+                      ? "text-text-dark/50 hover:text-text-dark/80"
+                      : "text-text-light/50 hover:text-text-light/80"
+                  } disabled:opacity-30`}
+                  disabled={!canSubmit}
+                  type="submit"
+                >
+                  {isSubmitting ? "..." : "create account"}
+                </button>
+              )}
+            </form.Subscribe>
+          </div>
+        </>
+      )}
+    </form>
+  );
 };
 
 interface AccountPanelProps {
@@ -109,6 +411,7 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<PopupMode>("loading");
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useAuth();
@@ -130,22 +433,19 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
 
   const isAuthenticated = user !== undefined && user !== null;
 
-  const bootstrapForm = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-      username: "",
-    },
-    onSubmit: async ({ value }) => {
+  const handleLogin = useRateLimitedCallback(
+    async (usernameOrEmail: string, password: string) => {
       setServerError(null);
       try {
-        await loginAction(value.username, value.password, value.email);
+        await loginAction(usernameOrEmail, password);
         setOpen(false);
+        void navigate({ to: "/home" });
       } catch (error) {
-        setServerError(error instanceof Error ? error.message : "Bootstrap failed");
+        setServerError(error instanceof Error ? error.message : "Login failed");
       }
     },
-  });
+    { limit: 5, window: 10_000, windowType: "sliding" },
+  );
 
   const loginForm = useForm({
     defaultValues: {
@@ -153,13 +453,7 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
       usernameOrEmail: "",
     },
     onSubmit: async ({ value }) => {
-      setServerError(null);
-      try {
-        await loginAction(value.usernameOrEmail, value.password);
-        setOpen(false);
-      } catch (error) {
-        setServerError(error instanceof Error ? error.message : "Login failed");
-      }
+      await handleLogin(value.usernameOrEmail, value.password);
     },
   });
 
@@ -302,20 +596,34 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
                 >
                   {(field) => (
                     <div>
-                      <input
-                        aria-label="Password"
-                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
-                          isDarkMode
-                            ? "border-border-dark placeholder:text-text-dark/30"
-                            : "border-border-light placeholder:text-text-light/30"
-                        }`}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="password"
-                        type="password"
-                        value={field.state.value}
-                      />
+                      <div className="relative">
+                        <input
+                          aria-label="Password"
+                          className={`w-full border-b py-1.5 pr-7 text-[13px] lowercase outline-none bg-transparent ${
+                            isDarkMode
+                              ? "border-border-dark placeholder:text-text-dark/30"
+                              : "border-border-light placeholder:text-text-light/30"
+                          }`}
+                          name={field.name}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          placeholder="password"
+                          type={showPassword ? "text" : "password"}
+                          value={field.state.value}
+                        />
+                        <button
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          className={`absolute right-0 top-1/2 -translate-y-1/2 ${
+                            isDarkMode
+                              ? "text-text-dark/30 hover:text-text-dark/60"
+                              : "text-text-light/30 hover:text-text-light/60"
+                          }`}
+                          onClick={() => setShowPassword((s) => !s)}
+                          type="button"
+                        >
+                          {showPassword ? <EyeSlashIcon size={14} /> : <EyeIcon size={14} />}
+                        </button>
+                      </div>
                       {field.state.meta.errors.length > 0 && (
                         <p
                           className={`mt-1 text-[11px] ${
@@ -354,142 +662,27 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
             )}
 
             {mode === "bootstrap" && (
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  bootstrapForm.handleSubmit();
+              <BootstrapFlow
+                isDarkMode={isDarkMode}
+                onSubmit={async (value) => {
+                  setServerError(null);
+                  try {
+                    await loginAction(
+                      value.username,
+                      value.password,
+                      value.email,
+                      value.name,
+                      value.workspaceName,
+                      value.spaceName,
+                    );
+                    setOpen(false);
+                    void navigate({ to: "/home" });
+                  } catch (error) {
+                    setServerError(error instanceof Error ? error.message : "Bootstrap failed");
+                  }
                 }}
-              >
-                <bootstrapForm.Field
-                  name="username"
-                  validators={{
-                    onChange: ({ value }) => validateUsername(value),
-                  }}
-                >
-                  {(field) => (
-                    <div>
-                      <input
-                        aria-label="Username"
-                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
-                          isDarkMode
-                            ? "border-border-dark placeholder:text-text-dark/30"
-                            : "border-border-light placeholder:text-text-light/30"
-                        }`}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="username"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.length > 0 && (
-                        <p
-                          className={`mt-1 text-[11px] ${
-                            isDarkMode ? "text-red-300" : "text-red-600"
-                          }`}
-                        >
-                          {field.state.meta.errors.join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </bootstrapForm.Field>
-
-                <bootstrapForm.Field
-                  name="email"
-                  validators={{
-                    onChange: ({ value }) => validateEmail(value),
-                  }}
-                >
-                  {(field) => (
-                    <div>
-                      <input
-                        aria-label="Email"
-                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
-                          isDarkMode
-                            ? "border-border-dark placeholder:text-text-dark/30"
-                            : "border-border-light placeholder:text-text-light/30"
-                        }`}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="email"
-                        type="email"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.length > 0 && (
-                        <p
-                          className={`mt-1 text-[11px] ${
-                            isDarkMode ? "text-red-300" : "text-red-600"
-                          }`}
-                        >
-                          {field.state.meta.errors.join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </bootstrapForm.Field>
-
-                <bootstrapForm.Field
-                  name="password"
-                  validators={{
-                    onChange: ({ value }) => validatePassword(value),
-                  }}
-                >
-                  {(field) => (
-                    <div>
-                      <input
-                        aria-label="Password"
-                        className={`w-full border-b py-1.5 text-[13px] lowercase outline-none bg-transparent ${
-                          isDarkMode
-                            ? "border-border-dark placeholder:text-text-dark/30"
-                            : "border-border-light placeholder:text-text-light/30"
-                        }`}
-                        name={field.name}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        placeholder="password"
-                        type="password"
-                        value={field.state.value}
-                      />
-                      {field.state.meta.errors.length > 0 && (
-                        <p
-                          className={`mt-1 text-[11px] ${
-                            isDarkMode ? "text-red-300" : "text-red-600"
-                          }`}
-                        >
-                          {field.state.meta.errors.join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </bootstrapForm.Field>
-
-                {serverError && (
-                  <p className={`text-[11px] ${isDarkMode ? "text-red-300" : "text-red-600"}`}>
-                    {serverError}
-                  </p>
-                )}
-
-                <bootstrapForm.Subscribe
-                  selector={(state) => [state.canSubmit, state.isSubmitting]}
-                >
-                  {([canSubmit, isSubmitting]) => (
-                    <button
-                      className={`w-full py-1.5 text-[13px] lowercase ${
-                        isDarkMode
-                          ? "text-text-dark/50 hover:text-text-dark/80"
-                          : "text-text-light/50 hover:text-text-light/80"
-                      } disabled:opacity-30`}
-                      disabled={!canSubmit}
-                      type="submit"
-                    >
-                      {isSubmitting ? "..." : "create account"}
-                    </button>
-                  )}
-                </bootstrapForm.Subscribe>
-              </form>
+                serverError={serverError}
+              />
             )}
 
             {mode === "account" && user && (

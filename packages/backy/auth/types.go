@@ -13,6 +13,9 @@ type LoginRequest struct {
 	UsernameOrEmail string `json:"usernameOrEmail" binding:"required"`
 	Password        string `json:"password" binding:"required"`
 	Email           string `json:"email"`
+	Name            string `json:"name"`
+	WorkspaceName   string `json:"workspaceName"`
+	SpaceName       string `json:"spaceName"`
 }
 
 // BootstrapStateResponse is returned by GET /api/auth/bootstrap-state.
@@ -25,6 +28,7 @@ type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
+	Name      string    `json:"name"`
 	IsOwner   bool      `json:"is_owner"`
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`

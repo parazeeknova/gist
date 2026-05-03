@@ -1,5 +1,6 @@
 import type { PageTreeItem } from "#/types";
 import { CaretDownIcon, CaretRightIcon, PlusIcon } from "@phosphor-icons/react";
+import { useQueuer } from "@tanstack/react-pacer";
 import { useState, useCallback, useEffect } from "react";
 import { useTheme } from "#/hooks/use-theme";
 import {
@@ -157,6 +158,14 @@ export const PageList = ({
   const [newSlugId, setNewSlugId] = useState("");
   const [newTitle, setNewTitle] = useState("");
 
+  const deleteQueue = useQueuer(
+    (id: string) => {
+      deletePage.mutate(id);
+    },
+    { wait: 100 },
+    (state) => ({ size: state.size }),
+  );
+
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   // Auto-select first workspace
@@ -172,9 +181,6 @@ export const PageList = ({
       onSelectSpace(spaces[0].id);
     }
   }, [spaces, selectedSpaceId, onSelectSpace]);
-
-  const spaceList = spaces ?? [];
-  const workspaceList = workspaces ?? [];
 
   const handleCreate = useCallback(() => {
     if (!newSlugId.trim() || !newTitle.trim() || !selectedSpaceId) {
@@ -210,52 +216,6 @@ export const PageList = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Workspace Selector */}
-      <div className="mb-1.5">
-        <select
-          className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none lowercase ${t(
-            "border-border-dark text-text-dark/50",
-            "border-border-light text-text-light/50",
-          )}`}
-          onChange={(e) => onSelectWorkspace(e.target.value)}
-          value={selectedWorkspaceId}
-        >
-          {workspaceList.length === 0 && (
-            <option value="" disabled>
-              no workspaces
-            </option>
-          )}
-          {workspaceList.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Space Selector */}
-      <div className="mb-2">
-        <select
-          className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none lowercase ${t(
-            "border-border-dark text-text-dark/70",
-            "border-border-light text-text-light/70",
-          )}`}
-          onChange={(e) => onSelectSpace(e.target.value)}
-          value={selectedSpaceId}
-        >
-          {spaceList.length === 0 && (
-            <option value="" disabled>
-              no spaces
-            </option>
-          )}
-          {spaceList.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
       {selectedSpaceId ? (
         <>
           <div className="mb-2 flex items-center justify-between">
@@ -279,6 +239,12 @@ export const PageList = ({
               new
             </button>
           </div>
+
+          {deleteQueue.state.size > 0 && (
+            <p className={`text-[10px] mb-1 ${t("text-text-dark/40", "text-text-light/40")}`}>
+              {deleteQueue.state.size} delete{deleteQueue.state.size === 1 ? "" : "s"} queued
+            </p>
+          )}
 
           {showCreateForm && (
             <div
@@ -388,7 +354,7 @@ export const PageList = ({
                     item={item}
                     key={item.id}
                     onAddChild={handleAddChild}
-                    onDelete={(id) => deletePage.mutate(id)}
+                    onDelete={(id) => deleteQueue.addItem(id)}
                     onSelectPage={onSelectPage}
                     selectedPageId={selectedPageId}
                   />

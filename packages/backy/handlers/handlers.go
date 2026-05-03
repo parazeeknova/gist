@@ -446,17 +446,8 @@ func (h *Handlers) GetConsolePageTree(c *gin.Context) {
 
 	spaceID := c.Query("spaceId")
 	if spaceID == "" {
-		if h.spaceService == nil {
-			c.JSON(http.StatusOK, []models.PageTreeItem{})
-			return
-		}
-		defaultID, err := h.spaceService.GetDefaultSpaceID(c.Request.Context())
-		if err != nil {
-			logger.Log.Error().Err(err).Msg("page tree: failed to get default space")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve default space"})
-			return
-		}
-		spaceID = defaultID
+		c.JSON(http.StatusOK, []models.PageTreeItem{})
+		return
 	}
 
 	tree, err := h.pageService.ListTree(c.Request.Context(), spaceID)
