@@ -1,4 +1,4 @@
-import { BugIcon, GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
+import { DatabaseIcon, GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -16,7 +16,6 @@ interface ConsoleContextValue {
   setSelectedWorkspaceId: (id: string) => void;
   selectedSpaceId: string;
   setSelectedSpaceId: (id: string) => void;
-  debugTable: string | null;
 }
 
 const ConsoleContext = createContext<ConsoleContextValue | null>(null);
@@ -37,7 +36,6 @@ export const ConsoleLayout = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
   const [debugSearch, setDebugSearch] = useState("");
-  const [debugTable, setDebugTable] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === "undefined") {
       return true;
@@ -49,6 +47,8 @@ export const ConsoleLayout = () => {
   const animatingRef = useRef(false);
 
   const isDebugRoute = routerState.location.pathname === "/home/debug";
+  const debugSelectedTable =
+    ((routerState.location.search as Record<string, unknown> | undefined)?.table as string) ?? null;
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   const toggleSidebar = useCallback(() => {
@@ -82,7 +82,6 @@ export const ConsoleLayout = () => {
   return (
     <ConsoleContext.Provider
       value={{
-        debugTable,
         selectedPageId,
         selectedSpaceId,
         selectedWorkspaceId,
@@ -105,12 +104,12 @@ export const ConsoleLayout = () => {
               <DebugSidebar
                 onBack={() => navigate({ to: "/home" })}
                 onSearchChange={setDebugSearch}
-                onSelectTable={setDebugTable}
+                onSelectTable={(table) => navigate({ search: { table }, to: "/home/debug" })}
                 searchQuery={debugSearch}
-                selectedTable={debugTable}
+                selectedTable={debugSelectedTable}
               />
             ) : (
-              <div className="min-h-0 w-[calc(280px-2rem)] flex-1 flex flex-col overflow-y-auto">
+              <div className="min-h-0 w-62 flex-1 flex flex-col overflow-y-auto">
                 <div
                   className={`mb-3 flex items-center justify-center gap-2 border-b pb-2 text-[11px] lowercase ${t("border-border-dark", "border-border-light")}`}
                 >
@@ -150,7 +149,7 @@ export const ConsoleLayout = () => {
             )}
 
             <div
-              className={`mt-2 w-[calc(280px-2rem)] space-y-2 border-t pt-2 ${t("border-border-dark", "border-border-light")}`}
+              className={`mt-2 w-62 space-y-2 border-t pt-2 ${t("border-border-dark", "border-border-light")}`}
             >
               <button
                 className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
@@ -168,11 +167,11 @@ export const ConsoleLayout = () => {
               </button>
               <button
                 className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-                onClick={() => navigate({ to: "/home/debug" })}
+                onClick={() => navigate({ search: { table: undefined }, to: "/home/debug" })}
                 type="button"
               >
-                <BugIcon size={12} />
-                debug
+                <DatabaseIcon size={12} />
+                debug database
               </button>
               <p className={`px-1 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
                 powered by{" "}

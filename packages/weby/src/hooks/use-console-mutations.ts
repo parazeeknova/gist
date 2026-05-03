@@ -271,7 +271,7 @@ export const useDeleteWorkspace = () => {
 
 // Debug
 export interface DebugTableData {
-  columns: string[];
+  columns: { name: string; type: string }[];
   rows: Record<string, unknown>[];
 }
 

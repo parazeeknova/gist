@@ -43,6 +43,7 @@ import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/conso
 import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages.$id.children'
 import { Route as ApiConsoleDebugTablesTableNameRouteImport } from './routes/api/console/debug.tables.$tableName'
 import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages.$id.history.$historyId'
+import { Route as ApiConsoleDebugTablesTableNameRowsRouteImport } from './routes/api/console/debug.tables.$tableName.rows'
 
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
@@ -221,6 +222,12 @@ const ApiConsolePagesIdHistoryHistoryIdRoute =
     path: '/$historyId',
     getParentRoute: () => ApiConsolePagesIdHistoryRoute,
   } as any)
+const ApiConsoleDebugTablesTableNameRowsRoute =
+  ApiConsoleDebugTablesTableNameRowsRouteImport.update({
+    id: '/rows',
+    path: '/rows',
+    getParentRoute: () => ApiConsoleDebugTablesTableNameRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -249,13 +256,14 @@ export interface FileRoutesByFullPath {
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRoute
-  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRoute
+  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/debug/tables/$tableName/rows': typeof ApiConsoleDebugTablesTableNameRowsRoute
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
 }
 export interface FileRoutesByTo {
@@ -284,13 +292,14 @@ export interface FileRoutesByTo {
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRoute
-  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRoute
+  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/debug/tables/$tableName/rows': typeof ApiConsoleDebugTablesTableNameRowsRoute
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
 }
 export interface FileRoutesById {
@@ -321,13 +330,14 @@ export interface FileRoutesById {
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRoute
-  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRoute
+  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/debug/tables/$tableName/rows': typeof ApiConsoleDebugTablesTableNameRowsRoute
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
 }
 export interface FileRouteTypes {
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/debug/tables/$tableName/rows'
     | '/api/console/pages/$id/history/$historyId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/debug/tables/$tableName/rows'
     | '/api/console/pages/$id/history/$historyId'
   id:
     | '__root__'
@@ -437,6 +449,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/debug/tables/$tableName/rows'
     | '/api/console/pages/$id/history/$historyId'
   fileRoutesById: FileRoutesById
 }
@@ -702,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsolePagesIdHistoryHistoryIdRouteImport
       parentRoute: typeof ApiConsolePagesIdHistoryRoute
     }
+    '/api/console/debug/tables/$tableName/rows': {
+      id: '/api/console/debug/tables/$tableName/rows'
+      path: '/rows'
+      fullPath: '/api/console/debug/tables/$tableName/rows'
+      preLoaderRoute: typeof ApiConsoleDebugTablesTableNameRowsRouteImport
+      parentRoute: typeof ApiConsoleDebugTablesTableNameRoute
+    }
   }
 }
 
@@ -801,12 +821,28 @@ const ApiConsoleWorkspacesRouteChildren: ApiConsoleWorkspacesRouteChildren = {
 const ApiConsoleWorkspacesRouteWithChildren =
   ApiConsoleWorkspacesRoute._addFileChildren(ApiConsoleWorkspacesRouteChildren)
 
+interface ApiConsoleDebugTablesTableNameRouteChildren {
+  ApiConsoleDebugTablesTableNameRowsRoute: typeof ApiConsoleDebugTablesTableNameRowsRoute
+}
+
+const ApiConsoleDebugTablesTableNameRouteChildren: ApiConsoleDebugTablesTableNameRouteChildren =
+  {
+    ApiConsoleDebugTablesTableNameRowsRoute:
+      ApiConsoleDebugTablesTableNameRowsRoute,
+  }
+
+const ApiConsoleDebugTablesTableNameRouteWithChildren =
+  ApiConsoleDebugTablesTableNameRoute._addFileChildren(
+    ApiConsoleDebugTablesTableNameRouteChildren,
+  )
+
 interface ApiConsoleDebugTablesRouteChildren {
-  ApiConsoleDebugTablesTableNameRoute: typeof ApiConsoleDebugTablesTableNameRoute
+  ApiConsoleDebugTablesTableNameRoute: typeof ApiConsoleDebugTablesTableNameRouteWithChildren
 }
 
 const ApiConsoleDebugTablesRouteChildren: ApiConsoleDebugTablesRouteChildren = {
-  ApiConsoleDebugTablesTableNameRoute: ApiConsoleDebugTablesTableNameRoute,
+  ApiConsoleDebugTablesTableNameRoute:
+    ApiConsoleDebugTablesTableNameRouteWithChildren,
 }
 
 const ApiConsoleDebugTablesRouteWithChildren =

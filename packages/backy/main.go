@@ -230,6 +230,8 @@ func main() {
 			// Debug
 			console.GET("/debug/tables", h.GetDebugTables)
 			console.GET("/debug/tables/:tableName", h.GetDebugTableData)
+			console.DELETE("/debug/tables/:tableName", h.DeleteDebugTableData)
+			console.POST("/debug/tables/:tableName/rows", h.DeleteDebugTableRows)
 		}
 	}
 

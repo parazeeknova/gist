@@ -1004,9 +1004,9 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 		return
 	}
 
-	// Get columns
+	// Get columns with data types
 	colRows, err := pool.Query(c.Request.Context(),
-		`SELECT column_name FROM information_schema.columns 
+		`SELECT column_name, data_type FROM information_schema.columns 
 		 WHERE table_schema = 'public' AND table_name = $1
 		 ORDER BY ordinal_position`, tableName)
 	if err != nil {
@@ -1016,13 +1016,16 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 	}
 	defer colRows.Close()
 
-	var columns []string
+	var columns []map[string]string
 	for colRows.Next() {
-		var col string
-		if err := colRows.Scan(&col); err != nil {
+		var name, dtype string
+		if err := colRows.Scan(&name, &dtype); err != nil {
 			continue
 		}
-		columns = append(columns, col)
+		columns = append(columns, map[string]string{
+			"name": name,
+			"type": dtype,
+		})
 	}
 	if colRows.Err() != nil {
 		logger.Log.Error().Err(colRows.Err()).Msg("debug: column iter error")
@@ -1031,13 +1034,38 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 	}
 
 	if columns == nil {
-		columns = []string{}
+		columns = []map[string]string{}
+	}
+
+	// Abbreviate type names for display
+	typeAbbrev := map[string]string{
+		"timestamp with time zone":    "timestamptz",
+		"timestamp without time zone": "timestamp",
+		"character varying":           "varchar",
+		"double precision":            "float8",
+		"bigint":                      "int8",
+		"integer":                     "int4",
+		"smallint":                    "int2",
+		"boolean":                     "bool",
+		"text":                        "text",
+		"bytea":                       "bytea",
+		"jsonb":                       "jsonb",
+		"uuid":                        "uuid",
+	}
+	for i := range columns {
+		if abbr, ok := typeAbbrev[columns[i]["type"]]; ok {
+			columns[i]["type"] = abbr
+		}
 	}
 
 	// Get data (limit 500 for safety)
+	colNames := make([]string, len(columns))
+	for i, col := range columns {
+		colNames[i] = col["name"]
+	}
 	query := fmt.Sprintf(
 		`SELECT %s FROM %s ORDER BY 1 DESC LIMIT 500`,
-		safeColumns(columns), safeIdent(tableName),
+		safeColumns(colNames), safeIdent(tableName),
 	)
 
 	dataRows, err := pool.Query(c.Request.Context(), query)
@@ -1055,8 +1083,8 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 			logger.Log.Error().Err(scanErr).Msg("debug: scan row values")
 			continue
 		}
-		row := make(map[string]any, len(columns))
-		for i, col := range columns {
+		row := make(map[string]any, len(colNames))
+		for i, col := range colNames {
 			if i < len(vals) {
 				row[col] = formatDebugVal(vals[i])
 			}
@@ -1074,6 +1102,98 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"columns": columns,
 		"rows":    data,
+	})
+}
+
+// DeleteDebugTableData handles DELETE /api/console/debug/tables/:tableName.
+func (h *Handlers) DeleteDebugTableData(c *gin.Context) {
+	pool := database.GetPool()
+	if pool == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database unavailable"})
+		return
+	}
+
+	tableName := c.Param("tableName")
+
+	allowed := map[string]bool{
+		"pages": true, "page_history": true, "spaces": true,
+		"workspaces": true, "users": true, "sessions": true,
+		"refresh_tokens": true, "password_credentials": true,
+	}
+	if !allowed[tableName] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
+		return
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s", safeIdent(tableName))
+	tag, err := pool.Exec(c.Request.Context(), query)
+	if err != nil {
+		logger.Log.Error().Str("table", tableName).Err(err).Msg("debug: delete all rows")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete rows"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"deleted": tag.RowsAffected(),
+		"table":   tableName,
+	})
+}
+
+// DeleteDebugTableRows handles POST /api/console/debug/tables/:tableName/rows.
+func (h *Handlers) DeleteDebugTableRows(c *gin.Context) {
+	pool := database.GetPool()
+	if pool == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database unavailable"})
+		return
+	}
+
+	tableName := c.Param("tableName")
+
+	allowed := map[string]bool{
+		"pages": true, "page_history": true, "spaces": true,
+		"workspaces": true, "users": true, "sessions": true,
+		"refresh_tokens": true, "password_credentials": true,
+	}
+	if !allowed[tableName] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
+		return
+	}
+
+	var req struct {
+		IDs []string `json:"ids" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ids array is required"})
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "no ids provided"})
+		return
+	}
+
+	// Build DELETE ... WHERE id IN ($1, $2, ...)
+	placeholders := ""
+	args := make([]any, 0, len(req.IDs))
+	for i, id := range req.IDs {
+		if i > 0 {
+			placeholders += ", "
+		}
+		placeholders += fmt.Sprintf("$%d", i+1)
+		args = append(args, id)
+	}
+
+	query := fmt.Sprintf("DELETE FROM %s WHERE id IN (%s)", safeIdent(tableName), placeholders)
+	tag, err := pool.Exec(c.Request.Context(), query, args...)
+	if err != nil {
+		logger.Log.Error().Str("table", tableName).Err(err).Msg("debug: delete rows")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete rows"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"deleted": tag.RowsAffected(),
+		"table":   tableName,
 	})
 }
 
@@ -1101,7 +1221,12 @@ func safeColumns(cols []string) string {
 func formatDebugVal(v any) any {
 	switch val := v.(type) {
 	case []byte:
+		if len(val) == 16 {
+			return fmt.Sprintf("%x-%x-%x-%x-%x", val[0:4], val[4:6], val[6:8], val[8:10], val[10:16])
+		}
 		return string(val)
+	case [16]byte:
+		return fmt.Sprintf("%x-%x-%x-%x-%x", val[0:4], val[4:6], val[6:8], val[8:10], val[10:16])
 	case time.Time:
 		return val.Format(time.RFC3339)
 	default:

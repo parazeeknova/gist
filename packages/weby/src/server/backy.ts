@@ -289,9 +289,29 @@ export const getDebugTables = (cookieHeader?: string | null) =>
   });
 
 export const getDebugTableData = (tableName: string, cookieHeader?: string | null) =>
-  fetchBacky<{ columns: string[]; rows: Record<string, unknown>[] }>(
+  fetchBacky<{ columns: { name: string; type: string }[]; rows: Record<string, unknown>[] }>(
     `console/debug/tables/${tableName}`,
     {
       headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     },
   );
+
+export const deleteDebugTableData = (tableName: string, cookieHeader?: string | null) =>
+  fetchBacky<{ deleted: number; table: string }>(`console/debug/tables/${tableName}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const deleteDebugTableRows = (
+  tableName: string,
+  ids: string[],
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<{ deleted: number; table: string }>(`console/debug/tables/${tableName}/rows`, {
+    body: JSON.stringify({ ids }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });

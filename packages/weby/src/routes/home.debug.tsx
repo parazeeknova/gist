@@ -1,15 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { DebugTable } from "../components/console/debug-table";
-import { useConsoleContext } from "../components/console/console-layout";
 import { useTheme } from "../hooks/use-theme";
 
-const DebugRoute = () => {
+const DebugRouteComponent = () => {
   const { isDarkMode } = useTheme();
-  const { debugTable } = useConsoleContext();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  // eslint-disable-next-line no-use-before-define
+  const search = Route.useSearch();
+  const table = search.table ?? null;
 
-  if (debugTable) {
-    return <DebugTable tableName={debugTable} />;
+  useEffect(() => {
+    document.title = table ? `verso — ${table}` : "verso — debug";
+    return () => {
+      document.title = "verso — console";
+    };
+  }, [table]);
+
+  if (table) {
+    return <DebugTable key={table} tableName={table} />;
   }
 
   return (
@@ -22,5 +31,11 @@ const DebugRoute = () => {
 };
 
 export const Route = createFileRoute("/home/debug")({
-  component: DebugRoute,
+  component: DebugRouteComponent,
+  head: () => ({
+    meta: [{ content: "noindex, nofollow", name: "robots" }],
+  }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    table: typeof search.table === "string" ? search.table : undefined,
+  }),
 });

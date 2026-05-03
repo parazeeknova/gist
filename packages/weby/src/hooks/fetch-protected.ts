@@ -20,11 +20,11 @@ const refreshTokens = (): Promise<boolean> => {
 };
 
 export const fetchProtected = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  let res = await fetch(url, init);
+  let res = await fetch(url, { ...init, credentials: "include" });
   if (res.status === 401) {
     const refreshed = await refreshTokens();
     if (refreshed) {
-      res = await fetch(url, init);
+      res = await fetch(url, { ...init, credentials: "include" });
     }
   }
   if (!res.ok) {
