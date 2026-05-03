@@ -119,6 +119,7 @@ type PageTreeItem struct {
 	IsPublished  bool    `json:"isPublished"`
 	ParentPageID *string `json:"parentPageId,omitempty"`
 	SpaceID      string  `json:"spaceId"`
+	WorkspaceID  string  `json:"workspaceId"`
 	HasChildren  bool    `json:"hasChildren"`
 	CreatedAt    string  `json:"createdAt"`
 	UpdatedAt    string  `json:"updatedAt"`
@@ -126,6 +127,17 @@ type PageTreeItem struct {
 
 // Space represents a space grouping pages together.
 type Space struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Icon        string `json:"icon"`
+	WorkspaceID string `json:"workspaceId"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+// Workspace represents a top-level grouping of spaces.
+type Workspace struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Slug      string `json:"slug"`

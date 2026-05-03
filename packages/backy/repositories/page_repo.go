@@ -237,7 +237,7 @@ func (r *PageRepo) Delete(ctx context.Context, id string) error {
 func (r *PageRepo) ListRoots(ctx context.Context, spaceID string) ([]models.PageTreeItem, error) {
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
-		       p.parent_page_id, p.space_id, p.created_at, p.updated_at,
+		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
 		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
 		FROM pages p
 		WHERE p.parent_page_id IS NULL AND p.space_id = $1
@@ -256,7 +256,7 @@ func (r *PageRepo) ListRoots(ctx context.Context, spaceID string) ([]models.Page
 func (r *PageRepo) ListChildren(ctx context.Context, parentID string) ([]models.PageTreeItem, error) {
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
-		       p.parent_page_id, p.space_id, p.created_at, p.updated_at,
+		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
 		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
 		FROM pages p
 		WHERE p.parent_page_id = $1
@@ -275,7 +275,7 @@ func (r *PageRepo) ListChildren(ctx context.Context, parentID string) ([]models.
 func (r *PageRepo) ListTree(ctx context.Context, spaceID string) ([]models.PageTreeItem, error) {
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
-		       p.parent_page_id, p.space_id, p.created_at, p.updated_at,
+		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
 		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
 		FROM pages p
 		WHERE p.space_id = $1
@@ -342,8 +342,8 @@ func scanPageTreeItems(rows pgx.Rows) ([]models.PageTreeItem, error) {
 		var createdAt, updatedAt any
 		if err := rows.Scan(
 			&item.ID, &item.SlugID, &item.Title, &item.Icon, &item.Position,
-			&item.IsPublished, &item.ParentPageID, &item.SpaceID, &createdAt, &updatedAt,
-			&item.HasChildren,
+			&item.IsPublished, &item.ParentPageID, &item.SpaceID, &item.WorkspaceID,
+			&createdAt, &updatedAt, &item.HasChildren,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page tree row: %w", err)
 		}

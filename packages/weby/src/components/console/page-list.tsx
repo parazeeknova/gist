@@ -7,13 +7,15 @@ import {
   useDeletePage,
   usePageTree,
   useSpaces,
+  useWorkspaces,
 } from "../../hooks/use-console-mutations";
 
 interface PageListProps {
   onSelectPage: (id: string) => void;
   selectedPageId: string | null;
-  activeTab: "spaces" | "favorites" | "profile";
+  selectedWorkspaceId: string;
   selectedSpaceId: string;
+  onSelectWorkspace: (id: string) => void;
   onSelectSpace: (id: string) => void;
 }
 
@@ -62,7 +64,7 @@ const TreeNode = ({
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
         <button
-          className={`flex-shrink-0 p-0.5 ${children.length === 0 ? "invisible" : ""} ${t(
+          className={`shrink-0 p-0.5 ${children.length === 0 ? "invisible" : ""} ${t(
             "text-text-dark/30 hover:text-text-dark/60",
             "text-text-light/30 hover:text-text-light/60",
           )}`}
@@ -78,11 +80,11 @@ const TreeNode = ({
           onClick={() => onSelectPage(item.id)}
           type="button"
         >
-          <span className="flex-shrink-0">{item.icon || "📄"}</span>
+          <span className="shrink-0">{item.icon || "📄"}</span>
           <span className="truncate">{item.title || item.slugId}</span>
           {!item.isPublished && (
             <span
-              className={`flex-shrink-0 text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}
+              className={`shrink-0 text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}
             >
               draft
             </span>
@@ -139,11 +141,14 @@ const TreeNode = ({
 export const PageList = ({
   onSelectPage,
   selectedPageId,
+  selectedWorkspaceId,
   selectedSpaceId,
+  onSelectWorkspace,
   onSelectSpace,
 }: PageListProps) => {
   const { data: treeItems, isPending, isError } = usePageTree(selectedSpaceId);
-  const { data: spaces } = useSpaces();
+  const { data: workspaces } = useWorkspaces();
+  const { data: spaces } = useSpaces(selectedWorkspaceId);
   const createPage = useCreatePage();
   const deletePage = useDeletePage();
   const { isDarkMode } = useTheme();
@@ -154,6 +159,13 @@ export const PageList = ({
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
+  // Auto-select first workspace
+  useEffect(() => {
+    if (!selectedWorkspaceId && workspaces && workspaces.length > 0) {
+      onSelectWorkspace(workspaces[0].id);
+    }
+  }, [workspaces, selectedWorkspaceId, onSelectWorkspace]);
+
   // Auto-select first space
   useEffect(() => {
     if (!selectedSpaceId && spaces && spaces.length > 0) {
@@ -162,6 +174,7 @@ export const PageList = ({
   }, [spaces, selectedSpaceId, onSelectSpace]);
 
   const spaceList = spaces ?? [];
+  const workspaceList = workspaces ?? [];
 
   const handleCreate = useCallback(() => {
     if (!newSlugId.trim() || !newTitle.trim() || !selectedSpaceId) {
@@ -197,6 +210,29 @@ export const PageList = ({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
+      {/* Workspace Selector */}
+      <div className="mb-1.5">
+        <select
+          className={`w-full rounded border px-2 py-1 text-[12px] bg-transparent outline-none lowercase ${t(
+            "border-border-dark text-text-dark/50",
+            "border-border-light text-text-light/50",
+          )}`}
+          onChange={(e) => onSelectWorkspace(e.target.value)}
+          value={selectedWorkspaceId}
+        >
+          {workspaceList.length === 0 && (
+            <option value="" disabled>
+              no workspaces
+            </option>
+          )}
+          {workspaceList.map((w) => (
+            <option key={w.id} value={w.id}>
+              {w.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Space Selector */}
       <div className="mb-2">
         <select

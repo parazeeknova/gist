@@ -102,7 +102,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
 
   return (
     <nav
-      className={`relative flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")} ${isDarkMode ? "bg-[#1a1a1a]" : "bg-[#e5e5e5]"}`}
+      className={`sticky top-0 z-50 flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")} ${isDarkMode ? "bg-[#1a1a1a]" : "bg-[#e5e5e5]"}`}
     >
       {/* Left: sidebar toggle + brand + desktop nav links */}
       <div className="flex items-center gap-2 md:gap-3">

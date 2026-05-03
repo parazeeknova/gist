@@ -50,6 +50,7 @@
     -ms-overflow-style: none;
     background-color: var(--color-bg);
     font-family: "Ubuntu Mono", monospace;
+    overflow: hidden;
     scroll-behavior: smooth;
     scrollbar-width: none;
     text-transform: lowercase;
@@ -57,15 +58,31 @@
 
   body {
     background-color: var(--color-bg);
+    margin: 0;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    overflow-x: hidden;
   }
 
   html::-webkit-scrollbar {
     display: none;
   }
 
-  * {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+  /* Scrollbar styles are applied via custom-scrollbar class only */
+
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
   }
 
   *::-webkit-scrollbar {
@@ -363,4 +380,42 @@ button {
   line-height: 0;
   margin: 0;
   padding: 0;
+}
+
+/* Custom scrollbar styles */
+.custom-scrollbar {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+  height: 6px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-radius: 4px !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Dark mode */
+[data-theme="dark"] .custom-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+}
+
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
 }

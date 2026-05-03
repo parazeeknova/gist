@@ -31,13 +31,14 @@ func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.P
 	}
 }
 
-// CreateSpace creates a new space.
-func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon string) (models.Space, error) {
+// CreateSpace creates a new space within a workspace.
+func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, workspaceID string) (models.Space, error) {
 	space := models.Space{
-		ID:   uuid.New().String(),
-		Name: name,
-		Slug: slug,
-		Icon: icon,
+		ID:          uuid.New().String(),
+		Name:        name,
+		Slug:        slug,
+		Icon:        icon,
+		WorkspaceID: workspaceID,
 	}
 
 	if err := s.spaceRepo.Insert(ctx, space); err != nil {
@@ -89,9 +90,9 @@ func (s *SpaceService) DeleteSpace(ctx context.Context, id string) error {
 	return nil
 }
 
-// ListSpaces returns all spaces.
-func (s *SpaceService) ListSpaces(ctx context.Context) ([]models.Space, error) {
-	spaces, err := s.spaceRepo.ListAll(ctx)
+// ListSpaces returns all spaces in a workspace.
+func (s *SpaceService) ListSpaces(ctx context.Context, workspaceID string) ([]models.Space, error) {
+	spaces, err := s.spaceRepo.ListAll(ctx, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("listing spaces: %w", err)
 	}

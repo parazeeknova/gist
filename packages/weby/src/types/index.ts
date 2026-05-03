@@ -156,6 +156,16 @@ export interface Space {
   name: string;
   slug: string;
   icon: string;
+  workspaceId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
   createdAt: string;
   updatedAt: string;
 }

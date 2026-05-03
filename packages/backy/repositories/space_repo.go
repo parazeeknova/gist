@@ -28,14 +28,14 @@ func NewSpaceRepo(pool *pgxpool.Pool) *SpaceRepo {
 // GetByID fetches a space by its primary key.
 func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error) {
 	query := `
-		SELECT id, name, slug, icon,
+		SELECT id, name, slug, icon, workspace_id,
 		       created_at::text, updated_at::text
 		FROM spaces
 		WHERE id = $1`
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
@@ -50,14 +50,14 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 // GetBySlug fetches a space by its slug.
 func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, error) {
 	query := `
-		SELECT id, name, slug, icon,
+		SELECT id, name, slug, icon, workspace_id,
 		       created_at::text, updated_at::text
 		FROM spaces
 		WHERE slug = $1`
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
@@ -84,14 +84,15 @@ func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
 }
 
 // ListAll returns all spaces ordered by name.
-func (r *SpaceRepo) ListAll(ctx context.Context) ([]models.Space, error) {
+func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.Space, error) {
 	query := `
-		SELECT id, name, slug, icon,
+		SELECT id, name, slug, icon, workspace_id,
 		       created_at::text, updated_at::text
 		FROM spaces
+		WHERE workspace_id = $1
 		ORDER BY name`
 
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.pool.Query(ctx, query, workspaceID)
 	if err != nil {
 		return nil, fmt.Errorf("listing spaces: %w", err)
 	}
@@ -100,7 +101,7 @@ func (r *SpaceRepo) ListAll(ctx context.Context) ([]models.Space, error) {
 	var spaces []models.Space
 	for rows.Next() {
 		var s models.Space
-		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning space row: %w", err)
 		}
 		spaces = append(spaces, s)
@@ -118,10 +119,10 @@ func (r *SpaceRepo) ListAll(ctx context.Context) ([]models.Space, error) {
 // Insert creates a new space row.
 func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 	query := `
-		INSERT INTO spaces (id, name, slug, icon, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, now(), now())`
+		INSERT INTO spaces (id, name, slug, icon, workspace_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon)
+	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.WorkspaceID)
 	if err != nil {
 		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
 	}
