@@ -18,6 +18,7 @@ import (
 	"github.com/verso/backy/middleware"
 	"github.com/verso/backy/repositories"
 	"github.com/verso/backy/services"
+	"github.com/verso/backy/storage"
 )
 
 func main() {
@@ -74,6 +75,15 @@ func main() {
 		pool := database.GetPool()
 		if err := database.MigrateUp(context.Background(), pool); err != nil {
 			log.Fatal().Err(err).Msg("migration failed")
+		}
+		// Ensure S3 buckets exist
+		s3Client, err := storage.NewClient()
+		if err != nil {
+			log.Warn().Err(err).Msg("storage init warning, file uploads will be unavailable")
+		} else {
+			if err := s3Client.EnsureBuckets(context.Background()); err != nil {
+				log.Warn().Err(err).Msg("bucket ensure warning, file uploads may be unavailable")
+			}
 		}
 	}
 
