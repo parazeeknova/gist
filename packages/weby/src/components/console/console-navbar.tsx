@@ -10,11 +10,15 @@ import { useWorkspaces } from "#/hooks/use-console-mutations";
 import { useConsoleContext } from "./console-context";
 import {
   BellIcon,
+  GearSixIcon,
   ListIcon,
   MagnifyingGlassIcon,
   SidebarIcon,
   SidebarSimpleIcon,
   SignOutIcon,
+  SlidersHorizontalIcon,
+  UserIcon,
+  UsersIcon,
 } from "@phosphor-icons/react";
 
 interface ConsoleNavbarProps {
@@ -226,52 +230,73 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
             onClick={() => setDropdownOpen((o) => !o)}
             type="button"
           >
-            @{workspaceName}
+            {workspaceName}
           </button>
 
           {dropdownOpen && (
             <div
-              className={`absolute right-0 top-full z-50 mt-1 w-48 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+              className={`absolute right-0 top-full z-50 mt-1 w-52 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
             >
               <div className="py-1">
-                <div
-                  className={`border-b px-3 pb-1.5 pt-1 ${t("border-border-dark", "border-border-light")}`}
+                {/* Workspace actions */}
+                <button
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                  onClick={() => setDropdownOpen(false)}
+                  type="button"
                 >
-                  <p className={`text-[12px] ${t("text-text-dark/70", "text-text-light/70")}`}>
-                    @{user?.username}
-                  </p>
+                  <GearSixIcon size={12} />
+                  workspace settings
+                </button>
+                <button
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                  onClick={() => setDropdownOpen(false)}
+                  type="button"
+                >
+                  <UsersIcon size={12} />
+                  manage members
+                </button>
+
+                {/* User details */}
+                <div
+                  className={`border-y my-1 px-3 pb-2 pt-1.5 ${t("border-border-dark", "border-border-light")}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-[13px] truncate ${t("text-text-dark", "text-text-light")}`}>
+                      {user?.name || user?.username}
+                    </p>
+                    <p
+                      className={`text-[10px] shrink-0 truncate max-w-20 ${t("text-text-dark/40", "text-text-light/40")}`}
+                    >
+                      @{user?.username}
+                    </p>
+                  </div>
                   <p className={`text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}>
                     {user?.email}
                   </p>
                   {stats && (
                     <p
-                      className={`mt-0.5 text-[11px] ${t("text-text-dark/20", "text-text-light/20")}`}
+                      className={`mt-1 text-[11px] ${t("text-text-dark/20", "text-text-light/20")}`}
                     >
                       pg {stats.pages} &middot; pts {stats.posts} &middot; rmd {stats.readmes}
                     </p>
                   )}
                 </div>
 
+                {/* Profile actions */}
                 <button
-                  className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
                   onClick={() => setDropdownOpen(false)}
                   type="button"
                 >
-                  workspace settings
-                </button>
-
-                <button
-                  className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={() => setDropdownOpen(false)}
-                  type="button"
-                >
+                  <UserIcon size={12} />
                   my profile
                 </button>
                 <button
-                  className={`w-full px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
                   onClick={() => setDropdownOpen(false)}
                   type="button"
                 >
+                  <SlidersHorizontalIcon size={12} />
                   my preferences
                 </button>
 
