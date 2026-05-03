@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
-import { extractBlogHeadings } from "../lib/blog-headings";
-import { markdownToHtml } from "../lib/markdown-to-html";
-import { AnimatedLink } from "./animated-link";
-import { BlogFileTree } from "./blog/blog-file-tree";
+import { extractBlogHeadings } from "../../lib/blog-headings";
+import { markdownToHtml } from "../../lib/markdown-to-html";
+import { AnimatedLink } from "../animated-link";
+import { BlogFileTree } from "../blog/blog-file-tree";
 import type { BlogManifestSection } from "#/types";
-import { BlogTableOfContents } from "./blog/blog-table-of-contents";
+import { BlogTableOfContents } from "../blog/blog-table-of-contents";
 
 interface ReadmeViewerProps {
   isDarkMode: boolean;

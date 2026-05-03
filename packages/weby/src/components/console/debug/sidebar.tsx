@@ -7,9 +7,9 @@ import {
 import { useDebouncedCallback, useThrottledCallback } from "@tanstack/react-pacer";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "../../hooks/use-theme";
-import { useDebugTables } from "../../hooks/use-console-mutations";
-import { fetchProtected } from "../../hooks/fetch-protected";
+import { useTheme } from "#/hooks/use-theme";
+import { useDebugTables } from "#/hooks/use-console-mutations";
+import { fetchProtected } from "#/hooks/fetch-protected";
 
 interface DebugSidebarProps {
   onBack: () => void;

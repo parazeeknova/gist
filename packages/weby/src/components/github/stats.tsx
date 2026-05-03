@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { LoadingDots } from "./loading";
+import { LoadingDots } from "../loading";
 
 export interface GitHubOrg {
   login: string;

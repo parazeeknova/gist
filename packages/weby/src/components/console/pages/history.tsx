@@ -1,6 +1,6 @@
 import type { PageHistoryItem } from "#/types";
-import { useTheme } from "../../hooks/use-theme";
-import { usePageHistory, useRestorePage } from "../../hooks/use-console-mutations";
+import { useTheme } from "#/hooks/use-theme";
+import { usePageHistory, useRestorePage } from "#/hooks/use-console-mutations";
 
 interface PageHistoryProps {
   pageId: string;

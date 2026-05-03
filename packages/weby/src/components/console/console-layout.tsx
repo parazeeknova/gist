@@ -4,8 +4,8 @@ import { gsap } from "gsap";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useTheme } from "../../hooks/use-theme";
 import { ConsoleNavbar } from "./console-navbar";
-import { DebugSidebar } from "./debug-sidebar";
-import { PageList } from "./page-list";
+import { DebugSidebar } from "./debug/sidebar";
+import { PageList } from "./pages/list";
 
 const SIDEBAR_WIDTH = 280;
 

@@ -1,6 +1,6 @@
 import { CaretDownIcon } from "@phosphor-icons/react";
 import { useState, useRef, useEffect } from "react";
-import { useTheme } from "../../hooks/use-theme";
+import { useTheme } from "#/hooks/use-theme";
 
 interface DropdownProps {
   value: number;

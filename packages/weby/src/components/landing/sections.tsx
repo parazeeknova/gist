@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import type { ExperienceItem, Link, Profile } from "#/types";
-import { AnimatedLink } from "./animated-link";
-import { LoadingDots } from "./loading";
-import { markdownToHtml } from "../lib/markdown-to-html";
+import { AnimatedLink } from "../animated-link";
+import { LoadingDots } from "../loading";
+import { markdownToHtml } from "../../lib/markdown-to-html";
 
 const getLink = (links: Record<string, Link> | undefined, key: string): Link | undefined =>
   links?.[key];

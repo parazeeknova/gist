@@ -4,10 +4,10 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { useEffect, useCallback, useRef, useState } from "react";
 import { CodeBlockLowlight } from "@tiptap/extension-code-block-lowlight";
 import { createLowlight, common } from "lowlight";
-import { HeadingWithIds } from "../blog/tiptap-heading-ids";
+import { HeadingWithIds } from "../../blog/tiptap-heading-ids";
 import { Link } from "@tiptap/extension-link";
-import { useTheme } from "../../hooks/use-theme";
-import { useUpdatePage } from "../../hooks/use-console-mutations";
+import { useTheme } from "#/hooks/use-theme";
+import { useUpdatePage } from "#/hooks/use-console-mutations";
 import type { ConsolePageDetail } from "#/types";
 
 const lowlight = createLowlight(common);

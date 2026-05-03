@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { GitHubActivity } from "../components/github-calendar";
-import { GitHubStats } from "../components/github-stats";
-import { ExperienceSection, ProfileSection, SocialLinks } from "../components/home-sections";
-import { MobileProjectList, ProjectList } from "../components/projects";
-import { ScrollContainer } from "../components/scroll-container";
+import { GitHubActivity } from "../components/github/calendar";
+import { GitHubStats } from "../components/github/stats";
+import { ExperienceSection, ProfileSection, SocialLinks } from "../components/landing/sections";
+import { ScrollContainer } from "../components/landing/scroll-container";
+import { ReadmeViewer } from "../components/landing/readme-viewer";
+import { MobileProjectList, ProjectList } from "../components/landing/projects";
 import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
 import { LoginPopup } from "../components/login-popup";
-import { ReadmeViewer } from "../components/readme-viewer";
 import {
   useBlogManifest,
   useExperience,

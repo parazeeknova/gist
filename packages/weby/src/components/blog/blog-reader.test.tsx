@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BlogPost } from "#/types";
 import { BlogReader } from "./blog-reader";
 import { BlogReaderPanel } from "./blog-reader-panel";
-import { renderWithQuery } from "../../test/utils";
+import { renderWithQuery } from "#/test/utils";
 
 const mockPost: BlogPost = {
   content: {

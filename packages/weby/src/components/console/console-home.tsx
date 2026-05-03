@@ -2,9 +2,9 @@ import { FileTextIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import type { ConsolePage } from "#/types";
-import { useAuth } from "../../hooks/use-auth";
-import { useTheme } from "../../hooks/use-theme";
-import { fetchProtected } from "../../hooks/fetch-protected";
+import { useAuth } from "#/hooks/use-auth";
+import { useTheme } from "#/hooks/use-theme";
+import { fetchProtected } from "#/hooks/fetch-protected";
 
 const useConsolePages = () =>
   useQuery<ConsolePage[]>({

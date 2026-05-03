@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { DebugTable } from "../components/console/debug-table";
+import { DebugTable } from "../components/console/debug/table";
 import { useTheme } from "../hooks/use-theme";
 
 const DebugRouteComponent = () => {

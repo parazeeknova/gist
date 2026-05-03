@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { Stats } from "#/types";
-import { useAuth, useAuthActions } from "../../hooks/use-auth";
-import { useTheme } from "../../hooks/use-theme";
+import { useAuth, useAuthActions } from "#/hooks/use-auth";
+import { useTheme } from "#/hooks/use-theme";
 import {
   BellIcon,
   ListIcon,

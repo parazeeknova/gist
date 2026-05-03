@@ -15,11 +15,11 @@ import {
   TrashIcon,
   CopyIcon,
 } from "@phosphor-icons/react";
-import { useTheme } from "../../hooks/use-theme";
-import { useDebugTableData } from "../../hooks/use-console-mutations";
-import { fetchProtected } from "../../hooks/fetch-protected";
-import { Check } from "./check";
-import { Dropdown } from "./dropdown";
+import { useTheme } from "#/hooks/use-theme";
+import { useDebugTableData } from "#/hooks/use-console-mutations";
+import { fetchProtected } from "#/hooks/fetch-protected";
+import { Check } from "../check";
+import { Dropdown } from "../dropdown";
 
 const columnHelper = createColumnHelper<Record<string, unknown>>();
 
@@ -279,7 +279,7 @@ export const DebugTable = ({ tableName }: DebugTableProps) => {
             />
             show
             <Dropdown
-              onChange={(n) => setPageSize(n)}
+              onChange={(n: number) => setPageSize(n)}
               options={[20, 50, 100, 500]}
               value={pageSize}
             />
