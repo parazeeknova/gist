@@ -12,7 +12,6 @@ const Console = function Console() {
   const loadingRef = useRef<HTMLDivElement>(null);
   const [done, setDone] = useState(false);
 
-  // Keep body background in sync with theme
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.body.style.backgroundColor = isDarkMode ? "#111111" : "#eeeeee";

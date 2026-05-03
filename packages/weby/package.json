@@ -1,6 +1,6 @@
 {
   "name": "@verso/weby",
-  "version": "0.0.76",
+  "version": "0.0.77",
   "private": true,
   "type": "module",
   "imports": {
@@ -27,6 +27,8 @@
     "@tanstack/react-router-devtools": "^1.166.13",
     "@tanstack/react-router-ssr-query": "^1.166.12",
     "@tanstack/react-start": "^1.167.49",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.24",
     "@tanstack/router-plugin": "^1.167.27",
     "@tiptap/extension-code-block-lowlight": "^3.22.4",
     "@tiptap/extension-link": "^3.22.4",

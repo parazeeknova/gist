@@ -8,6 +8,7 @@ import type {
   RestorePageInput,
   Space,
   UpdatePageInput,
+  Workspace,
 } from "#/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
@@ -189,10 +190,15 @@ export const useRestorePage = () => {
 };
 
 // Spaces
-export const useSpaces = () =>
+export const useSpaces = (workspaceId: string) =>
   useQuery<Space[]>({
-    queryFn: ({ signal }) => fetchProtected<Space[]>("/api/console/spaces", { signal }),
-    queryKey: ["spaces"],
+    enabled: workspaceId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<Space[]>(
+        `/api/console/spaces?workspaceId=${encodeURIComponent(workspaceId)}`,
+        { signal },
+      ),
+    queryKey: ["spaces", workspaceId],
     staleTime: 60 * 1000,
   });
 
@@ -224,3 +230,63 @@ export const useDeleteSpace = () => {
     },
   });
 };
+
+// Workspaces
+export const useWorkspaces = () =>
+  useQuery<Workspace[]>({
+    queryFn: ({ signal }) => fetchProtected<Workspace[]>("/api/console/workspaces", { signal }),
+    queryKey: ["workspaces"],
+    staleTime: 120 * 1000,
+  });
+
+export const useCreateWorkspace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; slug: string; icon?: string }) =>
+      fetchProtected<Workspace>("/api/console/workspaces", {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+    },
+  });
+};
+
+export const useDeleteWorkspace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchProtected<{ status: string }>(`/api/console/workspaces/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+    },
+  });
+};
+
+// Debug
+export interface DebugTableData {
+  columns: string[];
+  rows: Record<string, unknown>[];
+}
+
+export const useDebugTables = () =>
+  useQuery<string[]>({
+    queryFn: ({ signal }) => fetchProtected<string[]>("/api/console/debug/tables", { signal }),
+    queryKey: ["debugTables"],
+    staleTime: 30 * 1000,
+  });
+
+export const useDebugTableData = (tableName: string | null) =>
+  useQuery<DebugTableData>({
+    enabled: tableName !== null,
+    queryFn: ({ signal }) =>
+      fetchProtected<DebugTableData>(`/api/console/debug/tables/${tableName}`, { signal }),
+    queryKey: ["debugTableData", tableName],
+    staleTime: 10 * 1000,
+  });

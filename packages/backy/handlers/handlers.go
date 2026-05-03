@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/verso/backy/cache"
+	"github.com/verso/backy/database"
 	"github.com/verso/backy/logger"
 	"github.com/verso/backy/middleware"
 	"github.com/verso/backy/models"
@@ -25,9 +27,10 @@ type Handlers struct {
 	config        Config
 	statsGroup    singleflight.Group
 
-	// Optional DB-backed page service; if nil, falls back to file-based store
-	pageService  *services.PageService
-	spaceService *services.SpaceService
+	// Optional DB-backed services; if nil, falls back to file-based store
+	pageService      *services.PageService
+	spaceService     *services.SpaceService
+	workspaceService *services.WorkspaceService
 }
 
 // Config holds application configuration
@@ -45,11 +48,12 @@ func New(cfg Config) *Handlers {
 	}
 }
 
-// NewWithDB creates a new handlers instance with database-backed page service and space service.
-func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService) *Handlers {
+// NewWithDB creates a new handlers instance with database-backed services.
+func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService, workspaceService *services.WorkspaceService) *Handlers {
 	h := New(cfg)
 	h.pageService = pageService
 	h.spaceService = spaceService
+	h.workspaceService = workspaceService
 	return h
 }
 
@@ -713,7 +717,22 @@ func (h *Handlers) GetSpaces(c *gin.Context) {
 		return
 	}
 
-	spaces, err := h.spaceService.ListSpaces(c.Request.Context())
+	workspaceID := c.Query("workspaceId")
+	if workspaceID == "" {
+		if h.workspaceService == nil {
+			c.JSON(http.StatusOK, []models.Space{})
+			return
+		}
+		defaultID, err := h.workspaceService.GetDefaultWorkspaceID(c.Request.Context())
+		if err != nil {
+			logger.Log.Error().Err(err).Msg("list spaces: failed to get default workspace")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve default workspace"})
+			return
+		}
+		workspaceID = defaultID
+	}
+
+	spaces, err := h.spaceService.ListSpaces(c.Request.Context(), workspaceID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("list spaces error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list spaces"})
@@ -725,9 +744,10 @@ func (h *Handlers) GetSpaces(c *gin.Context) {
 
 // CreateSpaceRequest is the request body for creating a space.
 type CreateSpaceRequest struct {
-	Name string `json:"name" binding:"required"`
-	Slug string `json:"slug" binding:"required"`
-	Icon string `json:"icon"`
+	Name        string `json:"name" binding:"required"`
+	Slug        string `json:"slug" binding:"required"`
+	Icon        string `json:"icon"`
+	WorkspaceID string `json:"workspaceId" binding:"required"`
 }
 
 // CreateSpace handles POST /api/console/spaces.
@@ -743,7 +763,7 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 		return
 	}
 
-	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon)
+	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon, req.WorkspaceID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("create space error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create space"})
@@ -813,4 +833,278 @@ func (h *Handlers) DeleteSpace(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+// --- Workspace Handlers ---
+
+// GetWorkspaces handles GET /api/console/workspaces.
+func (h *Handlers) GetWorkspaces(c *gin.Context) {
+	if h.workspaceService == nil {
+		c.JSON(http.StatusOK, []models.Workspace{})
+		return
+	}
+
+	workspaces, err := h.workspaceService.ListWorkspaces(c.Request.Context())
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("list workspaces error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list workspaces"})
+		return
+	}
+
+	c.JSON(http.StatusOK, workspaces)
+}
+
+// CreateWorkspaceRequest is the request body for creating a workspace.
+type CreateWorkspaceRequest struct {
+	Name string `json:"name" binding:"required"`
+	Slug string `json:"slug" binding:"required"`
+	Icon string `json:"icon"`
+}
+
+// CreateWorkspace handles POST /api/console/workspaces.
+func (h *Handlers) CreateWorkspace(c *gin.Context) {
+	if h.workspaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "workspace service unavailable"})
+		return
+	}
+
+	var req CreateWorkspaceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workspace, err := h.workspaceService.CreateWorkspace(c.Request.Context(), req.Name, req.Slug, req.Icon)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("create workspace error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create workspace"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, workspace)
+}
+
+// UpdateWorkspaceRequest is the request body for updating a workspace.
+type UpdateWorkspaceRequest struct {
+	Name string `json:"name" binding:"required"`
+	Slug string `json:"slug" binding:"required"`
+	Icon string `json:"icon"`
+}
+
+// UpdateWorkspace handles PUT /api/console/workspaces/:id.
+func (h *Handlers) UpdateWorkspace(c *gin.Context) {
+	if h.workspaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "workspace service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+
+	var req UpdateWorkspaceRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	workspace, err := h.workspaceService.UpdateWorkspace(c.Request.Context(), id, req.Name, req.Slug, req.Icon)
+	if err != nil {
+		if errors.Is(err, services.ErrWorkspaceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("update workspace error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update workspace"})
+		return
+	}
+
+	c.JSON(http.StatusOK, workspace)
+}
+
+// DeleteWorkspace handles DELETE /api/console/workspaces/:id.
+func (h *Handlers) DeleteWorkspace(c *gin.Context) {
+	if h.workspaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "workspace service unavailable"})
+		return
+	}
+
+	id := c.Param("id")
+
+	if err := h.workspaceService.DeleteWorkspace(c.Request.Context(), id); err != nil {
+		if errors.Is(err, services.ErrWorkspaceNotEmpty) {
+			c.JSON(http.StatusConflict, gin.H{"error": "workspace is not empty, remove spaces first"})
+			return
+		}
+		if errors.Is(err, services.ErrWorkspaceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("delete workspace error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete workspace"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+// --- Debug Handlers ---
+
+// GetDebugTables handles GET /api/console/debug/tables.
+func (h *Handlers) GetDebugTables(c *gin.Context) {
+	pool := database.GetPool()
+	if pool == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database unavailable"})
+		return
+	}
+
+	rows, err := pool.Query(c.Request.Context(),
+		`SELECT table_name FROM information_schema.tables 
+		 WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+		 ORDER BY table_name`)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("debug: list tables")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list tables"})
+		return
+	}
+	defer rows.Close()
+
+	var tables []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			logger.Log.Error().Err(err).Msg("debug: scan table name")
+			continue
+		}
+		tables = append(tables, name)
+	}
+
+	if tables == nil {
+		tables = []string{}
+	}
+	c.JSON(http.StatusOK, tables)
+}
+
+// GetDebugTableData handles GET /api/console/debug/tables/:tableName.
+func (h *Handlers) GetDebugTableData(c *gin.Context) {
+	pool := database.GetPool()
+	if pool == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database unavailable"})
+		return
+	}
+
+	tableName := c.Param("tableName")
+
+	// Validate table name — only allow known tables
+	allowed := map[string]bool{
+		"pages": true, "page_history": true, "spaces": true,
+		"workspaces": true, "users": true, "sessions": true,
+		"refresh_tokens": true, "password_credentials": true,
+	}
+	if !allowed[tableName] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
+		return
+	}
+
+	// Get columns
+	colRows, err := pool.Query(c.Request.Context(),
+		`SELECT column_name FROM information_schema.columns 
+		 WHERE table_schema = 'public' AND table_name = $1
+		 ORDER BY ordinal_position`, tableName)
+	if err != nil {
+		logger.Log.Error().Str("table", tableName).Err(err).Msg("debug: list columns")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list columns"})
+		return
+	}
+	defer colRows.Close()
+
+	var columns []string
+	for colRows.Next() {
+		var col string
+		if err := colRows.Scan(&col); err != nil {
+			continue
+		}
+		columns = append(columns, col)
+	}
+	if colRows.Err() != nil {
+		logger.Log.Error().Err(colRows.Err()).Msg("debug: column iter error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read columns"})
+		return
+	}
+
+	if columns == nil {
+		columns = []string{}
+	}
+
+	// Get data (limit 500 for safety)
+	query := fmt.Sprintf(
+		`SELECT %s FROM %s ORDER BY 1 DESC LIMIT 500`,
+		safeColumns(columns), safeIdent(tableName),
+	)
+
+	dataRows, err := pool.Query(c.Request.Context(), query)
+	if err != nil {
+		logger.Log.Error().Str("table", tableName).Err(err).Msg("debug: query table")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to query table"})
+		return
+	}
+	defer dataRows.Close()
+
+	var data []map[string]any
+	for dataRows.Next() {
+		vals, scanErr := dataRows.Values()
+		if scanErr != nil {
+			logger.Log.Error().Err(scanErr).Msg("debug: scan row values")
+			continue
+		}
+		row := make(map[string]any, len(columns))
+		for i, col := range columns {
+			if i < len(vals) {
+				row[col] = formatDebugVal(vals[i])
+			}
+		}
+		data = append(data, row)
+	}
+	if dataRows.Err() != nil {
+		logger.Log.Error().Err(dataRows.Err()).Msg("debug: data iter error")
+	}
+
+	if data == nil {
+		data = []map[string]any{}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"columns": columns,
+		"rows":    data,
+	})
+}
+
+func safeIdent(name string) string {
+	for _, c := range name {
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' {
+			continue
+		}
+		return `"` + name + `"`
+	}
+	return name
+}
+
+func safeColumns(cols []string) string {
+	out := ""
+	for i, c := range cols {
+		if i > 0 {
+			out += ", "
+		}
+		out += safeIdent(c)
+	}
+	return out
+}
+
+func formatDebugVal(v any) any {
+	switch val := v.(type) {
+	case []byte:
+		return string(val)
+	case time.Time:
+		return val.Format(time.RFC3339)
+	default:
+		return val
+	}
 }

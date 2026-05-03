@@ -89,9 +89,11 @@ func main() {
 		pageRepo := repositories.NewPageRepo(pool)
 		pageHistoryRepo := repositories.NewPageHistoryRepo(pool)
 		spaceRepo := repositories.NewSpaceRepo(pool)
+		workspaceRepo := repositories.NewWorkspaceRepo(pool)
 		pageService := services.NewPageService(pageRepo, pageHistoryRepo)
 		spaceService := services.NewSpaceService(spaceRepo, pageRepo)
-		h = handlers.NewWithDB(cfg, pageService, spaceService)
+		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo)
+		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService)
 	} else {
 		h = handlers.New(cfg)
 	}
@@ -192,6 +194,12 @@ func main() {
 		console := api.Group("/console")
 		console.Use(middleware.AuthRequired(authService))
 		{
+			// Workspaces
+			console.GET("/workspaces", h.GetWorkspaces)
+			console.POST("/workspaces", h.CreateWorkspace)
+			console.PUT("/workspaces/:id", h.UpdateWorkspace)
+			console.DELETE("/workspaces/:id", h.DeleteWorkspace)
+
 			// Spaces
 			console.GET("/spaces", h.GetSpaces)
 			console.POST("/spaces", h.CreateSpace)
@@ -218,6 +226,10 @@ func main() {
 			console.GET("/pages/:id/history", h.GetConsolePageHistory)
 			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
 			console.POST("/pages/:id/restore", h.RestoreConsolePage)
+
+			// Debug
+			console.GET("/debug/tables", h.GetDebugTables)
+			console.GET("/debug/tables/:tableName", h.GetDebugTableData)
 		}
 	}
 

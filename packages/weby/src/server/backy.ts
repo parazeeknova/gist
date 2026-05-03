@@ -16,6 +16,7 @@ import type {
   Space,
   Stats,
   UpdatePageInput,
+  Workspace,
 } from "#/types";
 import { logger } from "#/lib/logger";
 
@@ -255,3 +256,42 @@ export const deleteSpace = (id: string, cookieHeader?: string | null) =>
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "DELETE",
   });
+
+// Workspace functions
+export const getWorkspaces = (cookieHeader?: string | null) =>
+  fetchBacky<Workspace[]>("console/workspaces", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const createWorkspace = (
+  input: { name: string; slug: string; icon?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Workspace>("console/workspaces", {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const deleteWorkspace = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/workspaces/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+// Debug functions
+export const getDebugTables = (cookieHeader?: string | null) =>
+  fetchBacky<string[]>("console/debug/tables", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getDebugTableData = (tableName: string, cookieHeader?: string | null) =>
+  fetchBacky<{ columns: string[]; rows: Record<string, unknown>[] }>(
+    `console/debug/tables/${tableName}`,
+    {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    },
+  );

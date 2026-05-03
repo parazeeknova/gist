@@ -13,12 +13,15 @@ import { Route as HomeRouteImport } from './routes/home'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as HomeIndexRouteImport } from './routes/home.index'
+import { Route as HomeDebugRouteImport } from './routes/home.debug'
 import { Route as ApiStatsRouteImport } from './routes/api/stats'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
 import { Route as ApiProfileRouteImport } from './routes/api/profile'
 import { Route as ApiExperienceRouteImport } from './routes/api/experience'
 import { Route as ApiBlogsRouteImport } from './routes/api/blogs'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
+import { Route as ApiConsoleWorkspacesRouteImport } from './routes/api/console/workspaces'
 import { Route as ApiConsoleSpacesRouteImport } from './routes/api/console/spaces'
 import { Route as ApiConsolePagesRouteImport } from './routes/api/console/pages'
 import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs.$slug'
@@ -27,15 +30,18 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
+import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces.$id'
 import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces.$id'
 import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
+import { Route as ApiConsoleDebugTablesRouteImport } from './routes/api/console/debug.tables'
 import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages.$id.unpublish'
 import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages.$id.restore'
 import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages.$id.publish'
 import { Route as ApiConsolePagesIdMoveRouteImport } from './routes/api/console/pages.$id.move'
 import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/console/pages.$id.history'
 import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages.$id.children'
+import { Route as ApiConsoleDebugTablesTableNameRouteImport } from './routes/api/console/debug.tables.$tableName'
 import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages.$id.history.$historyId'
 
 const HomeRoute = HomeRouteImport.update({
@@ -57,6 +63,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const HomeIndexRoute = HomeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => HomeRoute,
+} as any)
+const HomeDebugRoute = HomeDebugRouteImport.update({
+  id: '/debug',
+  path: '/debug',
+  getParentRoute: () => HomeRoute,
 } as any)
 const ApiStatsRoute = ApiStatsRouteImport.update({
   id: '/api/stats',
@@ -86,6 +102,11 @@ const ApiBlogsRoute = ApiBlogsRouteImport.update({
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   id: '/api/github/stats',
   path: '/api/github/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsoleWorkspacesRoute = ApiConsoleWorkspacesRouteImport.update({
+  id: '/api/console/workspaces',
+  path: '/api/console/workspaces',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConsoleSpacesRoute = ApiConsoleSpacesRouteImport.update({
@@ -128,6 +149,11 @@ const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
   path: '/api/auth/bootstrap-state',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiConsoleWorkspacesIdRoute = ApiConsoleWorkspacesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiConsoleWorkspacesRoute,
+} as any)
 const ApiConsoleSpacesIdRoute = ApiConsoleSpacesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -142,6 +168,11 @@ const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiConsolePagesRoute,
+} as any)
+const ApiConsoleDebugTablesRoute = ApiConsoleDebugTablesRouteImport.update({
+  id: '/api/console/debug/tables',
+  path: '/api/console/debug/tables',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConsolePagesIdUnpublishRoute =
   ApiConsolePagesIdUnpublishRouteImport.update({
@@ -178,6 +209,12 @@ const ApiConsolePagesIdChildrenRoute =
     path: '/children',
     getParentRoute: () => ApiConsolePagesIdRoute,
   } as any)
+const ApiConsoleDebugTablesTableNameRoute =
+  ApiConsoleDebugTablesTableNameRouteImport.update({
+    id: '/$tableName',
+    path: '/$tableName',
+    getParentRoute: () => ApiConsoleDebugTablesRoute,
+  } as any)
 const ApiConsolePagesIdHistoryHistoryIdRoute =
   ApiConsolePagesIdHistoryHistoryIdRouteImport.update({
     id: '/$historyId',
@@ -189,12 +226,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
-  '/home': typeof HomeRoute
+  '/home': typeof HomeRouteWithChildren
   '/api/blogs': typeof ApiBlogsRouteWithChildren
   '/api/experience': typeof ApiExperienceRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
+  '/home/debug': typeof HomeDebugRoute
+  '/home/': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -203,10 +242,14 @@ export interface FileRoutesByFullPath {
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
+  '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
+  '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRoute
+  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -219,12 +262,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
-  '/home': typeof HomeRoute
   '/api/blogs': typeof ApiBlogsRouteWithChildren
   '/api/experience': typeof ApiExperienceRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
+  '/home/debug': typeof HomeDebugRoute
+  '/home': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -233,10 +277,14 @@ export interface FileRoutesByTo {
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
+  '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
+  '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRoute
+  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -250,12 +298,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
-  '/home': typeof HomeRoute
+  '/home': typeof HomeRouteWithChildren
   '/api/blogs': typeof ApiBlogsRouteWithChildren
   '/api/experience': typeof ApiExperienceRoute
   '/api/profile': typeof ApiProfileRoute
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
+  '/home/debug': typeof HomeDebugRoute
+  '/home/': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -264,10 +314,14 @@ export interface FileRoutesById {
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
+  '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRoute
+  '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRoute
+  '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -288,6 +342,8 @@ export interface FileRouteTypes {
     | '/api/profile'
     | '/api/projects'
     | '/api/stats'
+    | '/home/debug'
+    | '/home/'
     | '/api/auth/bootstrap-state'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -296,10 +352,14 @@ export interface FileRouteTypes {
     | '/api/blogs/$slug'
     | '/api/console/pages'
     | '/api/console/spaces'
+    | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/api/console/debug/tables'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/spaces/$id'
+    | '/api/console/workspaces/$id'
+    | '/api/console/debug/tables/$tableName'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -312,12 +372,13 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
-    | '/home'
     | '/api/blogs'
     | '/api/experience'
     | '/api/profile'
     | '/api/projects'
     | '/api/stats'
+    | '/home/debug'
+    | '/home'
     | '/api/auth/bootstrap-state'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -326,10 +387,14 @@ export interface FileRouteTypes {
     | '/api/blogs/$slug'
     | '/api/console/pages'
     | '/api/console/spaces'
+    | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/api/console/debug/tables'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/spaces/$id'
+    | '/api/console/workspaces/$id'
+    | '/api/console/debug/tables/$tableName'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -348,6 +413,8 @@ export interface FileRouteTypes {
     | '/api/profile'
     | '/api/projects'
     | '/api/stats'
+    | '/home/debug'
+    | '/home/'
     | '/api/auth/bootstrap-state'
     | '/api/auth/login'
     | '/api/auth/logout'
@@ -356,10 +423,14 @@ export interface FileRouteTypes {
     | '/api/blogs/$slug'
     | '/api/console/pages'
     | '/api/console/spaces'
+    | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/api/console/debug/tables'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/spaces/$id'
+    | '/api/console/workspaces/$id'
+    | '/api/console/debug/tables/$tableName'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -373,7 +444,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
-  HomeRoute: typeof HomeRoute
+  HomeRoute: typeof HomeRouteWithChildren
   ApiBlogsRoute: typeof ApiBlogsRouteWithChildren
   ApiExperienceRoute: typeof ApiExperienceRoute
   ApiProfileRoute: typeof ApiProfileRoute
@@ -386,7 +457,9 @@ export interface RootRouteChildren {
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
   ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren
   ApiConsoleSpacesRoute: typeof ApiConsoleSpacesRouteWithChildren
+  ApiConsoleWorkspacesRoute: typeof ApiConsoleWorkspacesRouteWithChildren
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute
+  ApiConsoleDebugTablesRoute: typeof ApiConsoleDebugTablesRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -418,6 +491,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/home/': {
+      id: '/home/'
+      path: '/'
+      fullPath: '/home/'
+      preLoaderRoute: typeof HomeIndexRouteImport
+      parentRoute: typeof HomeRoute
+    }
+    '/home/debug': {
+      id: '/home/debug'
+      path: '/debug'
+      fullPath: '/home/debug'
+      preLoaderRoute: typeof HomeDebugRouteImport
+      parentRoute: typeof HomeRoute
     }
     '/api/stats': {
       id: '/api/stats'
@@ -459,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/api/github/stats'
       fullPath: '/api/github/stats'
       preLoaderRoute: typeof ApiGithubStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/workspaces': {
+      id: '/api/console/workspaces'
+      path: '/api/console/workspaces'
+      fullPath: '/api/console/workspaces'
+      preLoaderRoute: typeof ApiConsoleWorkspacesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/console/spaces': {
@@ -517,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/console/workspaces/$id': {
+      id: '/api/console/workspaces/$id'
+      path: '/$id'
+      fullPath: '/api/console/workspaces/$id'
+      preLoaderRoute: typeof ApiConsoleWorkspacesIdRouteImport
+      parentRoute: typeof ApiConsoleWorkspacesRoute
+    }
     '/api/console/spaces/$id': {
       id: '/api/console/spaces/$id'
       path: '/$id'
@@ -537,6 +638,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/console/pages/$id'
       preLoaderRoute: typeof ApiConsolePagesIdRouteImport
       parentRoute: typeof ApiConsolePagesRoute
+    }
+    '/api/console/debug/tables': {
+      id: '/api/console/debug/tables'
+      path: '/api/console/debug/tables'
+      fullPath: '/api/console/debug/tables'
+      preLoaderRoute: typeof ApiConsoleDebugTablesRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/console/pages/$id/unpublish': {
       id: '/api/console/pages/$id/unpublish'
@@ -580,6 +688,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsolePagesIdChildrenRouteImport
       parentRoute: typeof ApiConsolePagesIdRoute
     }
+    '/api/console/debug/tables/$tableName': {
+      id: '/api/console/debug/tables/$tableName'
+      path: '/$tableName'
+      fullPath: '/api/console/debug/tables/$tableName'
+      preLoaderRoute: typeof ApiConsoleDebugTablesTableNameRouteImport
+      parentRoute: typeof ApiConsoleDebugTablesRoute
+    }
     '/api/console/pages/$id/history/$historyId': {
       id: '/api/console/pages/$id/history/$historyId'
       path: '/$historyId'
@@ -589,6 +704,18 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface HomeRouteChildren {
+  HomeDebugRoute: typeof HomeDebugRoute
+  HomeIndexRoute: typeof HomeIndexRoute
+}
+
+const HomeRouteChildren: HomeRouteChildren = {
+  HomeDebugRoute: HomeDebugRoute,
+  HomeIndexRoute: HomeIndexRoute,
+}
+
+const HomeRouteWithChildren = HomeRoute._addFileChildren(HomeRouteChildren)
 
 interface ApiBlogsRouteChildren {
   ApiBlogsSlugRoute: typeof ApiBlogsSlugRoute
@@ -663,11 +790,35 @@ const ApiConsoleSpacesRouteChildren: ApiConsoleSpacesRouteChildren = {
 const ApiConsoleSpacesRouteWithChildren =
   ApiConsoleSpacesRoute._addFileChildren(ApiConsoleSpacesRouteChildren)
 
+interface ApiConsoleWorkspacesRouteChildren {
+  ApiConsoleWorkspacesIdRoute: typeof ApiConsoleWorkspacesIdRoute
+}
+
+const ApiConsoleWorkspacesRouteChildren: ApiConsoleWorkspacesRouteChildren = {
+  ApiConsoleWorkspacesIdRoute: ApiConsoleWorkspacesIdRoute,
+}
+
+const ApiConsoleWorkspacesRouteWithChildren =
+  ApiConsoleWorkspacesRoute._addFileChildren(ApiConsoleWorkspacesRouteChildren)
+
+interface ApiConsoleDebugTablesRouteChildren {
+  ApiConsoleDebugTablesTableNameRoute: typeof ApiConsoleDebugTablesTableNameRoute
+}
+
+const ApiConsoleDebugTablesRouteChildren: ApiConsoleDebugTablesRouteChildren = {
+  ApiConsoleDebugTablesTableNameRoute: ApiConsoleDebugTablesTableNameRoute,
+}
+
+const ApiConsoleDebugTablesRouteWithChildren =
+  ApiConsoleDebugTablesRoute._addFileChildren(
+    ApiConsoleDebugTablesRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
-  HomeRoute: HomeRoute,
+  HomeRoute: HomeRouteWithChildren,
   ApiBlogsRoute: ApiBlogsRouteWithChildren,
   ApiExperienceRoute: ApiExperienceRoute,
   ApiProfileRoute: ApiProfileRoute,
@@ -680,7 +831,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
   ApiConsolePagesRoute: ApiConsolePagesRouteWithChildren,
   ApiConsoleSpacesRoute: ApiConsoleSpacesRouteWithChildren,
+  ApiConsoleWorkspacesRoute: ApiConsoleWorkspacesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
+  ApiConsoleDebugTablesRoute: ApiConsoleDebugTablesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
