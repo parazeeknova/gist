@@ -3,8 +3,6 @@ package services
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"strings"
 
@@ -159,7 +157,10 @@ func (s *MFAService) Enable(ctx context.Context, userID, code string) (*MFABacku
 		return nil, ErrMFAInvalidCode
 	}
 
-	codes, hashes := generateBackupCodes(10)
+	codes, hashes, genErr := generateBackupCodes(10)
+	if genErr != nil {
+		return nil, fmt.Errorf("generate backup codes: %w", genErr)
+	}
 	err = s.mfaRepo.Enable(ctx, userID, hashes)
 	if err != nil {
 		return nil, fmt.Errorf("enable mfa: %w", err)
@@ -208,7 +209,10 @@ func (s *MFAService) RegenerateBackupCodes(ctx context.Context, userID string) (
 		return nil, ErrMFANotEnabled
 	}
 
-	codes, hashes := generateBackupCodes(10)
+	codes, hashes, genErr := generateBackupCodes(10)
+	if genErr != nil {
+		return nil, fmt.Errorf("generate backup codes: %w", genErr)
+	}
 	err = s.mfaRepo.UpdateBackupCodes(ctx, userID, hashes)
 	if err != nil {
 		return nil, fmt.Errorf("update backup codes: %w", err)
@@ -243,6 +247,7 @@ func (s *MFAService) Verify(ctx context.Context, userID, code string) (bool, boo
 			newHashes := append(mfa.BackupCodeHashes[:i], mfa.BackupCodeHashes[i+1:]...)
 			if updateErr := s.mfaRepo.UpdateBackupCodes(ctx, userID, newHashes); updateErr != nil {
 				logger.Log.Error().Err(updateErr).Str("user_id", userID).Msg("failed to remove used backup code")
+				return false, false, fmt.Errorf("consume backup code: %w", updateErr)
 			}
 			return true, true, nil
 		}
@@ -275,39 +280,54 @@ func (s *MFAService) IsMFARequired(ctx context.Context, userID string) (bool, er
 	return false, nil
 }
 
-// generateBackupCodes generates n random backup codes and their hashes.
-func generateBackupCodes(n int) ([]string, []string) {
+// generateBackupCodes generates n random backup codes and their argon2id hashes.
+func generateBackupCodes(n int) ([]string, []string, error) {
 	codes := make([]string, n)
 	hashes := make([]string, n)
 	for i := range n {
-		code := randomBackupCode()
+		code, err := randomBackupCode()
+		if err != nil {
+			return nil, nil, fmt.Errorf("generate backup code: %w", err)
+		}
 		codes[i] = code
-		hashes[i] = hashBackupCode(code)
+		hash, err := hashBackupCode(code)
+		if err != nil {
+			return nil, nil, fmt.Errorf("hash backup code: %w", err)
+		}
+		hashes[i] = hash
 	}
-	return codes, hashes
+	return codes, hashes, nil
 }
 
-// randomBackupCode generates a random 8-character alphanumeric backup code.
-func randomBackupCode() string {
+// randomBackupCode generates a random 12-character alphanumeric backup code
+// formatted in groups of 4 with hyphens (e.g., ABCD-EFGH-IJKL).
+func randomBackupCode() (string, error) {
 	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, 8)
+	const groups = 3
+	const groupSize = 4
+	b := make([]byte, groups*groupSize)
 	if _, err := rand.Read(b); err != nil {
-		// Fallback to simple generation
-		return "BACKUP00"
+		return "", fmt.Errorf("secure random generation failed: %w", err)
 	}
 	for i := range b {
 		b[i] = chars[int(b[i])%len(chars)]
 	}
-	return string(b)
+	var sb strings.Builder
+	for g := 0; g < groups; g++ {
+		if g > 0 {
+			sb.WriteByte('-')
+		}
+		sb.Write(b[g*groupSize : (g+1)*groupSize])
+	}
+	return sb.String(), nil
 }
 
-// hashBackupCode hashes a backup code using SHA-256.
-func hashBackupCode(code string) string {
-	hash := sha256.Sum256([]byte(strings.ToUpper(code)))
-	return base64.RawStdEncoding.EncodeToString(hash[:])
+// hashBackupCode hashes a backup code using argon2id.
+func hashBackupCode(code string) (string, error) {
+	return auth.HashPassword(strings.ToUpper(code))
 }
 
-// verifyBackupCode verifies a backup code against a hash.
+// verifyBackupCode verifies a backup code against an argon2id hash.
 func verifyBackupCode(code, hash string) bool {
-	return hashBackupCode(code) == hash
+	return auth.VerifyPassword(strings.ToUpper(code), hash)
 }

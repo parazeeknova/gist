@@ -11,7 +11,17 @@ import (
 	"verso/backy/logger"
 )
 
-// --- Debug Handlers ---
+// debugAllowedTables defines which tables are exposed through debug endpoints.
+var debugAllowedTables = map[string]bool{
+	"pages": true, "page_history": true, "spaces": true,
+	"workspaces": true, "users": true, "sessions": true,
+}
+
+// DebugTableInfo represents a table in the debug sidebar.
+type DebugTableInfo struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
 
 // GetDebugTables handles GET /api/console/debug/tables.
 func (h *Handlers) GetDebugTables(c *gin.Context) {
@@ -22,7 +32,7 @@ func (h *Handlers) GetDebugTables(c *gin.Context) {
 	}
 
 	rows, err := pool.Query(c.Request.Context(),
-		`SELECT table_name FROM information_schema.tables 
+		`SELECT table_name FROM information_schema.tables
 		 WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
 		 ORDER BY table_name`)
 	if err != nil {
@@ -32,18 +42,21 @@ func (h *Handlers) GetDebugTables(c *gin.Context) {
 	}
 	defer rows.Close()
 
-	var tables []string
+	var tables []DebugTableInfo
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
 			logger.Log.Error().Err(err).Msg("debug: scan table name")
 			continue
 		}
-		tables = append(tables, name)
+		tables = append(tables, DebugTableInfo{
+			Name:    name,
+			Enabled: debugAllowedTables[name],
+		})
 	}
 
 	if tables == nil {
-		tables = []string{}
+		tables = []DebugTableInfo{}
 	}
 	c.JSON(http.StatusOK, tables)
 }
@@ -59,13 +72,7 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 	tableName := c.Param("tableName")
 
 	// Validate table name — only allow known tables
-	allowed := map[string]bool{
-		"pages": true, "page_history": true, "spaces": true,
-		"workspaces": true, "users": true, "sessions": true,
-		"refresh_tokens": true, "password_credentials": true,
-		"user_mfa": true,
-	}
-	if !allowed[tableName] {
+	if !debugAllowedTables[tableName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
 		return
 	}
@@ -181,13 +188,7 @@ func (h *Handlers) DeleteDebugTableData(c *gin.Context) {
 
 	tableName := c.Param("tableName")
 
-	allowed := map[string]bool{
-		"pages": true, "page_history": true, "spaces": true,
-		"workspaces": true, "users": true, "sessions": true,
-		"refresh_tokens": true, "password_credentials": true,
-		"user_mfa": true,
-	}
-	if !allowed[tableName] {
+	if !debugAllowedTables[tableName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
 		return
 	}
@@ -216,13 +217,7 @@ func (h *Handlers) DeleteDebugTableRows(c *gin.Context) {
 
 	tableName := c.Param("tableName")
 
-	allowed := map[string]bool{
-		"pages": true, "page_history": true, "spaces": true,
-		"workspaces": true, "users": true, "sessions": true,
-		"refresh_tokens": true, "password_credentials": true,
-		"user_mfa": true,
-	}
-	if !allowed[tableName] {
+	if !debugAllowedTables[tableName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
 		return
 	}

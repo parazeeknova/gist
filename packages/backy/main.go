@@ -248,11 +248,17 @@ func main() {
 			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
 			console.POST("/pages/:id/restore", h.RestoreConsolePage)
 
-			// Debug
-			console.GET("/debug/tables", h.GetDebugTables)
-			console.GET("/debug/tables/:tableName", h.GetDebugTableData)
-			console.DELETE("/debug/tables/:tableName", h.DeleteDebugTableData)
-			console.POST("/debug/tables/:tableName/rows", h.DeleteDebugTableRows)
+			// Debug (owner-only, gated by env)
+			if os.Getenv("ENABLE_DEBUG_ROUTES") == "true" {
+				debug := console.Group("/debug")
+				debug.Use(middleware.OwnerRequired())
+				{
+					debug.GET("/tables", h.GetDebugTables)
+					debug.GET("/tables/:tableName", h.GetDebugTableData)
+					debug.DELETE("/tables/:tableName", h.DeleteDebugTableData)
+					debug.POST("/tables/:tableName/rows", h.DeleteDebugTableRows)
+				}
+			}
 		}
 	}
 

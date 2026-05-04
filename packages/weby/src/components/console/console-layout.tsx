@@ -23,6 +23,7 @@ import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useThrottledCallback } from "@tanstack/react-pacer";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth } from "../../hooks/use-auth";
 import { useTheme } from "../../hooks/use-theme";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
@@ -31,6 +32,28 @@ import { PageList } from "./pages/list";
 
 const SIDEBAR_WIDTH = 280;
 
+const getStoredWorkspaceId = (): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  try {
+    return localStorage.getItem("verso_selected_workspace_id") ?? "";
+  } catch {
+    return "";
+  }
+};
+
+const getStoredSpaceId = (): string => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  try {
+    return localStorage.getItem("verso_selected_space_id") ?? "";
+  } catch {
+    return "";
+  }
+};
+
 export const ConsoleLayout = () => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
@@ -38,8 +61,8 @@ export const ConsoleLayout = () => {
   const sidebarContentRef = useRef<HTMLDivElement>(null);
   const routerState = useRouterState();
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string>("");
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>(getStoredWorkspaceId);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>(getStoredSpaceId);
   const [debugSearch, setDebugSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === "undefined") {
@@ -50,6 +73,20 @@ export const ConsoleLayout = () => {
   const [activeTab, setActiveTab] = useState<"spaces" | "favorites" | "profile">("spaces");
   const sidebarRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
+  const { data: user } = useAuth();
+
+  // Persist selected workspace / space across route changes
+  useEffect(() => {
+    if (typeof window !== "undefined" && selectedWorkspaceId) {
+      localStorage.setItem("verso_selected_workspace_id", selectedWorkspaceId);
+    }
+  }, [selectedWorkspaceId]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && selectedSpaceId) {
+      localStorage.setItem("verso_selected_space_id", selectedSpaceId);
+    }
+  }, [selectedSpaceId]);
 
   const isDebugRoute = routerState.location.pathname === "/home/debug";
   const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
@@ -314,13 +351,16 @@ export const ConsoleLayout = () => {
               v{import.meta.env.VITE_APP_VERSION}
             </span>
           </div>
-          <button
-            className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-            type="button"
-          >
-            <BugBeetleIcon size={12} />
-            debug
-          </button>
+          {user?.isOwner && (
+            <button
+              className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+              onClick={() => navigate({ search: { table: undefined }, to: "/home/debug" })}
+              type="button"
+            >
+              <BugBeetleIcon size={12} />
+              debug
+            </button>
+          )}
           <button
             className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
             type="button"

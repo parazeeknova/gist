@@ -30,7 +30,7 @@ func TestGenerateAndValidateAccessToken(t *testing.T) {
 	username := "testuser"
 	sessionID := uuid.New().String()
 
-	tokenStr, err := GenerateAccessToken(userID, username, sessionID)
+	tokenStr, err := GenerateAccessToken(userID, username, sessionID, false)
 	if err != nil {
 		t.Fatalf("GenerateAccessToken failed: %v", err)
 	}
@@ -51,6 +51,9 @@ func TestGenerateAndValidateAccessToken(t *testing.T) {
 	}
 	if claims.SessionID != sessionID {
 		t.Errorf("SessionID = %s, want %s", claims.SessionID, sessionID)
+	}
+	if claims.IsOwner != false {
+		t.Errorf("IsOwner = %v, want false", claims.IsOwner)
 	}
 	if claims.Issuer != "verso-test" {
 		t.Errorf("Issuer = %s, want verso-test", claims.Issuer)
@@ -134,7 +137,7 @@ func TestValidateAccessToken_InvalidSignature(t *testing.T) {
 
 	t.Setenv("JWT_ACCESS_TOKEN_SECRET", "different-secret-that-is-at-least-32-bytes!!")
 
-	tokenStr, err := GenerateAccessToken(userID, "testuser", sessionID)
+	tokenStr, err := GenerateAccessToken(userID, "testuser", sessionID, false)
 	if err != nil {
 		t.Fatalf("GenerateAccessToken failed: %v", err)
 	}

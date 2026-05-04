@@ -1,8 +1,8 @@
 import {
   ArrowLeftIcon,
+  ArrowClockwiseIcon,
   MagnifyingGlassIcon,
   TrashIcon,
-  ArrowClockwiseIcon,
 } from "@phosphor-icons/react";
 import {
   useBatchedCallback,
@@ -10,11 +10,11 @@ import {
   useQueuer,
   useThrottledCallback,
 } from "@tanstack/react-pacer";
-import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "#/hooks/use-theme";
-import { useDebugTables } from "#/hooks/use-console-mutations";
+import { useRef, useState } from "react";
 import { fetchProtected } from "#/hooks/fetch-protected";
+import { useDebugTables } from "#/hooks/use-console-mutations";
+import { useTheme } from "#/hooks/use-theme";
 
 interface DebugSidebarProps {
   onBack: () => void;
@@ -77,7 +77,9 @@ export const DebugSidebar = ({
     setConfirmDeleteAll(false);
 
     for (const table of tables ?? []) {
-      deleteQueue.addItem(table);
+      if (table.enabled) {
+        deleteQueue.addItem(table.name);
+      }
     }
 
     // Wait for queue to drain then cleanup
@@ -100,9 +102,18 @@ export const DebugSidebar = ({
   };
 
   const tableList = tables ?? [];
-  const filteredTables = tableList.filter((table) =>
-    table.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filteredTables = tableList
+    .filter((table) => table.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .toSorted((a, b) => {
+      // Enabled tables first
+      if (a.enabled && !b.enabled) {
+        return -1;
+      }
+      if (!a.enabled && b.enabled) {
+        return 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
 
   const deleteBtnClass = confirmDeleteAll
     ? t(
@@ -120,8 +131,8 @@ export const DebugSidebar = ({
         className={`flex items-center justify-between px-1 py-2 border-b ${t("border-border-dark", "border-border-light")}`}
       >
         <button
-          onClick={onBack}
           className={`flex items-center gap-1.5 text-[11px] lowercase ${t("text-text-dark/70 hover:text-text-dark/90", "text-text-light/70 hover:text-text-light/90")}`}
+          onClick={onBack}
           type="button"
         >
           <ArrowLeftIcon size={12} />
@@ -179,23 +190,37 @@ export const DebugSidebar = ({
             {tableList.length === 0 ? "loading..." : "no tables match"}
           </p>
         ) : (
-          filteredTables.map((table) => (
-            <button
-              key={table}
-              onClick={() => batchedSelect(table)}
-              className={`w-full text-left px-2 py-1.5 text-[11px] lowercase ${
-                selectedTable === table
-                  ? t("bg-white/5 text-text-dark/90", "bg-black/3 text-text-light/90")
-                  : t(
-                      "text-text-dark/50 hover:text-text-dark/80 hover:bg-white/3",
-                      "text-text-light/50 hover:text-text-light/80 hover:bg-black/3",
-                    )
-              }`}
-              type="button"
-            >
-              {table}
-            </button>
-          ))
+          filteredTables.map((table) => {
+            const isSelected = selectedTable === table.name;
+            const baseClass = "w-full text-left px-2 py-1.5 text-[11px] lowercase";
+            if (!table.enabled) {
+              return (
+                <div
+                  key={table.name}
+                  className={`${baseClass} ${t("text-text-dark/20", "text-text-light/20")} cursor-default`}
+                >
+                  {table.name}
+                </div>
+              );
+            }
+            return (
+              <button
+                key={table.name}
+                className={`${baseClass} ${
+                  isSelected
+                    ? t("bg-white/5 text-text-dark/90", "bg-black/3 text-text-light/90")
+                    : t(
+                        "text-text-dark/50 hover:text-text-dark/80 hover:bg-white/3",
+                        "text-text-light/50 hover:text-text-light/80 hover:bg-black/3",
+                      )
+                }`}
+                onClick={() => batchedSelect(table.name)}
+                type="button"
+              >
+                {table.name}
+              </button>
+            );
+          })
         )}
       </div>
     </div>

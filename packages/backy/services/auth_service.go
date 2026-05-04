@@ -288,7 +288,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 		return nil, fmt.Errorf("parse user id: %w", err)
 	}
 
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, newSessionID)
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, newSessionID, dbUser.IsOwner)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
@@ -423,7 +423,7 @@ func (s *AuthService) createSession(ctx context.Context, userID string, deviceNa
 		return nil, fmt.Errorf("create session with refresh token: %w", err)
 	}
 
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID)
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID, dbUser.IsOwner)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}

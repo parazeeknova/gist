@@ -270,14 +270,26 @@ export const useDeleteWorkspace = () => {
 };
 
 // Debug
+export interface DebugTableInfo {
+  name: string;
+  enabled: boolean;
+}
+
 export interface DebugTableData {
   columns: { name: string; type: string }[];
   rows: Record<string, unknown>[];
 }
 
 export const useDebugTables = () =>
-  useQuery<string[]>({
-    queryFn: ({ signal }) => fetchProtected<string[]>("/api/console/debug/tables", { signal }),
+  useQuery<DebugTableInfo[]>({
+    queryFn: async ({ signal }) => {
+      const raw = await fetchProtected<unknown>("/api/console/debug/tables", { signal });
+      // Normalize legacy string[] responses to DebugTableInfo[]
+      if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === "string") {
+        return (raw as string[]).map((name) => ({ enabled: false, name }));
+      }
+      return raw as DebugTableInfo[];
+    },
     queryKey: ["debugTables"],
     staleTime: 30 * 1000,
   });

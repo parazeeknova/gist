@@ -47,7 +47,10 @@ interface ProfileDropdownProps {
   navigate: ReturnType<typeof useNavigate>;
   selectedWorkspace: { icon: string; name: string } | undefined;
   stats: Stats | undefined;
-  user: { avatar_url: string; email: string; name: string; username: string } | null | undefined;
+  user:
+    | { avatar_url: string; email: string; isOwner: boolean; name: string; username: string }
+    | null
+    | undefined;
   workspaceInitials: string;
   workspaceName: string;
 }
@@ -159,9 +162,20 @@ const ProfileDropdown = ({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <p className={`text-[13px] truncate ${t("text-text-dark", "text-text-light")}`}>
-                      {user?.name || user?.username}
-                    </p>
+                    <div className="flex items-center min-w-0">
+                      <p
+                        className={`text-[13px] truncate ${t("text-text-dark", "text-text-light")}`}
+                      >
+                        {user?.name || user?.username}
+                      </p>
+                      {user?.isOwner && (
+                        <span
+                          className={`ml-1.5 inline-flex shrink-0 items-center rounded px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide ${t("bg-white/10 text-text-dark/50", "bg-black/5 text-text-light/50")}`}
+                        >
+                          owner
+                        </span>
+                      )}
+                    </div>
                     <p
                       className={`text-[10px] shrink-0 truncate max-w-20 ${t("text-text-dark/40", "text-text-light/40")}`}
                     >

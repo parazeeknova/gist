@@ -1,11 +1,15 @@
 package services
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestGenerateBackupCodes(t *testing.T) {
-	codes, hashes := generateBackupCodes(10)
+	codes, hashes, err := generateBackupCodes(10)
+	if err != nil {
+		t.Fatalf("generateBackupCodes failed: %v", err)
+	}
 	if len(codes) != 10 {
 		t.Errorf("expected 10 codes, got %d", len(codes))
 	}
@@ -20,8 +24,12 @@ func TestGenerateBackupCodes(t *testing.T) {
 			t.Error("expected unique backup codes")
 		}
 		seen[code] = true
-		if len(code) != 8 {
-			t.Errorf("expected code length 8, got %d", len(code))
+		if len(code) != 14 {
+			t.Errorf("expected code length 14, got %d", len(code))
+		}
+		// Should contain two hyphens
+		if strings.Count(code, "-") != 2 {
+			t.Errorf("expected code with 2 hyphens, got %s", code)
 		}
 	}
 
@@ -34,28 +42,34 @@ func TestGenerateBackupCodes(t *testing.T) {
 }
 
 func TestHashBackupCode(t *testing.T) {
-	code := "ABCD1234"
-	hash := hashBackupCode(code)
+	code := "ABCD-EFGH-IJKL"
+	hash, err := hashBackupCode(code)
+	if err != nil {
+		t.Fatalf("hashBackupCode failed: %v", err)
+	}
 	if hash == "" {
 		t.Error("expected non-empty hash")
 	}
-
-	// Same code should produce same hash
-	hash2 := hashBackupCode(code)
-	if hash != hash2 {
-		t.Error("expected consistent hashing")
+	if !strings.HasPrefix(hash, "$argon2id$") {
+		t.Errorf("expected argon2id hash, got %s", hash)
 	}
 
-	// Different case should produce same hash
-	hash3 := hashBackupCode("abcd1234")
-	if hash != hash3 {
-		t.Error("expected case-insensitive hashing")
+	// Different case should produce valid hash that verifies
+	hash2, err := hashBackupCode("abcd-efgh-ijkl")
+	if err != nil {
+		t.Fatalf("hashBackupCode failed: %v", err)
+	}
+	if !verifyBackupCode("ABCD-EFGH-IJKL", hash2) {
+		t.Error("expected case-insensitive verification")
 	}
 }
 
 func TestVerifyBackupCode(t *testing.T) {
-	code := "TEST1234"
-	hash := hashBackupCode(code)
+	code := "TEST-1234-5678"
+	hash, err := hashBackupCode(code)
+	if err != nil {
+		t.Fatalf("hashBackupCode failed: %v", err)
+	}
 
 	// Valid code should verify
 	if !verifyBackupCode(code, hash) {
@@ -63,7 +77,7 @@ func TestVerifyBackupCode(t *testing.T) {
 	}
 
 	// Invalid code should not verify
-	if verifyBackupCode("WRONG567", hash) {
+	if verifyBackupCode("WRONG-5678-9012", hash) {
 		t.Error("expected invalid code to fail verification")
 	}
 }
