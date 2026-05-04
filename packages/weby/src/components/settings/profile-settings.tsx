@@ -5,7 +5,7 @@ import { AvatarUploader } from "./avatar-uploader";
 import { NameEditor } from "./name-editor";
 import { PasswordChanger } from "./password-changer";
 import { SessionInfo } from "./session-info";
-import { TwoFactorSection } from "./two-factor-section";
+import { MFASection } from "./mfa-section";
 
 export const ProfileSettings = () => {
   const { data: user } = useAuth();
@@ -44,7 +44,7 @@ export const ProfileSettings = () => {
 
       <PasswordChanger />
 
-      <TwoFactorSection />
+      <MFASection />
 
       <SessionInfo />
     </div>

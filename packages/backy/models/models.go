@@ -138,12 +138,26 @@ type Space struct {
 
 // Workspace represents a top-level grouping of spaces.
 type Workspace struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Slug      string `json:"slug"`
-	Icon      string `json:"icon"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Slug       string `json:"slug"`
+	Icon       string `json:"icon"`
+	EnforceMFA bool   `json:"enforce_mfa"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updatedAt"`
+}
+
+// UserMFA represents a user's MFA configuration.
+type UserMFA struct {
+	ID               string   `json:"id"`
+	UserID           string   `json:"user_id"`
+	WorkspaceID      string   `json:"workspace_id"`
+	Method           string   `json:"method"`
+	Secret           string   `json:"secret"`
+	IsEnabled        bool     `json:"is_enabled"`
+	BackupCodeHashes []string `json:"backup_code_hashes"`
+	CreatedAt        string   `json:"created_at"`
+	UpdatedAt        string   `json:"updated_at"`
 }
 
 // PageHistory represents a page history entry

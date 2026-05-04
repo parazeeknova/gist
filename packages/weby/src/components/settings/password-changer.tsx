@@ -17,6 +17,8 @@ export const PasswordChanger = () => {
 
   const changePassword = useChangePassword();
 
+  const canSave = currentPassword.length > 0 && newPassword.length > 0;
+
   const handleSubmit = useCallback(() => {
     setError("");
     if (newPassword.length < 8) {
@@ -51,7 +53,18 @@ export const PasswordChanger = () => {
         {showForm ? (
           <div className="flex items-center gap-2">
             <button
-              className={`flex items-center gap-1 text-[11px] lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+              className={`flex items-center gap-1 text-[11px] lowercase transition-opacity ${
+                canSave
+                  ? t(
+                      "text-text-dark/50 hover:text-text-dark/80",
+                      "text-text-light/50 hover:text-text-light/80",
+                    )
+                  : t(
+                      "text-text-dark/20 cursor-not-allowed",
+                      "text-text-light/20 cursor-not-allowed",
+                    )
+              }`}
+              disabled={!canSave}
               onClick={handleSubmit}
               type="button"
             >

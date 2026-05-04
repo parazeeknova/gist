@@ -1,15 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { postBacky } from "../../../server/backy";
+import { postBackyWithCookies } from "../../../../server/backy";
 
-export const Route = createFileRoute("/api/auth/login")({
+export const Route = createFileRoute("/api/auth/mfa/verify")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const body = await request.json();
-        const backyRes = await postBacky("auth/login", body);
-        const data = await backyRes
-          .text()
-          .catch(() => '{"error":"authentication service unavailable"}');
+        const cookieHeader = request.headers.get("cookie");
+        const backyRes = await postBackyWithCookies("auth/mfa/verify", body, cookieHeader);
+        const data = await backyRes.text().catch(() => '{"error":"mfa verification failed"}');
         const responseHeaders = new Headers({ "Content-Type": "application/json" });
         for (const cookie of backyRes.headers.getSetCookie()) {
           responseHeaders.append("set-cookie", cookie);

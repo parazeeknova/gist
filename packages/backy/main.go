@@ -110,8 +110,10 @@ func main() {
 
 	// Create auth service and handlers
 	authService := services.NewAuthService()
-	authHandlers := handlers.NewAuthHandlers(authService)
+	mfaService := services.NewMFAService(authService)
+	authHandlers := handlers.NewAuthHandlers(authService, mfaService)
 	profileHandlers := handlers.NewProfileHandlers(authService)
+	mfaHandlers := handlers.NewMFAHandlers(mfaService)
 
 	r := gin.New()
 
@@ -200,6 +202,8 @@ func main() {
 		authHandlers.RegisterRoutes(api)
 		// Login is rate-limited separately
 		api.POST("/auth/login", middleware.RateLimitLogin(), authHandlers.Login)
+		// MFA verification (public, requires mfa challenge cookie)
+		api.POST("/auth/mfa/verify", authHandlers.VerifyMFA)
 
 		// Console routes (protected)
 		console := api.Group("/console")
@@ -207,6 +211,9 @@ func main() {
 		{
 			// Profile
 			profileHandlers.RegisterRoutes(console)
+
+			// MFA
+			mfaHandlers.RegisterRoutes(console)
 
 			// Workspaces
 			console.GET("/workspaces", h.GetWorkspaces)

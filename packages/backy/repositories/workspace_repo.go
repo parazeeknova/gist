@@ -30,14 +30,14 @@ func NewWorkspaceRepo() *WorkspaceRepo {
 // GetByID fetches a workspace by its primary key.
 func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspace, error) {
 	query := `
-		SELECT id, name, slug, icon,
+		SELECT id, name, slug, icon, enforce_mfa,
 		       created_at::text, updated_at::text
 		FROM workspaces
 		WHERE id = $1`
 
 	var w models.Workspace
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&w.ID, &w.Name, &w.Slug, &w.Icon,
+		&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
 		&w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
@@ -66,7 +66,7 @@ func (r *WorkspaceRepo) GetDefaultWorkspaceID(ctx context.Context) (string, erro
 // ListAll returns all workspaces ordered by name.
 func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error) {
 	query := `
-		SELECT id, name, slug, icon,
+		SELECT id, name, slug, icon, enforce_mfa,
 		       created_at::text, updated_at::text
 		FROM workspaces
 		ORDER BY name`
@@ -80,7 +80,7 @@ func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error)
 	var workspaces []models.Workspace
 	for rows.Next() {
 		var w models.Workspace
-		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.CreatedAt, &w.UpdatedAt); err != nil {
+		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA, &w.CreatedAt, &w.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning workspace row: %w", err)
 		}
 		workspaces = append(workspaces, w)
@@ -98,10 +98,10 @@ func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error)
 // Insert creates a new workspace row.
 func (r *WorkspaceRepo) Insert(ctx context.Context, w models.Workspace) error {
 	query := `
-		INSERT INTO workspaces (id, name, slug, icon, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, now(), now())`
+		INSERT INTO workspaces (id, name, slug, icon, enforce_mfa, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, w.ID, w.Name, w.Slug, w.Icon)
+	_, err := r.pool.Exec(ctx, query, w.ID, w.Name, w.Slug, w.Icon, w.EnforceMFA)
 	if err != nil {
 		return fmt.Errorf("inserting workspace %q: %w", w.Slug, err)
 	}
@@ -111,10 +111,10 @@ func (r *WorkspaceRepo) Insert(ctx context.Context, w models.Workspace) error {
 // Update modifies an existing workspace row.
 func (r *WorkspaceRepo) Update(ctx context.Context, w models.Workspace) error {
 	query := `
-		UPDATE workspaces SET name = $1, slug = $2, icon = $3, updated_at = now()
-		WHERE id = $4`
+		UPDATE workspaces SET name = $1, slug = $2, icon = $3, enforce_mfa = $4, updated_at = now()
+		WHERE id = $5`
 
-	tag, err := r.pool.Exec(ctx, query, w.Name, w.Slug, w.Icon, w.ID)
+	tag, err := r.pool.Exec(ctx, query, w.Name, w.Slug, w.Icon, w.EnforceMFA, w.ID)
 	if err != nil {
 		return fmt.Errorf("updating workspace %q: %w", w.ID, err)
 	}

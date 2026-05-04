@@ -434,6 +434,11 @@ func (s *AuthService) createSession(ctx context.Context, userID string, deviceNa
 	}, nil
 }
 
+// CreateSessionForUser creates a new session for a user (used after MFA verification).
+func (s *AuthService) CreateSessionForUser(ctx context.Context, userID string, deviceName string) (*TokenPair, error) {
+	return s.createSession(ctx, userID, deviceName)
+}
+
 // GetCurrentSession retrieves the current session by ID.
 func (s *AuthService) GetCurrentSession(ctx context.Context, sessionID string) (*models.AuthSession, error) {
 	return s.sessionRepo.GetSessionByID(ctx, sessionID)

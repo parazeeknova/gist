@@ -44,3 +44,42 @@ type LoginResponse struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+// MFAChallengeResponse is returned when MFA verification is required after login.
+type MFAChallengeResponse struct {
+	MFARequired bool `json:"mfa_required"`
+}
+
+// MFAVerifyRequest is the payload for verifying an MFA code.
+type MFAVerifyRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
+// MFAStatusResponse is the payload for MFA status.
+type MFAStatusResponse struct {
+	IsEnabled         bool   `json:"is_enabled"`
+	Method            string `json:"method"`
+	WorkspaceEnforced bool   `json:"workspace_enforced"`
+}
+
+// MFASetupResponse is the payload for MFA setup.
+type MFASetupResponse struct {
+	Secret    string `json:"secret"`
+	QRURI     string `json:"qr_uri"`
+	ManualKey string `json:"manual_key"`
+}
+
+// MFAEnableRequest is the payload for enabling MFA.
+type MFAEnableRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
+// MFABackupCodesResponse is the payload for backup codes.
+type MFABackupCodesResponse struct {
+	Codes []string `json:"codes"`
+}
+
+// MFADisableRequest is the payload for disabling MFA.
+type MFADisableRequest struct {
+	Password string `json:"password" binding:"required"`
+}

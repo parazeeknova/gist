@@ -101,6 +101,15 @@ export const getAuthMe = (cookieHeader?: string | null) =>
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
+export const getBacky = (endpoint: string, cookieHeader?: string | null): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  return fetch(url, { headers });
+};
+
 export const postBacky = (endpoint: string, body: unknown): Promise<Response> => {
   const url = buildBackyUrl(endpoint);
   return fetch(url, {

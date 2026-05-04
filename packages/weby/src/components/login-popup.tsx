@@ -437,7 +437,12 @@ export const LoginPopup = ({ isDarkMode }: LoginPopupProps) => {
     async (usernameOrEmail: string, password: string) => {
       setServerError(null);
       try {
-        await loginAction(usernameOrEmail, password);
+        const result = await loginAction(usernameOrEmail, password);
+        if (result.mfa_required) {
+          setOpen(false);
+          void navigate({ to: "/mfa-challenge" });
+          return;
+        }
         setOpen(false);
         void navigate({ to: "/home" });
       } catch (error) {

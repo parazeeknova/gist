@@ -63,6 +63,7 @@ func (h *Handlers) GetDebugTableData(c *gin.Context) {
 		"pages": true, "page_history": true, "spaces": true,
 		"workspaces": true, "users": true, "sessions": true,
 		"refresh_tokens": true, "password_credentials": true,
+		"user_mfa": true,
 	}
 	if !allowed[tableName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
@@ -184,6 +185,7 @@ func (h *Handlers) DeleteDebugTableData(c *gin.Context) {
 		"pages": true, "page_history": true, "spaces": true,
 		"workspaces": true, "users": true, "sessions": true,
 		"refresh_tokens": true, "password_credentials": true,
+		"user_mfa": true,
 	}
 	if !allowed[tableName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})
@@ -218,6 +220,7 @@ func (h *Handlers) DeleteDebugTableRows(c *gin.Context) {
 		"pages": true, "page_history": true, "spaces": true,
 		"workspaces": true, "users": true, "sessions": true,
 		"refresh_tokens": true, "password_credentials": true,
+		"user_mfa": true,
 	}
 	if !allowed[tableName] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unknown table"})

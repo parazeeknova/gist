@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as MfaChallengeRouteImport } from './routes/mfa-challenge'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
@@ -39,7 +40,13 @@ import { Route as ApiConsoleProfileSessionRouteImport } from './routes/api/conso
 import { Route as ApiConsoleProfilePasswordRouteImport } from './routes/api/console/profile.password'
 import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
+import { Route as ApiConsoleMfaStatusRouteImport } from './routes/api/console/mfa/status'
+import { Route as ApiConsoleMfaSetupRouteImport } from './routes/api/console/mfa/setup'
+import { Route as ApiConsoleMfaEnableRouteImport } from './routes/api/console/mfa/enable'
+import { Route as ApiConsoleMfaDisableRouteImport } from './routes/api/console/mfa/disable'
+import { Route as ApiConsoleMfaBackupCodesRouteImport } from './routes/api/console/mfa/backup-codes'
 import { Route as ApiConsoleDebugTablesRouteImport } from './routes/api/console/debug.tables'
+import { Route as ApiAuthMfaVerifyRouteImport } from './routes/api/auth/mfa/verify'
 import { Route as ApiConsoleProfileSessionRevokeRouteImport } from './routes/api/console/profile.session.revoke'
 import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages.$id.unpublish'
 import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages.$id.restore'
@@ -54,6 +61,11 @@ import { Route as ApiConsoleDebugTablesTableNameRowsRouteImport } from './routes
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MfaChallengeRoute = MfaChallengeRouteImport.update({
+  id: '/mfa-challenge',
+  path: '/mfa-challenge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -203,9 +215,40 @@ const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiConsolePagesRoute,
 } as any)
+const ApiConsoleMfaStatusRoute = ApiConsoleMfaStatusRouteImport.update({
+  id: '/api/console/mfa/status',
+  path: '/api/console/mfa/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsoleMfaSetupRoute = ApiConsoleMfaSetupRouteImport.update({
+  id: '/api/console/mfa/setup',
+  path: '/api/console/mfa/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsoleMfaEnableRoute = ApiConsoleMfaEnableRouteImport.update({
+  id: '/api/console/mfa/enable',
+  path: '/api/console/mfa/enable',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsoleMfaDisableRoute = ApiConsoleMfaDisableRouteImport.update({
+  id: '/api/console/mfa/disable',
+  path: '/api/console/mfa/disable',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsoleMfaBackupCodesRoute =
+  ApiConsoleMfaBackupCodesRouteImport.update({
+    id: '/api/console/mfa/backup-codes',
+    path: '/api/console/mfa/backup-codes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiConsoleDebugTablesRoute = ApiConsoleDebugTablesRouteImport.update({
   id: '/api/console/debug/tables',
   path: '/api/console/debug/tables',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthMfaVerifyRoute = ApiAuthMfaVerifyRouteImport.update({
+  id: '/api/auth/mfa/verify',
+  path: '/api/auth/mfa/verify',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConsoleProfileSessionRevokeRoute =
@@ -273,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
   '/home': typeof HomeRouteWithChildren
+  '/mfa-challenge': typeof MfaChallengeRoute
   '/settings': typeof SettingsRouteWithChildren
   '/api/blogs': typeof ApiBlogsRouteWithChildren
   '/api/experience': typeof ApiExperienceRoute
@@ -293,7 +337,13 @@ export interface FileRoutesByFullPath {
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
+  '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
+  '/api/console/mfa/backup-codes': typeof ApiConsoleMfaBackupCodesRoute
+  '/api/console/mfa/disable': typeof ApiConsoleMfaDisableRoute
+  '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
+  '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
+  '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
@@ -315,6 +365,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/mfa-challenge': typeof MfaChallengeRoute
   '/settings': typeof SettingsRouteWithChildren
   '/api/blogs': typeof ApiBlogsRouteWithChildren
   '/api/experience': typeof ApiExperienceRoute
@@ -335,7 +386,13 @@ export interface FileRoutesByTo {
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
+  '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
+  '/api/console/mfa/backup-codes': typeof ApiConsoleMfaBackupCodesRoute
+  '/api/console/mfa/disable': typeof ApiConsoleMfaDisableRoute
+  '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
+  '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
+  '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
@@ -359,6 +416,7 @@ export interface FileRoutesById {
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
   '/home': typeof HomeRouteWithChildren
+  '/mfa-challenge': typeof MfaChallengeRoute
   '/settings': typeof SettingsRouteWithChildren
   '/api/blogs': typeof ApiBlogsRouteWithChildren
   '/api/experience': typeof ApiExperienceRoute
@@ -379,7 +437,13 @@ export interface FileRoutesById {
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
+  '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
+  '/api/console/mfa/backup-codes': typeof ApiConsoleMfaBackupCodesRoute
+  '/api/console/mfa/disable': typeof ApiConsoleMfaDisableRoute
+  '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
+  '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
+  '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
@@ -404,6 +468,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/about'
     | '/home'
+    | '/mfa-challenge'
     | '/settings'
     | '/api/blogs'
     | '/api/experience'
@@ -424,7 +489,13 @@ export interface FileRouteTypes {
     | '/api/console/workspaces'
     | '/api/github/stats'
     | '/settings/account/profile'
+    | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
+    | '/api/console/mfa/backup-codes'
+    | '/api/console/mfa/disable'
+    | '/api/console/mfa/enable'
+    | '/api/console/mfa/setup'
+    | '/api/console/mfa/status'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
@@ -446,6 +517,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/mfa-challenge'
     | '/settings'
     | '/api/blogs'
     | '/api/experience'
@@ -466,7 +538,13 @@ export interface FileRouteTypes {
     | '/api/console/workspaces'
     | '/api/github/stats'
     | '/settings/account/profile'
+    | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
+    | '/api/console/mfa/backup-codes'
+    | '/api/console/mfa/disable'
+    | '/api/console/mfa/enable'
+    | '/api/console/mfa/setup'
+    | '/api/console/mfa/status'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
@@ -489,6 +567,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/about'
     | '/home'
+    | '/mfa-challenge'
     | '/settings'
     | '/api/blogs'
     | '/api/experience'
@@ -509,7 +588,13 @@ export interface FileRouteTypes {
     | '/api/console/workspaces'
     | '/api/github/stats'
     | '/settings/account/profile'
+    | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
+    | '/api/console/mfa/backup-codes'
+    | '/api/console/mfa/disable'
+    | '/api/console/mfa/enable'
+    | '/api/console/mfa/setup'
+    | '/api/console/mfa/status'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
@@ -533,6 +618,7 @@ export interface RootRouteChildren {
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
   HomeRoute: typeof HomeRouteWithChildren
+  MfaChallengeRoute: typeof MfaChallengeRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   ApiBlogsRoute: typeof ApiBlogsRouteWithChildren
   ApiExperienceRoute: typeof ApiExperienceRoute
@@ -549,7 +635,13 @@ export interface RootRouteChildren {
   ApiConsoleSpacesRoute: typeof ApiConsoleSpacesRouteWithChildren
   ApiConsoleWorkspacesRoute: typeof ApiConsoleWorkspacesRouteWithChildren
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute
+  ApiAuthMfaVerifyRoute: typeof ApiAuthMfaVerifyRoute
   ApiConsoleDebugTablesRoute: typeof ApiConsoleDebugTablesRouteWithChildren
+  ApiConsoleMfaBackupCodesRoute: typeof ApiConsoleMfaBackupCodesRoute
+  ApiConsoleMfaDisableRoute: typeof ApiConsoleMfaDisableRoute
+  ApiConsoleMfaEnableRoute: typeof ApiConsoleMfaEnableRoute
+  ApiConsoleMfaSetupRoute: typeof ApiConsoleMfaSetupRoute
+  ApiConsoleMfaStatusRoute: typeof ApiConsoleMfaStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -559,6 +651,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mfa-challenge': {
+      id: '/mfa-challenge'
+      path: '/mfa-challenge'
+      fullPath: '/mfa-challenge'
+      preLoaderRoute: typeof MfaChallengeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -764,11 +863,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsolePagesIdRouteImport
       parentRoute: typeof ApiConsolePagesRoute
     }
+    '/api/console/mfa/status': {
+      id: '/api/console/mfa/status'
+      path: '/api/console/mfa/status'
+      fullPath: '/api/console/mfa/status'
+      preLoaderRoute: typeof ApiConsoleMfaStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/mfa/setup': {
+      id: '/api/console/mfa/setup'
+      path: '/api/console/mfa/setup'
+      fullPath: '/api/console/mfa/setup'
+      preLoaderRoute: typeof ApiConsoleMfaSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/mfa/enable': {
+      id: '/api/console/mfa/enable'
+      path: '/api/console/mfa/enable'
+      fullPath: '/api/console/mfa/enable'
+      preLoaderRoute: typeof ApiConsoleMfaEnableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/mfa/disable': {
+      id: '/api/console/mfa/disable'
+      path: '/api/console/mfa/disable'
+      fullPath: '/api/console/mfa/disable'
+      preLoaderRoute: typeof ApiConsoleMfaDisableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/mfa/backup-codes': {
+      id: '/api/console/mfa/backup-codes'
+      path: '/api/console/mfa/backup-codes'
+      fullPath: '/api/console/mfa/backup-codes'
+      preLoaderRoute: typeof ApiConsoleMfaBackupCodesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/console/debug/tables': {
       id: '/api/console/debug/tables'
       path: '/api/console/debug/tables'
       fullPath: '/api/console/debug/tables'
       preLoaderRoute: typeof ApiConsoleDebugTablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/mfa/verify': {
+      id: '/api/auth/mfa/verify'
+      path: '/api/auth/mfa/verify'
+      fullPath: '/api/auth/mfa/verify'
+      preLoaderRoute: typeof ApiAuthMfaVerifyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/console/profile/session/revoke': {
@@ -1013,6 +1154,7 @@ const rootRouteChildren: RootRouteChildren = {
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
   HomeRoute: HomeRouteWithChildren,
+  MfaChallengeRoute: MfaChallengeRoute,
   SettingsRoute: SettingsRouteWithChildren,
   ApiBlogsRoute: ApiBlogsRouteWithChildren,
   ApiExperienceRoute: ApiExperienceRoute,
@@ -1029,7 +1171,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsoleSpacesRoute: ApiConsoleSpacesRouteWithChildren,
   ApiConsoleWorkspacesRoute: ApiConsoleWorkspacesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
+  ApiAuthMfaVerifyRoute: ApiAuthMfaVerifyRoute,
   ApiConsoleDebugTablesRoute: ApiConsoleDebugTablesRouteWithChildren,
+  ApiConsoleMfaBackupCodesRoute: ApiConsoleMfaBackupCodesRoute,
+  ApiConsoleMfaDisableRoute: ApiConsoleMfaDisableRoute,
+  ApiConsoleMfaEnableRoute: ApiConsoleMfaEnableRoute,
+  ApiConsoleMfaSetupRoute: ApiConsoleMfaSetupRoute,
+  ApiConsoleMfaStatusRoute: ApiConsoleMfaStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
