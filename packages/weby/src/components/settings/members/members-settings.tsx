@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   createColumnHelper,
@@ -87,7 +87,7 @@ const RoleDropdown = ({ currentRole, onChange }: RoleDropdownProps) => {
   const menu = (
     <div
       ref={menuRef}
-      className={`absolute border text-[11px] lowercase overflow-hidden z-[9999] shadow-lg w-56 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+      className={`absolute border text-[11px] lowercase overflow-hidden z-9999 shadow-lg w-56 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
       style={{ left: pos.left, top: pos.top }}
     >
       {ROLE_OPTIONS.map((role) => (
@@ -242,6 +242,12 @@ export const MembersSettings = () => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const clearError = useCallback(() => setError(null), []);
+  const handleMutationError = useCallback((err: Error) => {
+    setError(err.message || "something went wrong");
+  }, []);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery) {
@@ -315,7 +321,15 @@ export const MembersSettings = () => {
           return (
             <RoleDropdown
               currentRole={user.role}
-              onChange={(role) => updateRole.mutate({ id: user.id, role })}
+              onChange={(role) =>
+                updateRole.mutate(
+                  { id: user.id, role },
+                  {
+                    onError: handleMutationError,
+                    onSuccess: clearError,
+                  },
+                )
+              }
             />
           );
         },
@@ -332,7 +346,15 @@ export const MembersSettings = () => {
                   ? tc(isDarkMode, "text-text-dark/50", "text-text-light/50")
                   : tc(isDarkMode, "text-text-dark/30", "text-text-light/30")
               }`}
-              onClick={() => updateActive.mutate({ id: user.id, isActive: !isActive })}
+              onClick={() =>
+                updateActive.mutate(
+                  { id: user.id, isActive: !isActive },
+                  {
+                    onError: handleMutationError,
+                    onSuccess: clearError,
+                  },
+                )
+              }
               type="button"
             >
               {isActive ? "active" : "inactive"}
@@ -380,8 +402,13 @@ export const MembersSettings = () => {
               }`}
               onClick={() => {
                 if (isConfirm) {
-                  deleteUser.mutate(user.id);
-                  setConfirmDelete(null);
+                  deleteUser.mutate(user.id, {
+                    onError: handleMutationError,
+                    onSuccess: () => {
+                      clearError();
+                      setConfirmDelete(null);
+                    },
+                  });
                 } else {
                   setConfirmDelete(user.id);
                   setTimeout(
@@ -401,7 +428,15 @@ export const MembersSettings = () => {
         id: "actions",
       }),
     ],
-    [isDarkMode, updateRole, updateActive, deleteUser, confirmDelete],
+    [
+      isDarkMode,
+      updateRole,
+      updateActive,
+      deleteUser,
+      confirmDelete,
+      handleMutationError,
+      clearError,
+    ],
   );
 
   const table = useReactTable({
@@ -424,6 +459,10 @@ export const MembersSettings = () => {
       >
         manage members
       </h1>
+
+      {error && (
+        <p className={`mb-4 text-[11px] lowercase ${t("text-red-400", "text-red-600")}`}>{error}</p>
+      )}
 
       <div className="flex items-center gap-3 mb-4">
         <MagnifyingGlassIcon className={t("text-text-dark/20", "text-text-light/20")} size={12} />
