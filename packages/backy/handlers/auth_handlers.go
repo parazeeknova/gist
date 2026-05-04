@@ -2,23 +2,25 @@ package handlers
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/verso/backy/auth"
-	"github.com/verso/backy/services"
+
+	"verso/backy/auth"
+	"verso/backy/logger"
+	"verso/backy/services"
 )
 
 // AuthHandlers holds HTTP handlers for authentication endpoints.
 type AuthHandlers struct {
 	authService *services.AuthService
+	mfaService  *services.MFAService
 }
 
 // NewAuthHandlers creates a new AuthHandlers.
-func NewAuthHandlers(authService *services.AuthService) *AuthHandlers {
-	return &AuthHandlers{authService: authService}
+func NewAuthHandlers(authService *services.AuthService, mfaService *services.MFAService) *AuthHandlers {
+	return &AuthHandlers{authService: authService, mfaService: mfaService}
 }
 
 // RegisterRoutes registers all auth routes on the given router group.
@@ -54,7 +56,17 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 		return
 	}
 
-	userResp, pair, err := h.authService.Login(c.Request.Context(), req.UsernameOrEmail, req.Password, req.Email)
+	var bootstrapParams *services.BootstrapParams
+	if req.Email != "" {
+		bootstrapParams = &services.BootstrapParams{
+			Name:          req.Name,
+			WorkspaceName: req.WorkspaceName,
+			SpaceName:     req.SpaceName,
+		}
+	}
+
+	deviceName := parseDeviceName(c.GetHeader("User-Agent"))
+	userResp, pair, err := h.authService.Login(c.Request.Context(), req.UsernameOrEmail, req.Password, req.Email, bootstrapParams, deviceName)
 	if err != nil {
 		if errors.Is(err, services.ErrNotBootstrapped) {
 			c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "system not bootstrapped"})
@@ -68,12 +80,32 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 			c.JSON(http.StatusConflict, auth.ErrorResponse{Error: "system already bootstrapped"})
 			return
 		}
-		log.Printf("login error: %v", err)
+		logger.Log.Error().Err(err).Msg("login error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "authentication failed"})
 		return
 	}
 	if userResp == nil {
 		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid username or password"})
+		return
+	}
+
+	// Check if MFA is required
+	mfaRequired, mfaErr := h.mfaService.IsMFARequired(c.Request.Context(), userResp.ID.String())
+	if mfaErr != nil {
+		logger.Log.Error().Err(mfaErr).Str("user_id", userResp.ID.String()).Msg("mfa required check error")
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "authentication failed"})
+		return
+	}
+
+	if mfaRequired {
+		mfaToken, mfaTokenErr := auth.GenerateMFAChallengeToken(userResp.ID.String())
+		if mfaTokenErr != nil {
+			logger.Log.Error().Err(mfaTokenErr).Str("user_id", userResp.ID.String()).Msg("generate mfa challenge token error")
+			c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "authentication failed"})
+			return
+		}
+		setMFAChallengeCookie(c, mfaToken)
+		c.JSON(http.StatusOK, auth.MFAChallengeResponse{MFARequired: true})
 		return
 	}
 
@@ -95,7 +127,7 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 			c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired refresh token"})
 			return
 		}
-		log.Printf("refresh error: %v", err)
+		logger.Log.Error().Err(err).Msg("refresh error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "token refresh failed"})
 		return
 	}
@@ -109,7 +141,7 @@ func (h *AuthHandlers) Logout(c *gin.Context) {
 	rawToken, _ := c.Cookie(auth.GetRefreshTokenCookieName())
 
 	if err := h.authService.Logout(c.Request.Context(), rawToken); err != nil {
-		log.Printf("logout error: %v", err)
+		logger.Log.Error().Err(err).Msg("logout error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to revoke session"})
 		return
 	}
@@ -136,7 +168,7 @@ func (h *AuthHandlers) Me(c *gin.Context) {
 	if accessClaims.SessionID != "" {
 		active, checkErr := h.authService.ValidateSession(c.Request.Context(), accessClaims.SessionID)
 		if checkErr != nil {
-			log.Printf("session validation error for user %s: %v", accessClaims.UserID, checkErr)
+			logger.Log.Error().Str("user_id", accessClaims.UserID).Err(checkErr).Msg("session validation error")
 			c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session validation failed"})
 			return
 		}
@@ -152,12 +184,33 @@ func (h *AuthHandlers) Me(c *gin.Context) {
 			c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
 			return
 		}
-		log.Printf("get me error for user %s: %v", accessClaims.UserID, err)
+		logger.Log.Error().Str("user_id", accessClaims.UserID).Err(err).Msg("get me error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to retrieve user"})
 		return
 	}
 
 	c.JSON(http.StatusOK, userResp)
+}
+
+func parseDeviceName(ua string) string {
+	if ua == "" {
+		return "unknown device"
+	}
+	ua = strings.ToLower(ua)
+	switch {
+	case strings.Contains(ua, "edg"):
+		return "edge"
+	case strings.Contains(ua, "opr") || strings.Contains(ua, "opera"):
+		return "opera"
+	case strings.Contains(ua, "firefox"):
+		return "firefox"
+	case strings.Contains(ua, "safari") && !strings.Contains(ua, "chrome"):
+		return "safari"
+	case strings.Contains(ua, "chrome"):
+		return "chrome"
+	default:
+		return "unknown device"
+	}
 }
 
 func extractAuthToken(c *gin.Context) string {
@@ -224,6 +277,102 @@ func clearAuthCookies(c *gin.Context) {
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     auth.GetRefreshTokenCookieName(),
+		Value:    "",
+		MaxAge:   -1,
+		Path:     path,
+		Domain:   domain,
+		Secure:   secure,
+		HttpOnly: true,
+		SameSite: sameSite,
+	})
+}
+
+// VerifyMFA verifies an MFA code and issues the real auth cookies.
+func (h *AuthHandlers) VerifyMFA(c *gin.Context) {
+	var req auth.MFAVerifyRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	mfaToken, err := c.Cookie(auth.GetMFAChallengeCookieName())
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "mfa challenge expired"})
+		return
+	}
+
+	claims, err := auth.ValidateMFAChallengeToken(mfaToken)
+	if err != nil {
+		clearMFAChallengeCookie(c)
+		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired mfa challenge"})
+		return
+	}
+
+	valid, _, err := h.mfaService.Verify(c.Request.Context(), claims.UserID, req.Code)
+	if err != nil {
+		if errors.Is(err, services.ErrMFANotEnabled) {
+			clearMFAChallengeCookie(c)
+			c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "mfa not enabled"})
+			return
+		}
+		logger.Log.Error().Err(err).Str("user_id", claims.UserID).Msg("mfa verify error")
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "verification failed"})
+		return
+	}
+	if !valid {
+		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid code"})
+		return
+	}
+
+	// MFA verified — create real session
+	deviceName := parseDeviceName(c.GetHeader("User-Agent"))
+	pair, sessionErr := h.authService.CreateSessionForUser(c.Request.Context(), claims.UserID, deviceName)
+	if sessionErr != nil {
+		logger.Log.Error().Err(sessionErr).Str("user_id", claims.UserID).Msg("create session after mfa error")
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session creation failed"})
+		return
+	}
+
+	clearMFAChallengeCookie(c)
+	setAuthCookies(c, pair)
+
+	// Return user info
+	userResp, userErr := h.authService.GetMe(c.Request.Context(), claims.UserID)
+	if userErr != nil {
+		logger.Log.Error().Err(userErr).Str("user_id", claims.UserID).Msg("get me after mfa error")
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		return
+	}
+
+	c.JSON(http.StatusOK, auth.LoginResponse{User: *userResp})
+}
+
+func setMFAChallengeCookie(c *gin.Context, token string) {
+	domain := auth.GetCookieDomain()
+	secure := auth.GetCookieSecure()
+	path := "/"
+	sameSite := http.SameSiteLaxMode
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     auth.GetMFAChallengeCookieName(),
+		Value:    token,
+		MaxAge:   300, // 5 minutes
+		Path:     path,
+		Domain:   domain,
+		Secure:   secure,
+		HttpOnly: true,
+		SameSite: sameSite,
+	})
+}
+
+func clearMFAChallengeCookie(c *gin.Context) {
+	domain := auth.GetCookieDomain()
+	secure := auth.GetCookieSecure()
+	path := "/"
+	sameSite := http.SameSiteLaxMode
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     auth.GetMFAChallengeCookieName(),
 		Value:    "",
 		MaxAge:   -1,
 		Path:     path,

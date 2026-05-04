@@ -99,12 +99,65 @@ type Page struct {
 	ContentJSON     json.RawMessage `json:"content_json"`
 	YDoc            []byte          `json:"ydoc,omitempty"`
 	TextContent     string          `json:"text_content"`
+	Position        string          `json:"position"`
 	IsPublished     bool            `json:"is_published"`
 	ParentPageID    *string         `json:"parent_page_id,omitempty"`
+	SpaceID         string          `json:"space_id"`
 	CreatorID       string          `json:"creator_id"`
 	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
+}
+
+// PageTreeItem represents a page node in the tree view.
+type PageTreeItem struct {
+	ID           string  `json:"id"`
+	SlugID       string  `json:"slugId"`
+	Title        string  `json:"title"`
+	Icon         string  `json:"icon"`
+	Position     string  `json:"position"`
+	IsPublished  bool    `json:"isPublished"`
+	ParentPageID *string `json:"parentPageId,omitempty"`
+	SpaceID      string  `json:"spaceId"`
+	WorkspaceID  string  `json:"workspaceId"`
+	HasChildren  bool    `json:"hasChildren"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    string  `json:"updatedAt"`
+}
+
+// Space represents a space grouping pages together.
+type Space struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Icon        string `json:"icon"`
+	WorkspaceID string `json:"workspaceId"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+// Workspace represents a top-level grouping of spaces.
+type Workspace struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Slug       string `json:"slug"`
+	Icon       string `json:"icon"`
+	EnforceMFA bool   `json:"enforce_mfa"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updatedAt"`
+}
+
+// UserMFA represents a user's MFA configuration.
+type UserMFA struct {
+	ID               string   `json:"id"`
+	UserID           string   `json:"user_id"`
+	WorkspaceID      string   `json:"workspace_id"`
+	Method           string   `json:"method"`
+	Secret           string   `json:"secret"`
+	IsEnabled        bool     `json:"is_enabled"`
+	BackupCodeHashes []string `json:"backup_code_hashes"`
+	CreatedAt        string   `json:"created_at"`
+	UpdatedAt        string   `json:"updated_at"`
 }
 
 // PageHistory represents a page history entry
@@ -138,6 +191,8 @@ type AuthUser struct {
 	ID        string `json:"id"`
 	Username  string `json:"username"`
 	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
 	IsOwner   bool   `json:"is_owner"`
 	IsActive  bool   `json:"is_active"`
 	CreatedAt string `json:"created_at"`
@@ -148,6 +203,7 @@ type AuthUser struct {
 type AuthSession struct {
 	ID         string `json:"id"`
 	UserID     string `json:"user_id"`
+	DeviceName string `json:"device_name"`
 	ExpiresAt  string `json:"expires_at"`
 	LastSeenAt string `json:"last_seen_at"`
 	CreatedAt  string `json:"created_at"`

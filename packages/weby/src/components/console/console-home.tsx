@@ -2,9 +2,9 @@ import { FileTextIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import type { ConsolePage } from "#/types";
-import { useAuth } from "../../hooks/use-auth";
-import { useTheme } from "../../hooks/use-theme";
-import { fetchProtected } from "../../hooks/fetch-protected";
+import { useAuth } from "#/hooks/use-auth";
+import { useTheme } from "#/hooks/use-theme";
+import { fetchProtected } from "#/hooks/fetch-protected";
 
 const useConsolePages = () =>
   useQuery<ConsolePage[]>({
@@ -47,10 +47,12 @@ export const ConsoleHome = () => {
   const subMessage = useMemo(() => subMessages[Math.floor(Math.random() * subMessages.length)], []);
 
   const mySpaces = placeholderSpaces;
-  const recentDocs = (pages ?? []).slice(0, 6);
+  const recentDocs = [...(pages ?? [])]
+    .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 6);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col px-4 pt-12">
+    <div className="mx-auto flex w-full max-w-2xl flex-col px-4 pt-12 min-h-full">
       <h1 className={`text-lg lowercase ${t("text-text-dark", "text-text-light")}`}>
         welcome, @{user?.username}
       </h1>
@@ -140,7 +142,7 @@ export const ConsoleHome = () => {
         )}
       </div>
       <p
-        className={`fixed bottom-0 left-0 right-0 z-30 md:absolute md:bottom-0 md:left-0 md:right-0 pb-4 pt-2 text-center text-[10px] lowercase ${t("bg-bg-dark/80 text-text-dark/20", "bg-bg-light/80 text-text-light/20")}`}
+        className={`sticky bottom-0 mt-auto pb-4 pt-2 text-center text-[10px] lowercase transition-colors duration-500 ease-out ${t("text-text-dark/20 bg-bg-dark/80", "text-text-light/20 bg-bg-light/80")}`}
       >
         spotted a bug or have a suggestion ?{" "}
         <a

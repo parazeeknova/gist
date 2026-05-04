@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { ExperienceItem, Profile } from "#/types";
-import { ExperienceSection, ProfileSection, SocialLinks } from "./home-sections";
+import { ExperienceSection, ProfileSection, SocialLinks } from "./sections";
 
 describe("ProfileSection", () => {
   const mockProfile: Profile = {

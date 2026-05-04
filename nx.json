@@ -21,7 +21,7 @@
       "cache": true
     },
     "check-types": {
-      "cache": false
+      "cache": true
     },
     "format": {
       "cache": true

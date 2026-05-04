@@ -20,15 +20,43 @@ const refreshTokens = (): Promise<boolean> => {
 };
 
 export const fetchProtected = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  let res = await fetch(url, init);
+  let res = await fetch(url, { ...init, credentials: "include" });
   if (res.status === 401) {
     const refreshed = await refreshTokens();
     if (refreshed) {
-      res = await fetch(url, init);
+      res = await fetch(url, { ...init, credentials: "include" });
     }
   }
+
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
+    let errorMessage = "";
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      try {
+        const errBody = (await res.json()) as { error?: string };
+        if (errBody.error) {
+          errorMessage = errBody.error;
+        }
+      } catch {
+        // Ignore JSON parse errors for error bodies
+      }
+    }
+    throw new Error(`HTTP ${res.status}${errorMessage ? `: ${errorMessage}` : ""}`);
   }
-  return res.json() as Promise<T>;
+
+  const text = await res.text();
+  if (!text.trim()) {
+    return {} as T;
+  }
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // eslint-disable-next-line no-console
+    console.error("[fetchProtected] non-JSON response:", {
+      status: res.status,
+      text: text.slice(0, 500),
+      url,
+    });
+    throw new Error("unexpected response from server");
+  }
 };

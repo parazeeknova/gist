@@ -1,13 +1,14 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/verso/backy/auth"
-	"github.com/verso/backy/services"
+
+	"verso/backy/auth"
+	"verso/backy/logger"
+	"verso/backy/services"
 )
 
 const (
@@ -15,6 +16,8 @@ const (
 	ContextKeyClaims = "auth_claims"
 	// ContextKeyUserID is the gin context key for the authenticated user ID.
 	ContextKeyUserID = "auth_user_id"
+	// ContextKeyIsOwner is the gin context key for whether the user is an owner.
+	ContextKeyIsOwner = "auth_is_owner"
 )
 
 // AuthRequired is middleware that requires a valid access token (via cookie or Authorization header).
@@ -37,7 +40,7 @@ func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
 		if claims.SessionID != "" {
 			active, checkErr := authService.ValidateSession(c.Request.Context(), claims.SessionID)
 			if checkErr != nil {
-				log.Printf("session validation error for user %s: %v", claims.UserID, checkErr)
+				logger.Log.Error().Str("user_id", claims.UserID).Err(checkErr).Msg("session validation error")
 				c.AbortWithStatusJSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "session validation failed"})
 				return
 			}
@@ -49,6 +52,7 @@ func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
 
 		c.Set(ContextKeyClaims, claims)
 		c.Set(ContextKeyUserID, claims.UserID)
+		c.Set(ContextKeyIsOwner, claims.IsOwner)
 		c.Next()
 	}
 }
@@ -67,6 +71,19 @@ func extractToken(c *gin.Context) string {
 	}
 
 	return ""
+}
+
+// OwnerRequired is middleware that requires the authenticated user to be an owner.
+// Must be used after AuthRequired.
+func OwnerRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		isOwner, ok := c.Get(ContextKeyIsOwner)
+		if !ok || !isOwner.(bool) {
+			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "owner access required"})
+			return
+		}
+		c.Next()
+	}
 }
 
 // GetCurrentUserID extracts the authenticated user ID from the gin context.

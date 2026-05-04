@@ -4,11 +4,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"log"
 	"sort"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"verso/backy/logger"
 )
 
 //go:embed migrations/*.sql
@@ -23,7 +24,7 @@ func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 
 	for _, m := range migrations {
-		log.Printf("migrate: applying %s", m.name)
+		logger.Log.Info().Str("name", m.name).Msg("applying migration")
 
 		tx, txErr := pool.Begin(ctx)
 		if txErr != nil {
@@ -40,13 +41,13 @@ func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 
-	log.Printf("migrate: %d migrations applied", len(migrations))
+	logger.Log.Info().Int("count", len(migrations)).Msg("migrations applied")
 	return nil
 }
 
 // MigrateReset drops all tables from the public schema and re-runs migrations.
 func MigrateReset(ctx context.Context, pool *pgxpool.Pool) error {
-	log.Println("migrate: dropping all tables in public schema...")
+	logger.Log.Info().Msg("migrate: dropping all tables in public schema...")
 	dropSQL := `
 	DO $$ DECLARE
 		r RECORD;

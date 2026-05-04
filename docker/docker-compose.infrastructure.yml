@@ -21,8 +21,36 @@ services:
     networks:
       - verso-network
 
+  rustfs:
+    image: rustfs/rustfs:${RUSTFS_VERSION:-latest}
+    container_name: verso-rustfs
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-verso}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-verso_secret_key}
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: 0.0.0.0:9000
+      RUSTFS_CONSOLE_ADDRESS: 0.0.0.0:9001
+    ports:
+      - "${RUSTFS_PORT:-1000}:9000"
+      - "${RUSTFS_CONSOLE_PORT:-1001}:9001"
+    volumes:
+      - rustfs_data:/data
+      - rustfs_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - verso-network
+
 volumes:
   postgres_data:
+    driver: local
+  rustfs_data:
+    driver: local
+  rustfs_logs:
     driver: local
 
 networks:

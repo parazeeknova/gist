@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { GitHubActivity } from "../components/github-calendar";
-import { GitHubStats } from "../components/github-stats";
-import { ExperienceSection, ProfileSection, SocialLinks } from "../components/home-sections";
-import { MobileProjectList, ProjectList } from "../components/projects";
-import { ScrollContainer } from "../components/scroll-container";
+import { GitHubActivity } from "../components/github/calendar";
+import { GitHubStats } from "../components/github/stats";
+import { ExperienceSection, ProfileSection, SocialLinks } from "../components/landing/sections";
+import { ScrollContainer } from "../components/landing/scroll-container";
+import { ReadmeViewer } from "../components/landing/readme-viewer";
+import { MobileProjectList, ProjectList } from "../components/landing/projects";
 import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
 import { LoginPopup } from "../components/login-popup";
-import { ReadmeViewer } from "../components/readme-viewer";
 import {
   useBlogManifest,
   useExperience,
@@ -315,39 +315,46 @@ const Home = function Home() {
 
 export const Route = createFileRoute("/")({
   component: Home,
-  head: () => ({
-    links: [{ href: "/", rel: "canonical" }],
-    meta: [
-      { title: "verso — open-source, self-hosted wiki" },
-      {
-        content:
-          "verso is an open-source, self-hosted wiki and knowledge base. write, organize, and publish your thinking — in real-time, with full control over your data.",
-        name: "description",
-      },
-      {
-        content:
-          "verso, wiki, knowledge base, self-hosted, open-source, markdown, real-time collaboration",
-        name: "keywords",
-      },
-      { content: "verso — open-source, self-hosted wiki", property: "og:title" },
-      {
-        content:
-          "verso is an open-source, self-hosted wiki and knowledge base. write, organize, and publish your thinking — in real-time, with full control over your data.",
-        property: "og:description",
-      },
-      { content: "website", property: "og:type" },
-      { content: "/verso-og.png", property: "og:image" },
-      { content: "1200", property: "og:image:width" },
-      { content: "630", property: "og:image:height" },
-      { content: "image/png", property: "og:image:type" },
-      { content: "summary_large_image", property: "twitter:card" },
-      { content: "verso — open-source, self-hosted wiki", property: "twitter:title" },
-      {
-        content:
-          "verso is an open-source, self-hosted wiki and knowledge base. write, organize, and publish your thinking — in real-time, with full control over your data.",
-        property: "twitter:description",
-      },
-      { content: "/verso-og.png", property: "twitter:image" },
-    ],
-  }),
+  head: () => {
+    const origin =
+      typeof window === "undefined"
+        ? import.meta.env.VITE_APP_ORIGIN || "https://folio.zephyyrr.in"
+        : window.location.origin;
+    const ogImage = `${origin}/verso-og.png`;
+    return {
+      links: [{ href: origin, rel: "canonical" }],
+      meta: [
+        { title: "verso — open-source, self-hosted wiki" },
+        {
+          content:
+            "verso is an open-source, self-hosted wiki and knowledge base. write, organize, and publish your thinking — in real-time, with full control over your data.",
+          name: "description",
+        },
+        {
+          content:
+            "verso, wiki, knowledge base, self-hosted, open-source, markdown, real-time collaboration",
+          name: "keywords",
+        },
+        { content: "verso — open-source, self-hosted wiki", property: "og:title" },
+        {
+          content:
+            "verso is an open-source, self-hosted wiki and knowledge base. write, organize, and publish your thinking — in real-time, with full control over your data.",
+          property: "og:description",
+        },
+        { content: "website", property: "og:type" },
+        { content: ogImage, property: "og:image" },
+        { content: "1200", property: "og:image:width" },
+        { content: "630", property: "og:image:height" },
+        { content: "image/png", property: "og:image:type" },
+        { content: "summary_large_image", property: "twitter:card" },
+        { content: "verso — open-source, self-hosted wiki", property: "twitter:title" },
+        {
+          content:
+            "verso is an open-source, self-hosted wiki and knowledge base. write, organize, and publish your thinking — in real-time, with full control over your data.",
+          property: "twitter:description",
+        },
+        { content: ogImage, property: "twitter:image" },
+      ],
+    };
+  },
 });

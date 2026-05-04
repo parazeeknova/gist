@@ -3,10 +3,11 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"verso/backy/logger"
 )
 
 var globalPool *pgxpool.Pool
@@ -65,6 +66,6 @@ func NewPool(ctx context.Context, cfg Config) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	log.Println("database: connection pool established")
+	logger.Log.Info().Msg("database: connection pool established")
 	return pool, nil
 }

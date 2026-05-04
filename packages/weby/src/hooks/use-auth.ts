@@ -2,6 +2,11 @@ import type { AuthUser } from "#/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
 
+export interface LoginResult {
+  mfa_required?: boolean;
+  user?: AuthUser;
+}
+
 export const useAuth = () => {
   const queryClient = useQueryClient();
 
@@ -34,13 +39,30 @@ export const useAuth = () => {
 export const useAuthActions = () => {
   const queryClient = useQueryClient();
 
-  const login = async (usernameOrEmail: string, password: string, email?: string) => {
+  const login = async (
+    usernameOrEmail: string,
+    password: string,
+    email?: string,
+    name?: string,
+    workspaceName?: string,
+    spaceName?: string,
+  ): Promise<LoginResult> => {
     const body: Record<string, string> = { password, usernameOrEmail };
     if (email) {
       body.email = email;
     }
+    if (name) {
+      body.name = name;
+    }
+    if (workspaceName) {
+      body.workspaceName = workspaceName;
+    }
+    if (spaceName) {
+      body.spaceName = spaceName;
+    }
     const res = await fetch("/api/auth/login", {
       body: JSON.stringify(body),
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
@@ -48,8 +70,16 @@ export const useAuthActions = () => {
       const err = await res.json().catch(() => ({ error: "Login failed" }));
       throw new Error((err as { error?: string }).error ?? "Login failed");
     }
+    const data = (await res.json()) as LoginResult;
+
+    // If MFA is required, return without invalidating auth cache
+    if (data.mfa_required) {
+      return data;
+    }
+
     await queryClient.invalidateQueries({ queryKey: ["auth"] });
-    return res.json() as Promise<unknown>;
+    await queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
+    return data;
   };
 
   const logout = async () => {
