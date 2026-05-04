@@ -5,6 +5,7 @@ import type {
   BootstrapState,
   ConsolePage,
   ConsolePageDetail,
+  ConsoleUser,
   CreatePageInput,
   ExperienceItem,
   MovePageInput,
@@ -380,4 +381,36 @@ export const revokeSession = (cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>("console/profile/session/revoke", {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "POST",
+  });
+
+// User management functions
+export const getUsers = (cookieHeader?: string | null) =>
+  fetchBacky<ConsoleUser[]>("console/users", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const updateUserRole = (id: string, role: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/users/${id}/role`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const updateUserActive = (id: string, isActive: boolean, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/users/${id}/active`, {
+    body: JSON.stringify({ is_active: isActive }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const deleteUser = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/users/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
   });
