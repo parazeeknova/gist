@@ -13,8 +13,8 @@ import {
   useMFADisable,
   useMFABackupCodes,
   useMFAStatus,
-} from "../../hooks/use-mfa";
-import { useTheme } from "../../hooks/use-theme";
+} from "../../../hooks/use-mfa";
+import { useTheme } from "../../../hooks/use-theme";
 
 interface MFASetupFormProps {
   isDarkMode: boolean;

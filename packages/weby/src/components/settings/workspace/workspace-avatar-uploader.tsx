@@ -1,18 +1,24 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
-import { useAuth } from "#/hooks/use-auth";
-import { useUpdateProfile } from "#/hooks/use-profile";
 import { useTheme } from "#/hooks/use-theme";
 import { compressImage } from "#/lib/image-compress";
+import { useUpdateWorkspace } from "#/hooks/use-workspace-settings";
 
-interface AvatarUploaderProps {
+interface WorkspaceAvatarUploaderProps {
   avatarUrl: string;
   name: string;
+  workspaceId: string;
+  slug: string;
   onAvatarChange: (url: string) => void;
 }
 
-export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUploaderProps) => {
-  const { data: user } = useAuth();
+export const WorkspaceAvatarUploader = ({
+  avatarUrl,
+  name,
+  workspaceId,
+  slug,
+  onAvatarChange,
+}: WorkspaceAvatarUploaderProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
@@ -20,7 +26,7 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const updateProfile = useUpdateProfile();
+  const updateWorkspace = useUpdateWorkspace();
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -32,7 +38,6 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
       setUploadError("");
       setIsUploading(true);
 
-      // Reset input so same file can be selected again
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -40,8 +45,8 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
       try {
         const url = await compressImage(file, 400, 400, 0.8);
         onAvatarChange(url);
-        updateProfile.mutate(
-          { avatar_url: url, name: name.trim() || user?.name || "" },
+        updateWorkspace.mutate(
+          { id: workspaceId, input: { icon: url, name: name.trim() || "", slug } },
           {
             onError: (err: Error) => {
               setUploadError(err.message || "failed to upload avatar");
@@ -59,17 +64,17 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
 
       setShowMenu(false);
     },
-    [name, user?.name, onAvatarChange, updateProfile],
+    [name, slug, workspaceId, onAvatarChange, updateWorkspace],
   );
 
   const handleRemove = useCallback(() => {
     setUploadError("");
     onAvatarChange("");
-    updateProfile.mutate({ avatar_url: "", name: name.trim() || user?.name || "" });
+    updateWorkspace.mutate({ id: workspaceId, input: { icon: "", name: name.trim() || "", slug } });
     setShowMenu(false);
-  }, [name, user?.name, onAvatarChange, updateProfile]);
+  }, [name, slug, workspaceId, onAvatarChange, updateWorkspace]);
 
-  const initials = (user?.name || user?.username || "?")
+  const initials = name
     .split(" ")
     .map((n) => n[0])
     .join("")
@@ -89,7 +94,7 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
           type="button"
         >
           {avatarUrl ? (
-            <img alt="avatar" className="w-full h-full object-cover" src={avatarUrl} />
+            <img alt="workspace avatar" className="w-full h-full object-cover" src={avatarUrl} />
           ) : (
             <span className={t("text-text-dark/60", "text-text-light/60")}>{initials}</span>
           )}

@@ -285,6 +285,20 @@ export const createWorkspace = (
     method: "POST",
   });
 
+export const updateWorkspace = (
+  id: string,
+  input: { name: string; slug: string; icon?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Workspace>(`console/workspaces/${id}`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
 export const deleteWorkspace = (id: string, cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>(`console/workspaces/${id}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,

@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 import { useQuery } from "@tanstack/react-query";
-import { useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useDebouncedState } from "@tanstack/react-pacer";
 import { useEffect, useRef, useState } from "react";
 import type { Stats } from "#/types";
@@ -34,6 +34,7 @@ const NAV_ROUTES = [
 ] as const;
 
 export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarProps) => {
+  const navigate = useNavigate();
   const { data: user } = useAuth();
   const { logout } = useAuthActions();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -241,7 +242,10 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
                 {/* Workspace actions */}
                 <button
                   className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    void navigate({ search: { name: undefined }, to: "/settings/workspace" });
+                  }}
                   type="button"
                 >
                   <GearSixIcon size={12} />

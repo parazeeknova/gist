@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useAuth } from "../../hooks/use-auth";
-import { useTheme } from "../../hooks/use-theme";
-import { AvatarUploader } from "./avatar-uploader";
+import { useAuth } from "#/hooks/use-auth";
+import { useTheme } from "#/hooks/use-theme";
+import { AvatarUploader } from "../avatar-uploader";
 import { NameEditor } from "./name-editor";
 import { PasswordChanger } from "./password-changer";
 import { SessionInfo } from "./session-info";

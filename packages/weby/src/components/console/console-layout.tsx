@@ -54,6 +54,7 @@ export const ConsoleLayout = () => {
   const isDebugRoute = routerState.location.pathname === "/home/debug";
   const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
   const isProfileRoute = routerState.location.pathname === "/settings/account/profile";
+  const isWorkspaceRoute = routerState.location.pathname === "/settings/workspace";
   const debugSelectedTable =
     ((routerState.location.search as Record<string, unknown> | undefined)?.table as string) ?? null;
 
@@ -223,7 +224,15 @@ export const ConsoleLayout = () => {
             workspaces
           </p>
           <button
-            className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+            className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${
+              isWorkspaceRoute
+                ? t("bg-white/5 text-text-dark/90", "bg-black/3 text-text-light/90")
+                : t(
+                    "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
+                    "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
+                  )
+            }`}
+            onClick={() => navigate({ search: { name: undefined }, to: "/settings/workspace" })}
             type="button"
           >
             <WrenchIcon size={12} />

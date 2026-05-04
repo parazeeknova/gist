@@ -16,6 +16,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HomeIndexRouteImport } from './routes/home.index'
+import { Route as SettingsWorkspaceRouteImport } from './routes/settings.workspace'
 import { Route as HomeDebugRouteImport } from './routes/home.debug'
 import { Route as ApiStatsRouteImport } from './routes/api/stats'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
@@ -92,6 +93,11 @@ const HomeIndexRoute = HomeIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => HomeRoute,
+} as any)
+const SettingsWorkspaceRoute = SettingsWorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
+  getParentRoute: () => SettingsRoute,
 } as any)
 const HomeDebugRoute = HomeDebugRouteImport.update({
   id: '/debug',
@@ -324,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
+  '/settings/workspace': typeof SettingsWorkspaceRoute
   '/home/': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -373,6 +380,7 @@ export interface FileRoutesByTo {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
+  '/settings/workspace': typeof SettingsWorkspaceRoute
   '/home': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -424,6 +432,7 @@ export interface FileRoutesById {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
+  '/settings/workspace': typeof SettingsWorkspaceRoute
   '/home/': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
   '/api/auth/login': typeof ApiAuthLoginRoute
@@ -476,6 +485,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
+    | '/settings/workspace'
     | '/home/'
     | '/api/auth/bootstrap-state'
     | '/api/auth/login'
@@ -525,6 +535,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
+    | '/settings/workspace'
     | '/home'
     | '/api/auth/bootstrap-state'
     | '/api/auth/login'
@@ -575,6 +586,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
+    | '/settings/workspace'
     | '/home/'
     | '/api/auth/bootstrap-state'
     | '/api/auth/login'
@@ -694,6 +706,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/home/'
       preLoaderRoute: typeof HomeIndexRouteImport
       parentRoute: typeof HomeRoute
+    }
+    '/settings/workspace': {
+      id: '/settings/workspace'
+      path: '/workspace'
+      fullPath: '/settings/workspace'
+      preLoaderRoute: typeof SettingsWorkspaceRouteImport
+      parentRoute: typeof SettingsRoute
     }
     '/home/debug': {
       id: '/home/debug'
@@ -998,10 +1017,12 @@ const HomeRouteChildren: HomeRouteChildren = {
 const HomeRouteWithChildren = HomeRoute._addFileChildren(HomeRouteChildren)
 
 interface SettingsRouteChildren {
+  SettingsWorkspaceRoute: typeof SettingsWorkspaceRoute
   SettingsAccountProfileRoute: typeof SettingsAccountProfileRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsWorkspaceRoute: SettingsWorkspaceRoute,
   SettingsAccountProfileRoute: SettingsAccountProfileRoute,
 }
 
