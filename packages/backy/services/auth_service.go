@@ -124,7 +124,8 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 		Username:  dbUser.Username,
 		Email:     dbUser.Email,
 		Name:      dbUser.Name,
-		IsOwner:   dbUser.IsOwner,
+		Role:      dbUser.Role,
+		IsOwner:   dbUser.Role == "owner",
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,
 	}
@@ -152,7 +153,7 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		name = params.Name
 	}
 
-	userID, err := s.userRepo.CreateUser(ctx, username, email, name, passwordHash, true)
+	userID, err := s.userRepo.CreateUser(ctx, username, email, name, passwordHash, "owner")
 	if err != nil {
 		if errors.Is(err, repositories.ErrDuplicateUser) {
 			return nil, nil, ErrAlreadyBootstrapped
@@ -202,6 +203,7 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		Username:  username,
 		Email:     email,
 		Name:      name,
+		Role:      "owner",
 		IsOwner:   true,
 		IsActive:  true,
 		CreatedAt: time.Now(),
@@ -288,7 +290,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 		return nil, fmt.Errorf("parse user id: %w", err)
 	}
 
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, newSessionID, dbUser.IsOwner)
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, newSessionID, dbUser.Role)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
@@ -360,7 +362,8 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 		Email:     dbUser.Email,
 		Name:      dbUser.Name,
 		AvatarURL: dbUser.AvatarURL,
-		IsOwner:   dbUser.IsOwner,
+		Role:      dbUser.Role,
+		IsOwner:   dbUser.Role == "owner",
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,
 	}, nil
@@ -423,7 +426,7 @@ func (s *AuthService) createSession(ctx context.Context, userID string, deviceNa
 		return nil, fmt.Errorf("create session with refresh token: %w", err)
 	}
 
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID, dbUser.IsOwner)
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID, dbUser.Role)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}

@@ -193,10 +193,23 @@ type AuthUser struct {
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	AvatarURL string `json:"avatar_url"`
-	IsOwner   bool   `json:"is_owner"`
+	Role      string `json:"role"`
 	IsActive  bool   `json:"is_active"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+}
+
+// ConsoleUser is a sanitized user object for console member management.
+type ConsoleUser struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
+	Role      string `json:"role"`
+	IsActive  bool   `json:"is_active"`
+	LastSeen  string `json:"last_seen"`
+	CreatedAt string `json:"created_at"`
 }
 
 // AuthSession is a database row from the sessions table.

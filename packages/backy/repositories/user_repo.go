@@ -38,7 +38,7 @@ func (r *UserRepo) CountUsers(ctx context.Context) (int64, error) {
 
 // CreateUser inserts a new user and their password credential in a single transaction.
 // Returns the newly created user's ID, or ErrDuplicateUser on unique constraint violations.
-func (r *UserRepo) CreateUser(ctx context.Context, username, email, name, passwordHash string, isOwner bool) (string, error) {
+func (r *UserRepo) CreateUser(ctx context.Context, username, email, name, passwordHash, role string) (string, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return "", fmt.Errorf("begin tx: %w", err)
@@ -47,10 +47,10 @@ func (r *UserRepo) CreateUser(ctx context.Context, username, email, name, passwo
 
 	var userID string
 	err = tx.QueryRow(ctx,
-		`INSERT INTO users (username, email, name, is_owner, is_active)
+		`INSERT INTO users (username, email, name, role, is_active)
 		 VALUES ($1, $2, $3, $4, true)
 		 RETURNING id`,
-		username, email, name, isOwner,
+		username, email, name, role,
 	).Scan(&userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -79,14 +79,14 @@ func (r *UserRepo) CreateUser(ctx context.Context, username, email, name, passwo
 // FindUserByUsernameOrEmail looks up a user by username first, then falls back to email.
 // This avoids nondeterministic results when a username matches another user's email.
 func (r *UserRepo) FindUserByUsernameOrEmail(ctx context.Context, identifier string) (*models.AuthUser, error) {
-	query := `SELECT id, username, email, name, COALESCE(avatar_url, ''), is_owner, is_active,
-	          COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
-	          COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
-	          FROM users WHERE username = $1`
+	query := `SELECT id, username, email, name, COALESCE(avatar_url, ''), role, is_active,
+			  COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
+			  COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
+			  FROM users WHERE username = $1`
 
 	var u models.AuthUser
 	err := r.pool.QueryRow(ctx, query, identifier).Scan(
-		&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.IsOwner, &u.IsActive,
+		&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.Role, &u.IsActive,
 		&u.CreatedAt, &u.UpdatedAt,
 	)
 	if err == nil {
@@ -97,13 +97,13 @@ func (r *UserRepo) FindUserByUsernameOrEmail(ctx context.Context, identifier str
 	}
 
 	// No match by username, try email.
-	query = `SELECT id, username, email, name, COALESCE(avatar_url, ''), is_owner, is_active,
-	         COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
-	         COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
-	         FROM users WHERE email = $1`
+	query = `SELECT id, username, email, name, COALESCE(avatar_url, ''), role, is_active,
+			 COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
+			 COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
+			 FROM users WHERE email = $1`
 
 	err = r.pool.QueryRow(ctx, query, identifier).Scan(
-		&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.IsOwner, &u.IsActive,
+		&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.Role, &u.IsActive,
 		&u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
@@ -117,14 +117,14 @@ func (r *UserRepo) FindUserByUsernameOrEmail(ctx context.Context, identifier str
 
 // GetUserByID retrieves a user by their UUID.
 func (r *UserRepo) GetUserByID(ctx context.Context, id string) (*models.AuthUser, error) {
-	query := `SELECT id, username, email, name, COALESCE(avatar_url, ''), is_owner, is_active,
-	          COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
-	          COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
-	          FROM users WHERE id = $1`
+	query := `SELECT id, username, email, name, COALESCE(avatar_url, ''), role, is_active,
+			  COALESCE(to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
+			  COALESCE(to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
+			  FROM users WHERE id = $1`
 
 	var u models.AuthUser
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.IsOwner, &u.IsActive,
+		&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.Role, &u.IsActive,
 		&u.CreatedAt, &u.UpdatedAt,
 	)
 	if err != nil {
@@ -134,6 +134,74 @@ func (r *UserRepo) GetUserByID(ctx context.Context, id string) (*models.AuthUser
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
 	return &u, nil
+}
+
+// ListUsers retrieves all users with their last seen timestamp.
+func (r *UserRepo) ListUsers(ctx context.Context) ([]models.ConsoleUser, error) {
+	query := `
+		SELECT u.id, u.username, u.email, u.name, COALESCE(u.avatar_url, ''), u.role, u.is_active,
+			   COALESCE(to_char(MAX(s.last_seen_at), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), ''),
+			   COALESCE(to_char(u.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
+		FROM users u
+		LEFT JOIN sessions s ON s.user_id = u.id
+		GROUP BY u.id, u.username, u.email, u.name, u.avatar_url, u.role, u.is_active, u.created_at
+		ORDER BY u.created_at DESC`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("list users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []models.ConsoleUser
+	for rows.Next() {
+		var u models.ConsoleUser
+		if err := rows.Scan(
+			&u.ID, &u.Username, &u.Email, &u.Name, &u.AvatarURL, &u.Role, &u.IsActive,
+			&u.LastSeen, &u.CreatedAt,
+		); err != nil {
+			continue
+		}
+		users = append(users, u)
+	}
+
+	if users == nil {
+		users = []models.ConsoleUser{}
+	}
+	return users, nil
+}
+
+// UpdateUserRole updates a user's role.
+func (r *UserRepo) UpdateUserRole(ctx context.Context, userID, role string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2`,
+		role, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update user role: %w", err)
+	}
+	return nil
+}
+
+// UpdateUserActive updates a user's active status.
+func (r *UserRepo) UpdateUserActive(ctx context.Context, userID string, isActive bool) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE users SET is_active = $1, updated_at = NOW() WHERE id = $2`,
+		isActive, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("update user active: %w", err)
+	}
+	return nil
+}
+
+// DeleteUser removes a user and their associated data.
+func (r *UserRepo) DeleteUser(ctx context.Context, userID string) error {
+	_, err := r.pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, userID)
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+	return nil
 }
 
 // UpdateUserProfile updates a user's name and avatar_url.

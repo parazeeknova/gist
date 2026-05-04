@@ -259,6 +259,16 @@ func main() {
 					debug.POST("/tables/:tableName/rows", h.DeleteDebugTableRows)
 				}
 			}
+
+			// Users (admin+ only)
+			admin := console.Group("/users")
+			admin.Use(middleware.AdminRequired())
+			{
+				admin.GET("", h.GetUsers)
+				admin.PUT("/:id/role", h.UpdateUserRole)
+				admin.PUT("/:id/active", h.UpdateUserActive)
+				admin.DELETE("/:id", h.DeleteUser)
+			}
 		}
 	}
 

@@ -64,7 +64,20 @@ export interface AuthUser {
   email: string;
   name: string;
   avatar_url: string;
+  role: string;
   isOwner: boolean;
+}
+
+export interface ConsoleUser {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  avatar_url: string;
+  role: string;
+  is_active: boolean;
+  last_seen: string;
+  createdAt: string;
 }
 
 export interface BootstrapState {
