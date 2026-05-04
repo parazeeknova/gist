@@ -26,12 +26,200 @@ interface ConsoleNavbarProps {
   sidebarOpen: boolean;
 }
 
+const getInitials = (text: string) =>
+  text
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
 const NAV_ROUTES = [
   { href: "/home", label: "home" },
   { href: "/#projects", label: "public" },
   { href: "/#blogs", label: "blogs" },
   { href: "/#about", label: "about" },
 ] as const;
+
+interface ProfileDropdownProps {
+  isDarkMode: boolean;
+  logout: () => void;
+  navigate: ReturnType<typeof useNavigate>;
+  selectedWorkspace: { icon: string; name: string } | undefined;
+  stats: Stats | undefined;
+  user: { avatar_url: string; email: string; name: string; username: string } | null | undefined;
+  workspaceInitials: string;
+  workspaceName: string;
+}
+
+const ProfileDropdown = ({
+  isDarkMode,
+  logout,
+  navigate,
+  selectedWorkspace,
+  stats,
+  user,
+  workspaceInitials,
+  workspaceName,
+}: ProfileDropdownProps) => {
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const userInitials = getInitials(user?.name || user?.username || "?");
+
+  useEffect(() => {
+    if (!dropdownOpen) {
+      return;
+    }
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (!dropdownOpen || !dropdownRef.current) {
+      return;
+    }
+    const inner = dropdownRef.current.querySelector(":scope > div");
+    if (inner) {
+      gsap.fromTo(
+        inner,
+        { opacity: 0, scale: 0.98, y: -4 },
+        { duration: 0.15, ease: "power2.out", opacity: 1, scale: 1, y: 0 },
+      );
+    }
+  }, [dropdownOpen]);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        className={`flex items-center gap-1.5 lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+        onClick={() => setDropdownOpen((o) => !o)}
+        type="button"
+      >
+        {selectedWorkspace?.icon ? (
+          <img alt="" className="w-4 h-4 rounded-full object-cover" src={selectedWorkspace.icon} />
+        ) : (
+          <span
+            className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+          >
+            {workspaceInitials}
+          </span>
+        )}
+        {workspaceName}
+      </button>
+
+      {dropdownOpen && (
+        <div
+          className={`absolute right-0 top-full z-50 mt-1 w-52 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+        >
+          <div className="py-1">
+            {/* Workspace actions */}
+            <button
+              className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+              onClick={() => {
+                setDropdownOpen(false);
+                void navigate({ search: { name: undefined }, to: "/settings/workspace" });
+              }}
+              type="button"
+            >
+              <GearSixIcon size={12} />
+              workspace settings
+            </button>
+            <button
+              className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+              onClick={() => setDropdownOpen(false)}
+              type="button"
+            >
+              <UsersIcon size={12} />
+              manage members
+            </button>
+
+            {/* User details */}
+            <div
+              className={`border-y my-1 px-3 pb-2 pt-1.5 ${t("border-border-dark", "border-border-light")}`}
+            >
+              <div className="flex items-center gap-2">
+                {user?.avatar_url ? (
+                  <img
+                    alt=""
+                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                    src={user.avatar_url}
+                  />
+                ) : (
+                  <span
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium flex-shrink-0 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+                  >
+                    {userInitials}
+                  </span>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className={`text-[13px] truncate ${t("text-text-dark", "text-text-light")}`}>
+                      {user?.name || user?.username}
+                    </p>
+                    <p
+                      className={`text-[10px] shrink-0 truncate max-w-20 ${t("text-text-dark/40", "text-text-light/40")}`}
+                    >
+                      @{user?.username}
+                    </p>
+                  </div>
+                  <p className={`text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+              {stats && (
+                <p className={`mt-1 text-[11px] ${t("text-text-dark/20", "text-text-light/20")}`}>
+                  pg {stats.pages} &middot; pts {stats.posts} &middot; rmd {stats.readmes}
+                </p>
+              )}
+            </div>
+
+            {/* Profile actions */}
+            <button
+              className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+              onClick={() => {
+                setDropdownOpen(false);
+                void navigate({ to: "/settings/account/profile" });
+              }}
+              type="button"
+            >
+              <UserIcon size={12} />
+              my profile
+            </button>
+            <button
+              className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+              onClick={() => setDropdownOpen(false)}
+              type="button"
+            >
+              <SlidersHorizontalIcon size={12} />
+              my preferences
+            </button>
+
+            <div className={`border-t ${t("border-border-dark", "border-border-light")}`}>
+              <button
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase text-red-400 hover:bg-red-400/5"
+                onClick={() => {
+                  setDropdownOpen(false);
+                  logout();
+                }}
+                type="button"
+              >
+                <SignOutIcon size={12} />
+                logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarProps) => {
   const navigate = useNavigate();
@@ -43,13 +231,12 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
 
   const selectedWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
   const workspaceName = selectedWorkspace?.name ?? user?.username ?? "...";
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const workspaceInitials = getInitials(workspaceName);
   const [notiOpen, setNotiOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useDebouncedState("", {
     wait: 300,
   });
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const notiRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -66,13 +253,10 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   });
 
   useEffect(() => {
-    if (!dropdownOpen && !notiOpen && !mobileMenuOpen) {
+    if (!notiOpen && !mobileMenuOpen) {
       return;
     }
     const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
       if (notiRef.current && !notiRef.current.contains(e.target as Node)) {
         setNotiOpen(false);
       }
@@ -82,13 +266,11 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [dropdownOpen, notiOpen, mobileMenuOpen]);
+  }, [notiOpen, mobileMenuOpen]);
 
   useEffect(() => {
     let el: HTMLDivElement | null = null;
-    if (dropdownOpen) {
-      el = dropdownRef.current;
-    } else if (notiOpen) {
+    if (notiOpen) {
       el = notiRef.current;
     } else if (mobileMenuOpen) {
       el = mobileMenuRef.current;
@@ -104,7 +286,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         { duration: 0.15, ease: "power2.out", opacity: 1, scale: 1, y: 0 },
       );
     }
-  }, [dropdownOpen, notiOpen, mobileMenuOpen]);
+  }, [notiOpen, mobileMenuOpen]);
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
@@ -224,103 +406,16 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           )}
         </div>
 
-        {/* Profile dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button
-            className={`flex items-center gap-1 lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setDropdownOpen((o) => !o)}
-            type="button"
-          >
-            {workspaceName}
-          </button>
-
-          {dropdownOpen && (
-            <div
-              className={`absolute right-0 top-full z-50 mt-1 w-52 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
-            >
-              <div className="py-1">
-                {/* Workspace actions */}
-                <button
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    void navigate({ search: { name: undefined }, to: "/settings/workspace" });
-                  }}
-                  type="button"
-                >
-                  <GearSixIcon size={12} />
-                  workspace settings
-                </button>
-                <button
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={() => setDropdownOpen(false)}
-                  type="button"
-                >
-                  <UsersIcon size={12} />
-                  manage members
-                </button>
-
-                {/* User details */}
-                <div
-                  className={`border-y my-1 px-3 pb-2 pt-1.5 ${t("border-border-dark", "border-border-light")}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-[13px] truncate ${t("text-text-dark", "text-text-light")}`}>
-                      {user?.name || user?.username}
-                    </p>
-                    <p
-                      className={`text-[10px] shrink-0 truncate max-w-20 ${t("text-text-dark/40", "text-text-light/40")}`}
-                    >
-                      @{user?.username}
-                    </p>
-                  </div>
-                  <p className={`text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}>
-                    {user?.email}
-                  </p>
-                  {stats && (
-                    <p
-                      className={`mt-1 text-[11px] ${t("text-text-dark/20", "text-text-light/20")}`}
-                    >
-                      pg {stats.pages} &middot; pts {stats.posts} &middot; rmd {stats.readmes}
-                    </p>
-                  )}
-                </div>
-
-                {/* Profile actions */}
-                <button
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={() => setDropdownOpen(false)}
-                  type="button"
-                >
-                  <UserIcon size={12} />
-                  my profile
-                </button>
-                <button
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  onClick={() => setDropdownOpen(false)}
-                  type="button"
-                >
-                  <SlidersHorizontalIcon size={12} />
-                  my preferences
-                </button>
-
-                <div className={`border-t ${t("border-border-dark", "border-border-light")}`}>
-                  <button
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase text-red-400 hover:bg-red-400/5"
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      logout();
-                    }}
-                    type="button"
-                  >
-                    <SignOutIcon size={12} />
-                    logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <ProfileDropdown
+          isDarkMode={isDarkMode}
+          logout={logout}
+          navigate={navigate}
+          selectedWorkspace={selectedWorkspace}
+          stats={stats}
+          user={user}
+          workspaceInitials={workspaceInitials}
+          workspaceName={workspaceName}
+        />
 
         {/* Mobile hamburger menu */}
         <div className="relative md:hidden" ref={mobileMenuRef}>
