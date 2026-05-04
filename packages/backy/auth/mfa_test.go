@@ -35,9 +35,9 @@ func TestGenerateAndValidateMFAChallengeToken(t *testing.T) {
 		t.Fatal("ExpiresAt is nil")
 	}
 	expectedExpiry := time.Now().Add(5 * time.Minute)
-	diff := claims.ExpiresAt.Time.Sub(expectedExpiry)
+	diff := claims.ExpiresAt.Sub(expectedExpiry)
 	if diff < -time.Minute || diff > time.Minute {
-		t.Errorf("unexpected expiry time, got %v", claims.ExpiresAt.Time)
+		t.Errorf("unexpected expiry time, got %v", claims.ExpiresAt)
 	}
 }
 
