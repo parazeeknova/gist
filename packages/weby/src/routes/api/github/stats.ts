@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getGitHubStats, BackyError } from "../../../server/backy";
+import { getGitHubStats, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/github/stats")({
   server: {

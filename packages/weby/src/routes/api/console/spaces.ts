@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createSpace, getSpaces } from "../../../server/backy";
+import { createSpace, getSpaces } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/spaces")({
   server: {

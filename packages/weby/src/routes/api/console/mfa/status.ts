@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getBacky } from "../../../../server/backy";
+import { getBacky } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/mfa/status")({
   server: {

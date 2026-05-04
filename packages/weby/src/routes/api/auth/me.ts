@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getAuthMe, BackyError } from "../../../server/backy";
+import { getAuthMe, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/auth/me")({
   server: {

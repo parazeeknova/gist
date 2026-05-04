@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { deleteSpace } from "../../../server/backy";
+import { deleteSpace } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/spaces/$id")({
   server: {
