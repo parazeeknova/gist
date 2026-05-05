@@ -153,12 +153,12 @@ const ProfileDropdown = ({
                 {user?.avatar_url ? (
                   <img
                     alt=""
-                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                    className="w-6 h-6 rounded-full object-cover shrink-0"
                     src={user.avatar_url}
                   />
                 ) : (
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium flex-shrink-0 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
                   >
                     {userInitials}
                   </span>
@@ -254,7 +254,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   const workspaceInitials = getInitials(workspaceName);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const [searchQuery, setSearchQuery] = useDebouncedState("", 150);
+  const [searchQuery, setSearchQuery] = useDebouncedState("", { wait: 150 });
 
   const { data: stats } = useQuery<Stats>({
     queryFn: async ({ signal }) => {

@@ -408,7 +408,7 @@ func (r *SpaceRepo) GetMembersMixed(ctx context.Context, spaceID string) ([]mode
 		UNION ALL
 		SELECT 'group', sm.id, NULL, sm.group_id, sm.space_id, sm.role, sm.joined_at::text,
 		       g.name, NULL, NULL,
-		       g.description, g.member_count,
+		       g.description, (SELECT COUNT(*) FROM group_users gu WHERE gu.group_id = g.id),
 		       g.is_default
 		FROM space_members sm
 		JOIN groups g ON g.id = sm.group_id

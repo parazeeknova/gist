@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { CaretDownIcon } from "@phosphor-icons/react";
 import { useTheme } from "#/hooks/use-theme";
 import type { ThemePreference } from "#/hooks/use-theme";
+import { usePushSubscription } from "#/hooks/use-push-subscription";
 import { Check } from "#/components/console/check";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -27,7 +26,7 @@ interface DropdownProps<T extends string> {
 const Dropdown = <T extends string>({
   disabled,
   options,
-  tooltip,
+  tooltip: _tooltip,
   value,
   onChange,
 }: DropdownProps<T>) => {
@@ -38,33 +37,27 @@ const Dropdown = <T extends string>({
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const closeMenu = useCallback(() => setOpen(false), []);
   useEffect(() => {
     if (!open) {
       return;
     }
-
     const handlePointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
       if (btnRef.current?.contains(target) || menuRef.current?.contains(target)) {
         return;
       }
-      setOpen(false);
+      closeMenu();
     };
-
-    const handleScrollOrResize = () => {
-      setOpen(false);
-    };
-
     document.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("scroll", handleScrollOrResize, true);
-    window.addEventListener("resize", handleScrollOrResize);
-
+    window.addEventListener("scroll", closeMenu, true);
+    window.addEventListener("resize", closeMenu);
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("scroll", handleScrollOrResize, true);
-      window.removeEventListener("resize", handleScrollOrResize);
+      window.removeEventListener("scroll", closeMenu, true);
+      window.removeEventListener("resize", closeMenu);
     };
-  }, [open]);
+  }, [open, closeMenu]);
 
   const handleToggle = () => {
     if (disabled) {
@@ -78,63 +71,47 @@ const Dropdown = <T extends string>({
     setOpen(nextOpen);
   };
 
-  const menu = (
-    <div
-      ref={menuRef}
-      className={`absolute border text-[11px] lowercase overflow-hidden z-[9999] shadow-lg w-40 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
-      style={{ left: pos.left, top: pos.top }}
-    >
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          className={`block w-full px-3 py-2 text-left cursor-pointer ${opt.value === value ? t("bg-white/5 text-text-dark/90", "bg-black/5 text-text-light/90") : t("hover:bg-white/5 hover:text-text-dark/80", "hover:bg-black/5 hover:text-text-light/80")}`}
-          onClick={() => {
-            onChange(opt.value);
-            setOpen(false);
-          }}
-          type="button"
-        >
-          <span
-            className={`block ${opt.value === value ? t("text-text-dark", "text-text-light") : t("text-text-dark/70", "text-text-light/70")}`}
-          >
-            {opt.label}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-
-  if (disabled) {
-    return (
-      <div className="group relative inline-flex">
-        <span
-          className={`text-[11px] lowercase cursor-not-allowed ${t("text-text-dark/20", "text-text-light/20")}`}
-        >
-          {options.find((o) => o.value === value)?.label ?? value}
-        </span>
-        {tooltip && (
-          <span
-            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${t("bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
-          >
-            {tooltip}
-          </span>
-        )}
-      </div>
-    );
-  }
+  const selectedLabel = options.find((o) => o.value === value)?.label ?? value;
 
   return (
     <>
       <button
         ref={btnRef}
-        className={`flex items-center gap-0.5 text-[11px] lowercase outline-none cursor-pointer ${t("text-text-dark/70 hover:text-text-dark/90", "text-text-light/70 hover:text-text-light/90")}`}
+        className={`text-[11px] lowercase inline-flex items-center gap-1 ${disabled ? "cursor-not-allowed opacity-30" : "cursor-pointer"} ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
+        disabled={disabled}
         onClick={handleToggle}
         type="button"
       >
-        {options.find((o) => o.value === value)?.label ?? value}
-        <CaretDownIcon className="size-2.5" />
+        {selectedLabel}
+        <span className={`text-[10px] transition-transform ${open ? "rotate-180" : ""}`}>
+          &#9662;
+        </span>
       </button>
-      {open && createPortal(menu, document.body)}
+      {open && (
+        <div
+          ref={menuRef}
+          className={`fixed border text-[11px] lowercase overflow-hidden z-9999 shadow-lg w-40 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+          style={{ left: pos.left, top: pos.top }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              className={`block w-full px-3 py-2 text-left cursor-pointer ${opt.value === value ? t("bg-white/5 text-text-dark/90", "bg-black/5 text-text-light/90") : t("hover:bg-white/5 hover:text-text-dark/80", "hover:bg-black/5 hover:text-text-light/80")}`}
+              onClick={() => {
+                onChange(opt.value);
+                closeMenu();
+              }}
+              type="button"
+            >
+              <span
+                className={`block ${opt.value === value ? t("text-text-dark", "text-text-light") : t("text-text-dark/70", "text-text-light/70")}`}
+              >
+                {opt.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
     </>
   );
 };
@@ -218,6 +195,56 @@ const SectionTitle = ({
     >
       {children}
     </p>
+  );
+};
+
+const PushNotificationsSection = ({ isDarkMode }: { isDarkMode: boolean }) => {
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  const { error, isSubscribed, isLoading, permission, subscribe, unsubscribe } =
+    usePushSubscription();
+
+  let statusText = "receive notifications even when not viewing this page.";
+  if (error) {
+    statusText = error;
+  } else if (permission === "denied") {
+    statusText = "push notifications are blocked in your browser.";
+  } else if (isSubscribed) {
+    statusText = "you will receive push notifications in your browser.";
+  }
+
+  let buttonText = "...";
+  if (!isLoading) {
+    buttonText = isSubscribed ? "disable" : "enable";
+  }
+
+  return (
+    <div className="mt-8">
+      <SectionTitle isDarkMode={isDarkMode}>push notifications</SectionTitle>
+      <div className={`border ${t("border-border-dark", "border-border-light")} px-3`}>
+        <div className={`flex items-center justify-between py-2`}>
+          <div>
+            <span
+              className={`text-[12px] lowercase ${t("text-text-dark/70", "text-text-light/70")}`}
+            >
+              browser push
+            </span>
+            <span
+              className={`block text-[10px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
+            >
+              {statusText}
+            </span>
+          </div>
+          <button
+            className={`lowercase text-[11px] px-2 py-0.5 border ${t("border-border-dark hover:bg-white/5", "border-border-light hover:bg-black/3")} disabled:opacity-30`}
+            disabled={isLoading || permission === "denied"}
+            onClick={() => (isSubscribed ? unsubscribe() : subscribe())}
+            type="button"
+          >
+            {buttonText}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -389,6 +416,8 @@ export const PreferencesSettings = () => {
           ))}
         </div>
       </div>
+
+      <PushNotificationsSection isDarkMode={isDarkMode} />
     </div>
   );
 };

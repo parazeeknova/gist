@@ -34,6 +34,7 @@ import { Route as ApiConsoleUsersRouteImport } from './routes/api/console/users'
 import { Route as ApiConsoleSpacesRouteImport } from './routes/api/console/spaces'
 import { Route as ApiConsoleProfileRouteImport } from './routes/api/console/profile'
 import { Route as ApiConsolePagesRouteImport } from './routes/api/console/pages'
+import { Route as ApiConsoleNotificationsRouteImport } from './routes/api/console/notifications'
 import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs.$slug'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
@@ -43,10 +44,15 @@ import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/boo
 import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces.$id'
 import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users.$id'
 import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces.$id'
+import { Route as ApiConsolePushUnsubscribeRouteImport } from './routes/api/console/push.unsubscribe'
+import { Route as ApiConsolePushSubscribeRouteImport } from './routes/api/console/push.subscribe'
+import { Route as ApiConsolePushPublicKeyRouteImport } from './routes/api/console/push.public-key'
 import { Route as ApiConsoleProfileSessionRouteImport } from './routes/api/console/profile.session'
 import { Route as ApiConsoleProfilePasswordRouteImport } from './routes/api/console/profile.password'
 import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
+import { Route as ApiConsoleNotificationsUnreadCountRouteImport } from './routes/api/console/notifications.unread-count'
+import { Route as ApiConsoleNotificationsReadAllRouteImport } from './routes/api/console/notifications.read-all'
 import { Route as ApiConsoleMfaStatusRouteImport } from './routes/api/console/mfa/status'
 import { Route as ApiConsoleMfaSetupRouteImport } from './routes/api/console/mfa/setup'
 import { Route as ApiConsoleMfaEnableRouteImport } from './routes/api/console/mfa/enable'
@@ -66,6 +72,7 @@ import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/conso
 import { Route as ApiConsolePagesIdMoveRouteImport } from './routes/api/console/pages.$id.move'
 import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/console/pages.$id.history'
 import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages.$id.children'
+import { Route as ApiConsoleNotificationsIdReadRouteImport } from './routes/api/console/notifications.$id.read'
 import { Route as ApiConsoleGroupsIdMembersRouteImport } from './routes/api/console/groups.$id.members'
 import { Route as ApiConsoleDebugTablesTableNameRouteImport } from './routes/api/console/debug.tables.$tableName'
 import { Route as ApiConsoleSpacesIdMembersUserIdRouteImport } from './routes/api/console/spaces.$id.members.$userId'
@@ -200,6 +207,11 @@ const ApiConsolePagesRoute = ApiConsolePagesRouteImport.update({
   path: '/api/console/pages',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiConsoleNotificationsRoute = ApiConsoleNotificationsRouteImport.update({
+  id: '/api/console/notifications',
+  path: '/api/console/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBlogsSlugRoute = ApiBlogsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -245,6 +257,22 @@ const ApiConsoleSpacesIdRoute = ApiConsoleSpacesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiConsoleSpacesRoute,
 } as any)
+const ApiConsolePushUnsubscribeRoute =
+  ApiConsolePushUnsubscribeRouteImport.update({
+    id: '/api/console/push/unsubscribe',
+    path: '/api/console/push/unsubscribe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiConsolePushSubscribeRoute = ApiConsolePushSubscribeRouteImport.update({
+  id: '/api/console/push/subscribe',
+  path: '/api/console/push/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConsolePushPublicKeyRoute = ApiConsolePushPublicKeyRouteImport.update({
+  id: '/api/console/push/public-key',
+  path: '/api/console/push/public-key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiConsoleProfileSessionRoute =
   ApiConsoleProfileSessionRouteImport.update({
     id: '/session',
@@ -267,6 +295,18 @@ const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiConsolePagesRoute,
 } as any)
+const ApiConsoleNotificationsUnreadCountRoute =
+  ApiConsoleNotificationsUnreadCountRouteImport.update({
+    id: '/unread-count',
+    path: '/unread-count',
+    getParentRoute: () => ApiConsoleNotificationsRoute,
+  } as any)
+const ApiConsoleNotificationsReadAllRoute =
+  ApiConsoleNotificationsReadAllRouteImport.update({
+    id: '/read-all',
+    path: '/read-all',
+    getParentRoute: () => ApiConsoleNotificationsRoute,
+  } as any)
 const ApiConsoleMfaStatusRoute = ApiConsoleMfaStatusRouteImport.update({
   id: '/api/console/mfa/status',
   path: '/api/console/mfa/status',
@@ -371,6 +411,12 @@ const ApiConsolePagesIdChildrenRoute =
     path: '/children',
     getParentRoute: () => ApiConsolePagesIdRoute,
   } as any)
+const ApiConsoleNotificationsIdReadRoute =
+  ApiConsoleNotificationsIdReadRouteImport.update({
+    id: '/$id/read',
+    path: '/$id/read',
+    getParentRoute: () => ApiConsoleNotificationsRoute,
+  } as any)
 const ApiConsoleGroupsIdMembersRoute =
   ApiConsoleGroupsIdMembersRouteImport.update({
     id: '/members',
@@ -438,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/console/notifications': typeof ApiConsoleNotificationsRouteWithChildren
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/profile': typeof ApiConsoleProfileRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
@@ -454,15 +501,21 @@ export interface FileRoutesByFullPath {
   '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
   '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
   '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
+  '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
+  '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
   '/api/console/profile/session': typeof ApiConsoleProfileSessionRouteWithChildren
+  '/api/console/push/public-key': typeof ApiConsolePushPublicKeyRoute
+  '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
+  '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
+  '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -503,6 +556,7 @@ export interface FileRoutesByTo {
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/console/notifications': typeof ApiConsoleNotificationsRouteWithChildren
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/profile': typeof ApiConsoleProfileRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
@@ -519,15 +573,21 @@ export interface FileRoutesByTo {
   '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
   '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
   '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
+  '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
+  '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
   '/api/console/profile/session': typeof ApiConsoleProfileSessionRouteWithChildren
+  '/api/console/push/public-key': typeof ApiConsolePushPublicKeyRoute
+  '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
+  '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
+  '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -570,6 +630,7 @@ export interface FileRoutesById {
   '/api/auth/me': typeof ApiAuthMeRoute
   '/api/auth/refresh': typeof ApiAuthRefreshRoute
   '/api/blogs/$slug': typeof ApiBlogsSlugRoute
+  '/api/console/notifications': typeof ApiConsoleNotificationsRouteWithChildren
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/profile': typeof ApiConsoleProfileRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
@@ -586,15 +647,21 @@ export interface FileRoutesById {
   '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
   '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
   '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
+  '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
+  '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
   '/api/console/profile/session': typeof ApiConsoleProfileSessionRouteWithChildren
+  '/api/console/push/public-key': typeof ApiConsolePushPublicKeyRoute
+  '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
+  '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
+  '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
@@ -638,6 +705,7 @@ export interface FileRouteTypes {
     | '/api/auth/me'
     | '/api/auth/refresh'
     | '/api/blogs/$slug'
+    | '/api/console/notifications'
     | '/api/console/pages'
     | '/api/console/profile'
     | '/api/console/spaces'
@@ -654,15 +722,21 @@ export interface FileRouteTypes {
     | '/api/console/mfa/enable'
     | '/api/console/mfa/setup'
     | '/api/console/mfa/status'
+    | '/api/console/notifications/read-all'
+    | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
     | '/api/console/profile/session'
+    | '/api/console/push/public-key'
+    | '/api/console/push/subscribe'
+    | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
+    | '/api/console/notifications/$id/read'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -703,6 +777,7 @@ export interface FileRouteTypes {
     | '/api/auth/me'
     | '/api/auth/refresh'
     | '/api/blogs/$slug'
+    | '/api/console/notifications'
     | '/api/console/pages'
     | '/api/console/profile'
     | '/api/console/spaces'
@@ -719,15 +794,21 @@ export interface FileRouteTypes {
     | '/api/console/mfa/enable'
     | '/api/console/mfa/setup'
     | '/api/console/mfa/status'
+    | '/api/console/notifications/read-all'
+    | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
     | '/api/console/profile/session'
+    | '/api/console/push/public-key'
+    | '/api/console/push/subscribe'
+    | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
+    | '/api/console/notifications/$id/read'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -769,6 +850,7 @@ export interface FileRouteTypes {
     | '/api/auth/me'
     | '/api/auth/refresh'
     | '/api/blogs/$slug'
+    | '/api/console/notifications'
     | '/api/console/pages'
     | '/api/console/profile'
     | '/api/console/spaces'
@@ -785,15 +867,21 @@ export interface FileRouteTypes {
     | '/api/console/mfa/enable'
     | '/api/console/mfa/setup'
     | '/api/console/mfa/status'
+    | '/api/console/notifications/read-all'
+    | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
     | '/api/console/profile/session'
+    | '/api/console/push/public-key'
+    | '/api/console/push/subscribe'
+    | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
+    | '/api/console/notifications/$id/read'
     | '/api/console/pages/$id/children'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
@@ -829,6 +917,7 @@ export interface RootRouteChildren {
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   ApiAuthMeRoute: typeof ApiAuthMeRoute
   ApiAuthRefreshRoute: typeof ApiAuthRefreshRoute
+  ApiConsoleNotificationsRoute: typeof ApiConsoleNotificationsRouteWithChildren
   ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren
   ApiConsoleProfileRoute: typeof ApiConsoleProfileRouteWithChildren
   ApiConsoleSpacesRoute: typeof ApiConsoleSpacesRouteWithChildren
@@ -843,6 +932,9 @@ export interface RootRouteChildren {
   ApiConsoleMfaEnableRoute: typeof ApiConsoleMfaEnableRoute
   ApiConsoleMfaSetupRoute: typeof ApiConsoleMfaSetupRoute
   ApiConsoleMfaStatusRoute: typeof ApiConsoleMfaStatusRoute
+  ApiConsolePushPublicKeyRoute: typeof ApiConsolePushPublicKeyRoute
+  ApiConsolePushSubscribeRoute: typeof ApiConsolePushSubscribeRoute
+  ApiConsolePushUnsubscribeRoute: typeof ApiConsolePushUnsubscribeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1022,6 +1114,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsolePagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/console/notifications': {
+      id: '/api/console/notifications'
+      path: '/api/console/notifications'
+      fullPath: '/api/console/notifications'
+      preLoaderRoute: typeof ApiConsoleNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/blogs/$slug': {
       id: '/api/blogs/$slug'
       path: '/$slug'
@@ -1085,6 +1184,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleSpacesIdRouteImport
       parentRoute: typeof ApiConsoleSpacesRoute
     }
+    '/api/console/push/unsubscribe': {
+      id: '/api/console/push/unsubscribe'
+      path: '/api/console/push/unsubscribe'
+      fullPath: '/api/console/push/unsubscribe'
+      preLoaderRoute: typeof ApiConsolePushUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/push/subscribe': {
+      id: '/api/console/push/subscribe'
+      path: '/api/console/push/subscribe'
+      fullPath: '/api/console/push/subscribe'
+      preLoaderRoute: typeof ApiConsolePushSubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/push/public-key': {
+      id: '/api/console/push/public-key'
+      path: '/api/console/push/public-key'
+      fullPath: '/api/console/push/public-key'
+      preLoaderRoute: typeof ApiConsolePushPublicKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/console/profile/session': {
       id: '/api/console/profile/session'
       path: '/session'
@@ -1112,6 +1232,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/console/pages/$id'
       preLoaderRoute: typeof ApiConsolePagesIdRouteImport
       parentRoute: typeof ApiConsolePagesRoute
+    }
+    '/api/console/notifications/unread-count': {
+      id: '/api/console/notifications/unread-count'
+      path: '/unread-count'
+      fullPath: '/api/console/notifications/unread-count'
+      preLoaderRoute: typeof ApiConsoleNotificationsUnreadCountRouteImport
+      parentRoute: typeof ApiConsoleNotificationsRoute
+    }
+    '/api/console/notifications/read-all': {
+      id: '/api/console/notifications/read-all'
+      path: '/read-all'
+      fullPath: '/api/console/notifications/read-all'
+      preLoaderRoute: typeof ApiConsoleNotificationsReadAllRouteImport
+      parentRoute: typeof ApiConsoleNotificationsRoute
     }
     '/api/console/mfa/status': {
       id: '/api/console/mfa/status'
@@ -1246,6 +1380,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsolePagesIdChildrenRouteImport
       parentRoute: typeof ApiConsolePagesIdRoute
     }
+    '/api/console/notifications/$id/read': {
+      id: '/api/console/notifications/$id/read'
+      path: '/$id/read'
+      fullPath: '/api/console/notifications/$id/read'
+      preLoaderRoute: typeof ApiConsoleNotificationsIdReadRouteImport
+      parentRoute: typeof ApiConsoleNotificationsRoute
+    }
     '/api/console/groups/$id/members': {
       id: '/api/console/groups/$id/members'
       path: '/members'
@@ -1343,6 +1484,25 @@ const ApiBlogsRouteChildren: ApiBlogsRouteChildren = {
 const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
   ApiBlogsRouteChildren,
 )
+
+interface ApiConsoleNotificationsRouteChildren {
+  ApiConsoleNotificationsReadAllRoute: typeof ApiConsoleNotificationsReadAllRoute
+  ApiConsoleNotificationsUnreadCountRoute: typeof ApiConsoleNotificationsUnreadCountRoute
+  ApiConsoleNotificationsIdReadRoute: typeof ApiConsoleNotificationsIdReadRoute
+}
+
+const ApiConsoleNotificationsRouteChildren: ApiConsoleNotificationsRouteChildren =
+  {
+    ApiConsoleNotificationsReadAllRoute: ApiConsoleNotificationsReadAllRoute,
+    ApiConsoleNotificationsUnreadCountRoute:
+      ApiConsoleNotificationsUnreadCountRoute,
+    ApiConsoleNotificationsIdReadRoute: ApiConsoleNotificationsIdReadRoute,
+  }
+
+const ApiConsoleNotificationsRouteWithChildren =
+  ApiConsoleNotificationsRoute._addFileChildren(
+    ApiConsoleNotificationsRouteChildren,
+  )
 
 interface ApiConsolePagesIdHistoryRouteChildren {
   ApiConsolePagesIdHistoryHistoryIdRoute: typeof ApiConsolePagesIdHistoryHistoryIdRoute
@@ -1580,6 +1740,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   ApiAuthMeRoute: ApiAuthMeRoute,
   ApiAuthRefreshRoute: ApiAuthRefreshRoute,
+  ApiConsoleNotificationsRoute: ApiConsoleNotificationsRouteWithChildren,
   ApiConsolePagesRoute: ApiConsolePagesRouteWithChildren,
   ApiConsoleProfileRoute: ApiConsoleProfileRouteWithChildren,
   ApiConsoleSpacesRoute: ApiConsoleSpacesRouteWithChildren,
@@ -1594,6 +1755,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsoleMfaEnableRoute: ApiConsoleMfaEnableRoute,
   ApiConsoleMfaSetupRoute: ApiConsoleMfaSetupRoute,
   ApiConsoleMfaStatusRoute: ApiConsoleMfaStatusRoute,
+  ApiConsolePushPublicKeyRoute: ApiConsolePushPublicKeyRoute,
+  ApiConsolePushSubscribeRoute: ApiConsolePushSubscribeRoute,
+  ApiConsolePushUnsubscribeRoute: ApiConsolePushUnsubscribeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
