@@ -167,6 +167,26 @@ func (s *SpaceService) requireAdmin(ctx context.Context, spaceID, userID string)
 	return ErrSpacePermissionDenied
 }
 
+// RequireRead checks if a user has at least reader access to a space.
+func (s *SpaceService) RequireRead(ctx context.Context, spaceID, userID string) error {
+	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
+	if err != nil {
+		return fmt.Errorf("checking space role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter || role == models.SpaceRoleReader {
+		return nil
+	}
+	// Fallback: creator of the space always has read access
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("checking space creator: %w", err)
+	}
+	if space.CreatedBy == userID {
+		return nil
+	}
+	return ErrSpacePermissionDenied
+}
+
 // --- Membership helpers ---
 
 // GetSpaceMembers returns all members of a space.
@@ -189,6 +209,9 @@ func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role
 
 // UpdateSpaceMemberRole updates a user's role in a space.
 func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userID, role, actorID string) error {
+	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
+		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
+	}
 	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}

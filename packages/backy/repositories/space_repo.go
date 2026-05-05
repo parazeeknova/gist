@@ -158,6 +158,19 @@ func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 	return nil
 }
 
+// InsertTx creates a new space row within a transaction.
+func (r *SpaceRepo) InsertTx(ctx context.Context, tx pgx.Tx, s models.Space) error {
+	query := `
+		INSERT INTO spaces (id, name, slug, icon, description, workspace_id, created_by, visibility, default_role, settings, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now())`
+
+	_, err := tx.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.WorkspaceID, s.CreatedBy, s.Visibility, s.DefaultRole, s.Settings)
+	if err != nil {
+		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
+	}
+	return nil
+}
+
 // Update modifies an existing space row.
 func (r *SpaceRepo) Update(ctx context.Context, s models.Space) error {
 	query := `
@@ -205,6 +218,19 @@ func (r *SpaceRepo) AddMember(ctx context.Context, spaceID, userID, role string)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (user_id, space_id) DO UPDATE SET role = EXCLUDED.role`
 	_, err := r.pool.Exec(ctx, query, spaceID, userID, role)
+	if err != nil {
+		return fmt.Errorf("adding member to space %q: %w", spaceID, err)
+	}
+	return nil
+}
+
+// AddMemberTx adds a user to a space with a given role within a transaction.
+func (r *SpaceRepo) AddMemberTx(ctx context.Context, tx pgx.Tx, spaceID, userID, role string) error {
+	query := `
+		INSERT INTO space_members (space_id, user_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, space_id) DO UPDATE SET role = EXCLUDED.role`
+	_, err := tx.Exec(ctx, query, spaceID, userID, role)
 	if err != nil {
 		return fmt.Errorf("adding member to space %q: %w", spaceID, err)
 	}

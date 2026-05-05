@@ -104,6 +104,7 @@ type Page struct {
 	IsLocked        bool            `json:"is_locked"`
 	ParentPageID    *string         `json:"parent_page_id,omitempty"`
 	SpaceID         string          `json:"space_id"`
+	WorkspaceID     string          `json:"workspace_id"`
 	CreatorID       string          `json:"creator_id"`
 	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
 	DeletedAt       *time.Time      `json:"deleted_at,omitempty"`

@@ -92,6 +92,10 @@ func (h *Handlers) UpdateWorkspace(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
 			return
 		}
+		if errors.Is(err, services.ErrWorkspacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("update workspace error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update workspace"})
 		return
@@ -117,6 +121,10 @@ func (h *Handlers) DeleteWorkspace(c *gin.Context) {
 		}
 		if errors.Is(err, services.ErrWorkspaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
+			return
+		}
+		if errors.Is(err, services.ErrWorkspacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("delete workspace error")

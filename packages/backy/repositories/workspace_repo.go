@@ -124,6 +124,19 @@ func (r *WorkspaceRepo) Insert(ctx context.Context, w models.Workspace) error {
 	return nil
 }
 
+// InsertTx creates a new workspace row within a transaction.
+func (r *WorkspaceRepo) InsertTx(ctx context.Context, tx pgx.Tx, w models.Workspace) error {
+	query := `
+		INSERT INTO workspaces (id, name, slug, icon, description, settings, enforce_mfa, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, now(), now())`
+
+	_, err := tx.Exec(ctx, query, w.ID, w.Name, w.Slug, w.Icon, w.Description, w.Settings, w.EnforceMFA)
+	if err != nil {
+		return fmt.Errorf("inserting workspace %q: %w", w.Slug, err)
+	}
+	return nil
+}
+
 // Update modifies an existing workspace row.
 func (r *WorkspaceRepo) Update(ctx context.Context, w models.Workspace) error {
 	query := `
@@ -164,6 +177,18 @@ func (r *WorkspaceRepo) SetDefaultSpaceID(ctx context.Context, workspaceID, spac
 	return nil
 }
 
+// SetDefaultSpaceIDTx updates the default space for a workspace within a transaction.
+func (r *WorkspaceRepo) SetDefaultSpaceIDTx(ctx context.Context, tx pgx.Tx, workspaceID, spaceID string) error {
+	_, err := tx.Exec(ctx,
+		`UPDATE workspaces SET default_space_id = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL`,
+		spaceID, workspaceID,
+	)
+	if err != nil {
+		return fmt.Errorf("setting default space for workspace %q: %w", workspaceID, err)
+	}
+	return nil
+}
+
 // SpaceCount returns the number of non-deleted spaces in a workspace.
 func (r *WorkspaceRepo) SpaceCount(ctx context.Context, workspaceID string) (int, error) {
 	var count int
@@ -183,6 +208,19 @@ func (r *WorkspaceRepo) AddMember(ctx context.Context, workspaceID, userID, role
 		VALUES ($1, $2, $3)
 		ON CONFLICT (user_id, workspace_id) DO UPDATE SET role = EXCLUDED.role`
 	_, err := r.pool.Exec(ctx, query, workspaceID, userID, role)
+	if err != nil {
+		return fmt.Errorf("adding member to workspace %q: %w", workspaceID, err)
+	}
+	return nil
+}
+
+// AddMemberTx adds a user to a workspace with a given role within a transaction.
+func (r *WorkspaceRepo) AddMemberTx(ctx context.Context, tx pgx.Tx, workspaceID, userID, role string) error {
+	query := `
+		INSERT INTO workspace_members (workspace_id, user_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, workspace_id) DO UPDATE SET role = EXCLUDED.role`
+	_, err := tx.Exec(ctx, query, workspaceID, userID, role)
 	if err != nil {
 		return fmt.Errorf("adding member to workspace %q: %w", workspaceID, err)
 	}

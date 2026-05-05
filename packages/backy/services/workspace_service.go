@@ -7,13 +7,15 @@ import (
 
 	"github.com/google/uuid"
 
+	"verso/backy/database"
 	"verso/backy/models"
 	"verso/backy/repositories"
 )
 
 var (
-	ErrWorkspaceNotFound = errors.New("workspace not found")
-	ErrWorkspaceNotEmpty = errors.New("workspace is not empty")
+	ErrWorkspaceNotFound         = errors.New("workspace not found")
+	ErrWorkspaceNotEmpty         = errors.New("workspace is not empty")
+	ErrWorkspacePermissionDenied = errors.New("permission denied for this workspace")
 )
 
 // WorkspaceService provides business logic for workspaces.
@@ -30,7 +32,7 @@ func NewWorkspaceService(workspaceRepo *repositories.WorkspaceRepo, spaceRepo *r
 	}
 }
 
-// CreateWorkspace creates a new workspace with a default space and memberships.
+// CreateWorkspace creates a new workspace with a default space and memberships atomically.
 func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon, userID string) (models.Workspace, error) {
 	w := models.Workspace{
 		ID:       uuid.New().String(),
@@ -40,16 +42,6 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon
 		Settings: "{}",
 	}
 
-	if err := s.workspaceRepo.Insert(ctx, w); err != nil {
-		return models.Workspace{}, fmt.Errorf("creating workspace: %w", err)
-	}
-
-	// Add creator as workspace owner
-	if err := s.workspaceRepo.AddMember(ctx, w.ID, userID, "owner"); err != nil {
-		return models.Workspace{}, fmt.Errorf("adding creator as workspace owner: %w", err)
-	}
-
-	// Create default space
 	space := models.Space{
 		ID:          uuid.New().String(),
 		Name:        "notes",
@@ -61,18 +53,35 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon
 		Settings:    "{}",
 	}
 
-	if err := s.spaceRepo.Insert(ctx, space); err != nil {
+	pool := database.GetPool()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return models.Workspace{}, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	if err := s.workspaceRepo.InsertTx(ctx, tx, w); err != nil {
+		return models.Workspace{}, fmt.Errorf("creating workspace: %w", err)
+	}
+
+	if err := s.workspaceRepo.AddMemberTx(ctx, tx, w.ID, userID, "owner"); err != nil {
+		return models.Workspace{}, fmt.Errorf("adding creator as workspace owner: %w", err)
+	}
+
+	if err := s.spaceRepo.InsertTx(ctx, tx, space); err != nil {
 		return models.Workspace{}, fmt.Errorf("creating default space: %w", err)
 	}
 
-	// Add creator to default space as admin
-	if err := s.spaceRepo.AddMember(ctx, space.ID, userID, models.SpaceRoleAdmin); err != nil {
+	if err := s.spaceRepo.AddMemberTx(ctx, tx, space.ID, userID, models.SpaceRoleAdmin); err != nil {
 		return models.Workspace{}, fmt.Errorf("adding creator to default space: %w", err)
 	}
 
-	// Set default space ID on workspace
-	if err := s.workspaceRepo.SetDefaultSpaceID(ctx, w.ID, space.ID); err != nil {
+	if err := s.workspaceRepo.SetDefaultSpaceIDTx(ctx, tx, w.ID, space.ID); err != nil {
 		return models.Workspace{}, fmt.Errorf("setting default space id: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return models.Workspace{}, fmt.Errorf("commit tx: %w", err)
 	}
 
 	w.DefaultSpaceID = space.ID
@@ -168,7 +177,7 @@ func (s *WorkspaceService) requireWorkspaceOwner(ctx context.Context, workspaceI
 	if role == "owner" {
 		return nil
 	}
-	return errors.New("permission denied for this workspace")
+	return ErrWorkspacePermissionDenied
 }
 
 // RequireMembership checks if a user is a member of a workspace.
@@ -178,7 +187,19 @@ func (s *WorkspaceService) RequireMembership(ctx context.Context, workspaceID, u
 		return fmt.Errorf("checking workspace membership: %w", err)
 	}
 	if !isMember {
-		return errors.New("permission denied for this workspace")
+		return ErrWorkspacePermissionDenied
 	}
 	return nil
+}
+
+// RequireOwnerOrAdmin checks if a user is an owner or admin of a workspace.
+func (s *WorkspaceService) RequireOwnerOrAdmin(ctx context.Context, workspaceID, userID string) error {
+	role, err := s.workspaceRepo.GetMemberRole(ctx, workspaceID, userID)
+	if err != nil {
+		return fmt.Errorf("checking workspace role: %w", err)
+	}
+	if role == "owner" || role == "admin" {
+		return nil
+	}
+	return ErrWorkspacePermissionDenied
 }

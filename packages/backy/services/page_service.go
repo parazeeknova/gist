@@ -90,6 +90,13 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 		return err
 	}
 
+	// Look up workspace_id from space.
+	space, err := s.spaceRepo.GetByID(ctx, page.SpaceID)
+	if err != nil {
+		return fmt.Errorf("getting space for page: %w", err)
+	}
+	page.WorkspaceID = space.WorkspaceID
+
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -112,12 +119,12 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 
 	_, err = tx.Exec(ctx,
 		`INSERT INTO pages (id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		                   text_content, position, is_published, parent_page_id, space_id, creator_id,
+		                   text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		                   last_updated_by_id, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
 		page.ID, page.SlugID, page.Title, page.Icon, page.CoverPhoto,
 		contentJSONBytes, page.YDoc, page.TextContent, page.Position, page.IsPublished,
-		page.ParentPageID, page.SpaceID, page.CreatorID, page.LastUpdatedByID,
+		page.ParentPageID, page.SpaceID, page.WorkspaceID, page.CreatorID, page.LastUpdatedByID,
 		page.CreatedAt, page.UpdatedAt,
 	)
 	if err != nil {
@@ -490,6 +497,15 @@ func (s *PageService) ListAllPages(ctx context.Context) ([]models.Page, error) {
 	pages, err := s.pageRepo.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing all pages: %w", err)
+	}
+	return pages, nil
+}
+
+// ListPagesForUser returns all pages in spaces the user is a member of.
+func (s *PageService) ListPagesForUser(ctx context.Context, userID string) ([]models.Page, error) {
+	pages, err := s.pageRepo.ListAllForUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("listing pages for user: %w", err)
 	}
 	return pages, nil
 }

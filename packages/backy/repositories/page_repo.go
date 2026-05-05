@@ -138,6 +138,48 @@ func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 	return pages, nil
 }
 
+// ListAllForUser returns all non-deleted pages in spaces the user is a member of.
+func (r *PageRepo) ListAllForUser(ctx context.Context, userID string) ([]models.Page, error) {
+	query := `
+		SELECT p.id, p.slug_id, p.title, p.icon, p.cover_photo, p.content_json, p.ydoc,
+		       p.text_content, p.position, p.is_published, p.parent_page_id, p.space_id, p.creator_id,
+		       p.last_updated_by_id, p.created_at, p.updated_at
+		FROM pages p
+		JOIN space_members sm ON sm.space_id = p.space_id
+		WHERE p.deleted_at IS NULL AND sm.user_id = $1
+		ORDER BY p.created_at DESC`
+
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("listing pages for user: %w", err)
+	}
+	defer rows.Close()
+
+	var pages []models.Page
+	for rows.Next() {
+		var p models.Page
+		var contentJSONBytes []byte
+
+		if err := rows.Scan(
+			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
+			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
+			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.CreatedAt, &p.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning page row: %w", err)
+		}
+
+		p.ContentJSON = json.RawMessage(contentJSONBytes)
+		pages = append(pages, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating page rows: %w", err)
+	}
+
+	return pages, nil
+}
+
 // GetByID fetches a page by its primary key ID (not slug).
 func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) {
 	query := `

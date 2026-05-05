@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 CREATE TABLE IF NOT EXISTS spaces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    slug TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL,
     icon TEXT NOT NULL DEFAULT '',
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE RESTRICT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -203,6 +203,11 @@ ALTER TABLE pages ADD COLUMN IF NOT EXISTS deleted_by_id UUID REFERENCES users(i
 -- pages indexes
 CREATE INDEX IF NOT EXISTS idx_pages_deleted_at ON pages (deleted_at);
 CREATE INDEX IF NOT EXISTS idx_spaces_deleted_at ON spaces (deleted_at);
+
+-- spaces slug unique per workspace
+ALTER TABLE spaces DROP CONSTRAINT IF EXISTS spaces_slug_key;
+ALTER TABLE spaces DROP CONSTRAINT IF EXISTS spaces_workspace_slug_unique;
+ALTER TABLE spaces ADD CONSTRAINT spaces_workspace_slug_unique UNIQUE (workspace_id, slug);
 
 -- workspaces FK to default_space_id
 ALTER TABLE workspaces DROP CONSTRAINT IF EXISTS fk_workspaces_default_space_id;

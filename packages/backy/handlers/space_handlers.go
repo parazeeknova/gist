@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -66,8 +67,13 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 	}
 
 	userID := middleware.GetCurrentUserID(c)
-	if err := h.workspaceService.RequireMembership(c.Request.Context(), req.WorkspaceID, userID); err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+	if err := h.workspaceService.RequireOwnerOrAdmin(c.Request.Context(), req.WorkspaceID, userID); err != nil {
+		if errors.Is(err, services.ErrWorkspacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Err(err).Msg("create space permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create space"})
 		return
 	}
 
@@ -162,6 +168,18 @@ func (h *Handlers) GetSpaceMembers(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	if err := h.spaceService.RequireRead(c.Request.Context(), id, userID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("space members permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list space members"})
+		return
+	}
+
 	members, err := h.spaceService.GetSpaceMemberDetails(c.Request.Context(), id)
 	if err != nil {
 		logger.Log.Error().Str("id", id).Err(err).Msg("list space members error")
@@ -197,6 +215,10 @@ func (h *Handlers) UpdateSpaceMemberRole(c *gin.Context) {
 	if err := h.spaceService.UpdateSpaceMemberRole(c.Request.Context(), spaceID, userID, req.Role, actorID); err != nil {
 		if errors.Is(err, services.ErrSpacePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		if strings.Contains(err.Error(), "invalid role") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 		logger.Log.Error().Str("spaceId", spaceID).Str("userId", userID).Err(err).Msg("update space member role error")

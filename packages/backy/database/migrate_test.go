@@ -35,7 +35,7 @@ func TestReadMigrations_FindsFiles(t *testing.T) {
 	}
 }
 
-func TestReadMigrations_ContainsAuth(t *testing.T) {
+func TestReadMigrations_ContainsInit(t *testing.T) {
 	migrations, err := readMigrations()
 	if err != nil {
 		t.Fatalf("readMigrations: %v", err)
@@ -43,32 +43,13 @@ func TestReadMigrations_ContainsAuth(t *testing.T) {
 
 	found := false
 	for _, m := range migrations {
-		if m.name == "0001_auth.sql" {
+		if m.name == "0001_init.sql" {
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		t.Error("expected 0001_auth.sql migration")
-	}
-}
-
-func TestReadMigrations_ContainsPages(t *testing.T) {
-	migrations, err := readMigrations()
-	if err != nil {
-		t.Fatalf("readMigrations: %v", err)
-	}
-
-	found := false
-	for _, m := range migrations {
-		if m.name == "0002_pages.sql" {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		t.Error("expected 0002_pages.sql migration")
+		t.Error("expected 0001_init.sql migration")
 	}
 }

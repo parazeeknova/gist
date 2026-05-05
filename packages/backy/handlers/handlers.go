@@ -170,14 +170,15 @@ type ConsolePageSummary struct {
 	UpdatedAt   string `json:"updatedAt"`
 }
 
-// GetConsolePages returns all pages for the console (requires auth via middleware).
+// GetConsolePages returns pages for the console scoped to spaces the user belongs to.
 func (h *Handlers) GetConsolePages(c *gin.Context) {
 	if h.pageService == nil {
 		c.JSON(http.StatusOK, []ConsolePageSummary{})
 		return
 	}
 
-	pages, err := h.pageService.ListAllPages(c.Request.Context())
+	userID := middleware.GetCurrentUserID(c)
+	pages, err := h.pageService.ListPagesForUser(c.Request.Context(), userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("console pages error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load pages"})
