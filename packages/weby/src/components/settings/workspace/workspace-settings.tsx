@@ -101,38 +101,49 @@ export const WorkspaceSettings = ({ urlWorkspaceName }: WorkspaceSettingsProps) 
   }
 
   return (
-    <div className="max-w-lg mx-auto px-6 py-8">
+    <div className="max-w-2xl mx-auto px-6 py-8">
       <h1
         className={`text-center text-sm font-normal lowercase mb-8 ${t("text-text-dark", "text-text-light")}`}
       >
         workspace settings
       </h1>
 
-      <WorkspaceAvatarUploader
-        avatarUrl={avatarUrl}
-        name={name}
-        onAvatarChange={setAvatarUrl}
-        slug={slug}
-        workspaceId={workspace.id}
-      />
-
-      <WorkspaceNameEditor
-        hasChanges={hasNameChanges}
-        icon={avatarUrl}
-        name={name}
-        onNameChange={setName}
-        slug={slug}
-        workspaceId={workspace.id}
-      />
-
-      <WorkspaceSlugEditor
-        hasChanges={hasSlugChanges}
-        icon={avatarUrl}
-        name={name}
-        onSlugChange={setSlug}
-        slug={slug}
-        workspaceId={workspace.id}
-      />
+      <div className="mb-8">
+        <p
+          className={`text-[10px] uppercase tracking-wider mb-3 ${t("text-text-dark/30", "text-text-light/30")}`}
+        >
+          general
+        </p>
+        <div className={`border ${t("border-border-dark", "border-border-light")} px-3`}>
+          <div className="flex items-center gap-6 py-3">
+            <WorkspaceAvatarUploader
+              avatarUrl={avatarUrl}
+              name={name}
+              onAvatarChange={setAvatarUrl}
+              slug={slug}
+              workspaceId={workspace.id}
+            />
+            <div className="flex-1 min-w-0">
+              <WorkspaceNameEditor
+                hasChanges={hasNameChanges}
+                icon={avatarUrl}
+                name={name}
+                onNameChange={setName}
+                slug={slug}
+                workspaceId={workspace.id}
+              />
+              <WorkspaceSlugEditor
+                hasChanges={hasSlugChanges}
+                icon={avatarUrl}
+                name={name}
+                onSlugChange={setSlug}
+                slug={slug}
+                workspaceId={workspace.id}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

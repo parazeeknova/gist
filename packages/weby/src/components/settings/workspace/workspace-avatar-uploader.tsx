@@ -82,7 +82,7 @@ export const WorkspaceAvatarUploader = ({
     .toUpperCase();
 
   return (
-    <div className="flex flex-col items-center mb-8 relative">
+    <div className="flex flex-col items-center py-3 relative">
       <div className="relative">
         <button
           className={`relative w-20 h-20 rounded-full flex items-center justify-center text-lg font-medium overflow-hidden border-2 transition-colors ${

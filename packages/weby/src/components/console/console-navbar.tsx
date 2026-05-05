@@ -211,7 +211,10 @@ const ProfileDropdown = ({
             </button>
             <button
               className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-              onClick={() => setDropdownOpen(false)}
+              onClick={() => {
+                setDropdownOpen(false);
+                void navigate({ to: "/settings/account/preferences" });
+              }}
               type="button"
             >
               <SlidersHorizontalIcon size={12} />

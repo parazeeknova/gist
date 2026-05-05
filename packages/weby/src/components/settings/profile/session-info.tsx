@@ -63,15 +63,8 @@ export const SessionInfo = () => {
   const lastSeen = session?.last_seen_at || new Date().toISOString();
 
   return (
-    <div className="mb-6">
-      <span
-        className={`block text-[10px] uppercase tracking-wider mb-2 ${t("text-text-dark/30", "text-text-light/30")}`}
-      >
-        active session
-      </span>
-      <div
-        className={`flex items-center justify-between py-3 border-b ${t("border-border-dark", "border-border-light")}`}
-      >
+    <div className="py-3">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <DesktopIcon
             className={`shrink-0 ${t("text-text-dark/30", "text-text-light/30")}`}
