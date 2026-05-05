@@ -30,7 +30,7 @@ func NewSpaceRepo() *SpaceRepo {
 // GetByID fetches a space by its primary key with member count.
 func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error) {
 	query := `
-		SELECT s.id, s.name, s.slug, s.icon, s.workspace_id, s.created_by,
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
 		FROM spaces s
@@ -43,7 +43,7 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedBy,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
 		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
@@ -59,7 +59,7 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 // GetBySlug fetches a space by its slug with member count.
 func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, error) {
 	query := `
-		SELECT s.id, s.name, s.slug, s.icon, s.workspace_id, s.created_by,
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
 		FROM spaces s
@@ -72,7 +72,7 @@ func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, e
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedBy,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
 		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
@@ -102,7 +102,7 @@ func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
 // ListAll returns all spaces for a workspace ordered by name with member counts.
 func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.Space, error) {
 	query := `
-		SELECT s.id, s.name, s.slug, s.icon, s.workspace_id, s.created_by,
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
 		FROM spaces s
@@ -123,7 +123,7 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 	var spaces []models.Space
 	for rows.Next() {
 		var s models.Space
-		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedBy,
+		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
 			&s.MemberCount, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning space row: %w", err)
 		}
@@ -142,10 +142,10 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 // Insert creates a new space row.
 func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 	query := `
-		INSERT INTO spaces (id, name, slug, icon, workspace_id, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, now(), now())`
+		INSERT INTO spaces (id, name, slug, icon, description, workspace_id, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.WorkspaceID, s.CreatedBy)
+	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.WorkspaceID, s.CreatedBy)
 	if err != nil {
 		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
 	}
@@ -155,10 +155,10 @@ func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 // Update modifies an existing space row.
 func (r *SpaceRepo) Update(ctx context.Context, s models.Space) error {
 	query := `
-		UPDATE spaces SET name = $1, slug = $2, icon = $3, updated_at = now()
-		WHERE id = $4`
+		UPDATE spaces SET name = $1, slug = $2, icon = $3, description = $4, updated_at = now()
+		WHERE id = $5`
 
-	tag, err := r.pool.Exec(ctx, query, s.Name, s.Slug, s.Icon, s.ID)
+	tag, err := r.pool.Exec(ctx, query, s.Name, s.Slug, s.Icon, s.Description, s.ID)
 	if err != nil {
 		return fmt.Errorf("updating space %q: %w", s.ID, err)
 	}
@@ -258,6 +258,40 @@ func (r *SpaceRepo) GetMemberCount(ctx context.Context, spaceID string) (int, er
 	return count, nil
 }
 
+// GetMembersWithUsers returns all members of a space enriched with user details.
+func (r *SpaceRepo) GetMembersWithUsers(ctx context.Context, spaceID string) ([]models.SpaceMemberWithUser, error) {
+	query := `
+		SELECT sm.id, sm.user_id, sm.space_id, sm.role, sm.joined_at::text,
+		       COALESCE(u.name, ''), COALESCE(u.email, ''), COALESCE(u.avatar_url, '')
+		FROM space_members sm
+		JOIN users u ON u.id = sm.user_id
+		WHERE sm.space_id = $1
+		ORDER BY sm.joined_at DESC`
+
+	rows, err := r.pool.Query(ctx, query, spaceID)
+	if err != nil {
+		return nil, fmt.Errorf("listing space members with users: %w", err)
+	}
+	defer rows.Close()
+
+	var members []models.SpaceMemberWithUser
+	for rows.Next() {
+		var m models.SpaceMemberWithUser
+		if err := rows.Scan(&m.ID, &m.UserID, &m.SpaceID, &m.Role, &m.JoinedAt,
+			&m.Name, &m.Email, &m.AvatarURL); err != nil {
+			return nil, fmt.Errorf("scanning space member with user: %w", err)
+		}
+		members = append(members, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating space members with users: %w", err)
+	}
+	if members == nil {
+		members = []models.SpaceMemberWithUser{}
+	}
+	return members, nil
+}
+
 // GetMembers returns all members of a space.
 func (r *SpaceRepo) GetMembers(ctx context.Context, spaceID string) ([]models.SpaceMember, error) {
 	rows, err := r.pool.Query(ctx,
@@ -284,6 +318,18 @@ func (r *SpaceRepo) GetMembers(ctx context.Context, spaceID string) ([]models.Sp
 		members = []models.SpaceMember{}
 	}
 	return members, nil
+}
+
+// UpdateMemberRole updates a user's role in a space.
+func (r *SpaceRepo) UpdateMemberRole(ctx context.Context, spaceID, userID, role string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE space_members SET role = $1 WHERE space_id = $2 AND user_id = $3`,
+		role, spaceID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("updating member role: %w", err)
+	}
+	return nil
 }
 
 // HasOwnerOtherThan checks if there's another owner besides the given user.

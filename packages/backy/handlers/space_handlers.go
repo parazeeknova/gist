@@ -42,6 +42,7 @@ type CreateSpaceRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Slug        string `json:"slug" binding:"required"`
 	Icon        string `json:"icon"`
+	Description string `json:"description"`
 	WorkspaceID string `json:"workspaceId" binding:"required"`
 }
 
@@ -59,7 +60,7 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 	}
 
 	userID := middleware.GetCurrentUserID(c)
-	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon, req.WorkspaceID, userID)
+	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon, req.Description, req.WorkspaceID, userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("create space error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create space"})
@@ -71,9 +72,10 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 
 // UpdateSpaceRequest is the request body for updating a space.
 type UpdateSpaceRequest struct {
-	Name string `json:"name" binding:"required"`
-	Slug string `json:"slug" binding:"required"`
-	Icon string `json:"icon"`
+	Name        string `json:"name" binding:"required"`
+	Slug        string `json:"slug" binding:"required"`
+	Icon        string `json:"icon"`
+	Description string `json:"description"`
 }
 
 // UpdateSpace handles PUT /api/console/spaces/:id.
@@ -92,7 +94,7 @@ func (h *Handlers) UpdateSpace(c *gin.Context) {
 		return
 	}
 
-	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, userID)
+	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, req.Description, userID)
 	if err != nil {
 		if errors.Is(err, services.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
@@ -139,4 +141,81 @@ func (h *Handlers) DeleteSpace(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "deleted"})
+}
+
+// GetSpaceMembers handles GET /api/console/spaces/:id/members.
+func (h *Handlers) GetSpaceMembers(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusOK, []models.SpaceMemberWithUser{})
+		return
+	}
+
+	id := c.Param("id")
+	members, err := h.spaceService.GetSpaceMemberDetails(c.Request.Context(), id)
+	if err != nil {
+		logger.Log.Error().Str("id", id).Err(err).Msg("list space members error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list space members"})
+		return
+	}
+
+	c.JSON(http.StatusOK, members)
+}
+
+// UpdateSpaceMemberRequest is the request body for updating a member's role.
+type UpdateSpaceMemberRequest struct {
+	Role string `json:"role" binding:"required"`
+}
+
+// UpdateSpaceMemberRole handles PUT /api/console/spaces/:id/members/:userId.
+func (h *Handlers) UpdateSpaceMemberRole(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	userID := c.Param("userId")
+	actorID := middleware.GetCurrentUserID(c)
+
+	var req UpdateSpaceMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.spaceService.UpdateSpaceMemberRole(c.Request.Context(), spaceID, userID, req.Role, actorID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("userId", userID).Err(err).Msg("update space member role error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update member role"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "updated"})
+}
+
+// RemoveSpaceMember handles DELETE /api/console/spaces/:id/members/:userId.
+func (h *Handlers) RemoveSpaceMember(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	userID := c.Param("userId")
+	actorID := middleware.GetCurrentUserID(c)
+
+	if err := h.spaceService.RemoveSpaceMember(c.Request.Context(), spaceID, userID, actorID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("userId", userID).Err(err).Msg("remove space member error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove member"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "removed"})
 }

@@ -11,6 +11,7 @@ import type { SortingState } from "@tanstack/react-table";
 import { useTheme } from "#/hooks/use-theme";
 import { useCreateSpace, useSpaces, useWorkspaces } from "#/hooks/use-console-mutations";
 import type { Space } from "#/types";
+import { SpaceDetailSidebar } from "./space-detail-sidebar";
 
 const columnHelper = createColumnHelper<Space>();
 
@@ -21,6 +22,7 @@ interface TableBodyProps {
   filteredSpaces: Space[];
   isDarkMode: boolean;
   isPending: boolean;
+  onRowClick?: (space: Space) => void;
   spacesLength: number;
   tableRows: ReturnType<ReturnType<typeof useReactTable<Space>>["getRowModel"]>["rows"];
 }
@@ -30,6 +32,7 @@ const TableBody = ({
   filteredSpaces,
   isDarkMode,
   isPending,
+  onRowClick,
   spacesLength,
   tableRows,
 }: TableBodyProps) => {
@@ -62,7 +65,8 @@ const TableBody = ({
   return tableRows.map((row) => (
     <tr
       key={row.id}
-      className={`border-b ${tc(isDarkMode, "border-border-dark/50", "border-border-light/50")} ${tc(isDarkMode, "hover:bg-white/2", "hover:bg-black/2")}`}
+      className={`border-b cursor-pointer ${tc(isDarkMode, "border-border-dark/50", "border-border-light/50")} ${tc(isDarkMode, "hover:bg-white/2", "hover:bg-black/2")}`}
+      onClick={() => onRowClick?.(row.original)}
     >
       {row.getVisibleCells().map((cell) => (
         <td key={cell.id} className="px-3 py-2">
@@ -155,7 +159,12 @@ const CreateSpaceDropdown = ({
       return;
     }
     createSpace.mutate(
-      { name: name.trim(), slug: slug.trim(), workspaceId },
+      {
+        description: description.trim() || undefined,
+        name: name.trim(),
+        slug: slug.trim(),
+        workspaceId,
+      },
       {
         onError: (err: Error) => {
           setError(err.message || "failed to create space");
@@ -235,6 +244,7 @@ export const SpacesSettings = ({ urlWorkspaceName }: SpacesSettingsProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
 
   const workspace = useMemo(() => {
     if (!workspaces || !urlWorkspaceName) {
@@ -404,6 +414,7 @@ export const SpacesSettings = ({ urlWorkspaceName }: SpacesSettingsProps) => {
               filteredSpaces={filteredSpaces}
               isDarkMode={isDarkMode}
               isPending={isPending}
+              onRowClick={(space) => setSelectedSpace(space)}
               spacesLength={spaces?.length ?? 0}
               tableRows={table.getRowModel().rows}
             />
@@ -414,6 +425,15 @@ export const SpacesSettings = ({ urlWorkspaceName }: SpacesSettingsProps) => {
       <div className={`mt-4 text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
         {pluralize(filteredSpaces.length, "space")}
       </div>
+
+      {selectedSpace && (
+        <SpaceDetailSidebar
+          isOpen={!!selectedSpace}
+          onClose={() => setSelectedSpace(null)}
+          space={selectedSpace}
+          workspaceName={workspace?.name ?? ""}
+        />
+      )}
     </div>
   );
 };

@@ -36,12 +36,13 @@ func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.P
 }
 
 // CreateSpace creates a new space within a workspace and adds the creator as owner.
-func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, workspaceID, userID string) (models.Space, error) {
+func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, description, workspaceID, userID string) (models.Space, error) {
 	space := models.Space{
 		ID:          uuid.New().String(),
 		Name:        name,
 		Slug:        slug,
 		Icon:        icon,
+		Description: description,
 		WorkspaceID: workspaceID,
 		CreatedBy:   userID,
 	}
@@ -62,7 +63,7 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, worksp
 }
 
 // UpdateSpace updates an existing space. Requires admin or owner role.
-func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, userID string) (models.Space, error) {
+func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, description, userID string) (models.Space, error) {
 	if err := s.requireAdminOrOwner(ctx, id, userID); err != nil {
 		return models.Space{}, err
 	}
@@ -78,6 +79,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, us
 	existing.Name = name
 	existing.Slug = slug
 	existing.Icon = icon
+	existing.Description = description
 	existing.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 
 	if err := s.spaceRepo.Update(ctx, existing); err != nil {
@@ -172,12 +174,25 @@ func (s *SpaceService) GetSpaceMembers(ctx context.Context, spaceID string) ([]m
 	return s.spaceRepo.GetMembers(ctx, spaceID)
 }
 
+// GetSpaceMemberDetails returns all members of a space enriched with user details.
+func (s *SpaceService) GetSpaceMemberDetails(ctx context.Context, spaceID string) ([]models.SpaceMemberWithUser, error) {
+	return s.spaceRepo.GetMembersWithUsers(ctx, spaceID)
+}
+
 // AddSpaceMember adds a user to a space with a role.
 func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role, actorID string) error {
 	if err := s.requireAdminOrOwner(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	return s.spaceRepo.AddMember(ctx, spaceID, userID, role)
+}
+
+// UpdateSpaceMemberRole updates a user's role in a space.
+func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userID, role, actorID string) error {
+	if err := s.requireAdminOrOwner(ctx, spaceID, actorID); err != nil {
+		return err
+	}
+	return s.spaceRepo.UpdateMemberRole(ctx, spaceID, userID, role)
 }
 
 // RemoveSpaceMember removes a user from a space.

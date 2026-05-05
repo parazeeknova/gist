@@ -171,10 +171,22 @@ export interface Space {
   name: string;
   slug: string;
   icon: string;
+  description: string;
   workspaceId: string;
   memberCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SpaceMemberWithUser {
+  id: string;
+  user_id: string;
+  space_id: string;
+  role: string;
+  joined_at: string;
+  name: string;
+  email: string;
+  avatar_url: string;
 }
 
 export interface Workspace {

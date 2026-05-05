@@ -226,6 +226,9 @@ func main() {
 			console.POST("/spaces", h.CreateSpace)
 			console.PUT("/spaces/:id", h.UpdateSpace)
 			console.DELETE("/spaces/:id", h.DeleteSpace)
+			console.GET("/spaces/:id/members", h.GetSpaceMembers)
+			console.PUT("/spaces/:id/members/:userId", h.UpdateSpaceMemberRole)
+			console.DELETE("/spaces/:id/members/:userId", h.RemoveSpaceMember)
 
 			// Page CRUD
 			console.GET("/pages", h.GetConsolePages)

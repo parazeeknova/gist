@@ -131,6 +131,7 @@ type Space struct {
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Icon        string `json:"icon"`
+	Description string `json:"description"`
 	WorkspaceID string `json:"workspaceId"`
 	CreatedBy   string `json:"createdBy,omitempty"`
 	MemberCount int    `json:"memberCount"`
@@ -145,6 +146,18 @@ type SpaceMember struct {
 	SpaceID  string `json:"space_id"`
 	Role     string `json:"role"`
 	JoinedAt string `json:"joined_at"`
+}
+
+// SpaceMemberWithUser represents a space membership enriched with user details.
+type SpaceMemberWithUser struct {
+	ID        string `json:"id"`
+	UserID    string `json:"user_id"`
+	SpaceID   string `json:"space_id"`
+	Role      string `json:"role"`
+	JoinedAt  string `json:"joined_at"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
 }
 
 // Workspace represents a top-level grouping of spaces.

@@ -8,6 +8,7 @@ import type {
   PageTreeItem,
   RestorePageInput,
   Space,
+  SpaceMemberWithUser,
   UpdatePageInput,
   Workspace,
 } from "#/types";
@@ -206,7 +207,13 @@ export const useSpaces = (workspaceId: string) =>
 export const useCreateSpace = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name: string; slug: string; icon?: string; workspaceId: string }) =>
+    mutationFn: (input: {
+      name: string;
+      slug: string;
+      icon?: string;
+      description?: string;
+      workspaceId: string;
+    }) =>
       fetchProtected<Space>("/api/console/spaces", {
         body: JSON.stringify(input),
         headers: { "Content-Type": "application/json" },
@@ -214,6 +221,28 @@ export const useCreateSpace = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useUpdateSpace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: { name: string; slug: string; icon?: string; description?: string };
+    }) =>
+      fetchProtected<Space>(`/api/console/spaces/${id}`, {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["space", variables.id] });
     },
   });
 };
@@ -228,6 +257,44 @@ export const useDeleteSpace = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+    },
+  });
+};
+
+export const useSpaceMembers = (spaceId: string) =>
+  useQuery<SpaceMemberWithUser[]>({
+    enabled: spaceId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<SpaceMemberWithUser[]>(`/api/console/spaces/${spaceId}/members`, { signal }),
+    queryKey: ["spaceMembers", spaceId],
+    staleTime: 30 * 1000,
+  });
+
+export const useUpdateSpaceMemberRole = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ spaceId, userId, role }: { spaceId: string; userId: string; role: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+    },
+  });
+};
+
+export const useRemoveSpaceMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
     },
   });
 };
