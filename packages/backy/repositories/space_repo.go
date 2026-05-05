@@ -31,6 +31,7 @@ func NewSpaceRepo() *SpaceRepo {
 func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error) {
 	query := `
 		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
+		       s.visibility, s.default_role, s.settings,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
 		FROM spaces s
@@ -39,11 +40,12 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 			FROM space_members
 			GROUP BY space_id
 		) m ON m.space_id = s.id
-		WHERE s.id = $1`
+		WHERE s.id = $1 AND s.deleted_at IS NULL`
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
+		&s.Visibility, &s.DefaultRole, &s.Settings,
 		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
@@ -60,6 +62,7 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, error) {
 	query := `
 		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
+		       s.visibility, s.default_role, s.settings,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
 		FROM spaces s
@@ -68,11 +71,12 @@ func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, e
 			FROM space_members
 			GROUP BY space_id
 		) m ON m.space_id = s.id
-		WHERE s.slug = $1`
+		WHERE s.slug = $1 AND s.deleted_at IS NULL`
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
 		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
+		&s.Visibility, &s.DefaultRole, &s.Settings,
 		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
@@ -87,7 +91,7 @@ func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, e
 
 // GetDefaultSpaceID returns the ID of the "notes" default space.
 func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
-	query := `SELECT id FROM spaces WHERE slug = 'notes' LIMIT 1`
+	query := `SELECT id FROM spaces WHERE slug = 'notes' AND deleted_at IS NULL LIMIT 1`
 	var id string
 	err := r.pool.QueryRow(ctx, query).Scan(&id)
 	if err != nil {
@@ -103,6 +107,7 @@ func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
 func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.Space, error) {
 	query := `
 		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
+		       s.visibility, s.default_role, s.settings,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
 		FROM spaces s
@@ -111,7 +116,7 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 			FROM space_members
 			GROUP BY space_id
 		) m ON m.space_id = s.id
-		WHERE s.workspace_id = $1
+		WHERE s.workspace_id = $1 AND s.deleted_at IS NULL
 		ORDER BY s.name`
 
 	rows, err := r.pool.Query(ctx, query, workspaceID)
@@ -124,6 +129,7 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 	for rows.Next() {
 		var s models.Space
 		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
+			&s.Visibility, &s.DefaultRole, &s.Settings,
 			&s.MemberCount, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning space row: %w", err)
 		}
@@ -142,10 +148,10 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 // Insert creates a new space row.
 func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 	query := `
-		INSERT INTO spaces (id, name, slug, icon, description, workspace_id, created_by, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, now(), now())`
+		INSERT INTO spaces (id, name, slug, icon, description, workspace_id, created_by, visibility, default_role, settings, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.WorkspaceID, s.CreatedBy)
+	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.WorkspaceID, s.CreatedBy, s.Visibility, s.DefaultRole, s.Settings)
 	if err != nil {
 		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
 	}
@@ -155,10 +161,10 @@ func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 // Update modifies an existing space row.
 func (r *SpaceRepo) Update(ctx context.Context, s models.Space) error {
 	query := `
-		UPDATE spaces SET name = $1, slug = $2, icon = $3, description = $4, updated_at = now()
-		WHERE id = $5`
+		UPDATE spaces SET name = $1, slug = $2, icon = $3, description = $4, visibility = $5, default_role = $6, settings = $7, updated_at = now()
+		WHERE id = $8 AND deleted_at IS NULL`
 
-	tag, err := r.pool.Exec(ctx, query, s.Name, s.Slug, s.Icon, s.Description, s.ID)
+	tag, err := r.pool.Exec(ctx, query, s.Name, s.Slug, s.Icon, s.Description, s.Visibility, s.DefaultRole, s.Settings, s.ID)
 	if err != nil {
 		return fmt.Errorf("updating space %q: %w", s.ID, err)
 	}
@@ -168,11 +174,11 @@ func (r *SpaceRepo) Update(ctx context.Context, s models.Space) error {
 	return nil
 }
 
-// Delete removes a space by ID.
-func (r *SpaceRepo) Delete(ctx context.Context, id string) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM spaces WHERE id = $1`, id)
+// SoftDelete marks a space as deleted.
+func (r *SpaceRepo) SoftDelete(ctx context.Context, id string) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE spaces SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
-		return fmt.Errorf("deleting space %q: %w", id, err)
+		return fmt.Errorf("soft-deleting space %q: %w", id, err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("%w: space %q", ErrSpaceNotFound, id)
@@ -180,10 +186,10 @@ func (r *SpaceRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// PageCount returns the number of pages in a space.
+// PageCount returns the number of non-deleted pages in a space.
 func (r *SpaceRepo) PageCount(ctx context.Context, spaceID string) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1`, spaceID).Scan(&count)
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1 AND deleted_at IS NULL`, spaceID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("counting pages in space %q: %w", spaceID, err)
 	}
@@ -332,15 +338,15 @@ func (r *SpaceRepo) UpdateMemberRole(ctx context.Context, spaceID, userID, role 
 	return nil
 }
 
-// HasOwnerOtherThan checks if there's another owner besides the given user.
-func (r *SpaceRepo) HasOwnerOtherThan(ctx context.Context, spaceID, userID string) (bool, error) {
+// HasAdminOtherThan checks if there's another admin besides the given user.
+func (r *SpaceRepo) HasAdminOtherThan(ctx context.Context, spaceID, userID string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx,
-		`SELECT EXISTS(SELECT 1 FROM space_members WHERE space_id = $1 AND user_id != $2 AND role = 'owner')`,
+		`SELECT EXISTS(SELECT 1 FROM space_members WHERE space_id = $1 AND user_id != $2 AND role = 'admin')`,
 		spaceID, userID,
 	).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("checking other owners: %w", err)
+		return false, fmt.Errorf("checking other admins: %w", err)
 	}
 	return exists, nil
 }

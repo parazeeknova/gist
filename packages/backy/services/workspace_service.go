@@ -30,24 +30,63 @@ func NewWorkspaceService(workspaceRepo *repositories.WorkspaceRepo, spaceRepo *r
 	}
 }
 
-// CreateWorkspace creates a new workspace.
-func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon string) (models.Workspace, error) {
+// CreateWorkspace creates a new workspace with a default space and memberships.
+func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon, userID string) (models.Workspace, error) {
 	w := models.Workspace{
-		ID:   uuid.New().String(),
-		Name: name,
-		Slug: slug,
-		Icon: icon,
+		ID:       uuid.New().String(),
+		Name:     name,
+		Slug:     slug,
+		Icon:     icon,
+		Settings: "{}",
 	}
 
 	if err := s.workspaceRepo.Insert(ctx, w); err != nil {
 		return models.Workspace{}, fmt.Errorf("creating workspace: %w", err)
 	}
 
+	// Add creator as workspace owner
+	if err := s.workspaceRepo.AddMember(ctx, w.ID, userID, "owner"); err != nil {
+		return models.Workspace{}, fmt.Errorf("adding creator as workspace owner: %w", err)
+	}
+
+	// Create default space
+	space := models.Space{
+		ID:          uuid.New().String(),
+		Name:        "notes",
+		Slug:        "notes",
+		WorkspaceID: w.ID,
+		CreatedBy:   userID,
+		Visibility:  "private",
+		DefaultRole: models.SpaceRoleReader,
+		Settings:    "{}",
+	}
+
+	if err := s.spaceRepo.Insert(ctx, space); err != nil {
+		return models.Workspace{}, fmt.Errorf("creating default space: %w", err)
+	}
+
+	// Add creator to default space as admin
+	if err := s.spaceRepo.AddMember(ctx, space.ID, userID, models.SpaceRoleAdmin); err != nil {
+		return models.Workspace{}, fmt.Errorf("adding creator to default space: %w", err)
+	}
+
+	// Set default space ID on workspace
+	if err := s.workspaceRepo.SetDefaultSpaceID(ctx, w.ID, space.ID); err != nil {
+		return models.Workspace{}, fmt.Errorf("setting default space id: %w", err)
+	}
+
+	w.DefaultSpaceID = space.ID
+	w.MemberCount = 1
+
 	return w, nil
 }
 
 // UpdateWorkspace updates an existing workspace.
-func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, icon string) (models.Workspace, error) {
+func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, icon, userID string) (models.Workspace, error) {
+	if err := s.requireWorkspaceOwner(ctx, id, userID); err != nil {
+		return models.Workspace{}, err
+	}
+
 	existing, err := s.workspaceRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, repositories.ErrWorkspaceNotFound) {
@@ -67,8 +106,12 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 	return existing, nil
 }
 
-// DeleteWorkspace deletes a workspace only if it has no spaces.
-func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id string) error {
+// DeleteWorkspace soft-deletes a workspace only if it has no non-deleted spaces.
+func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id, userID string) error {
+	if err := s.requireWorkspaceOwner(ctx, id, userID); err != nil {
+		return err
+	}
+
 	count, err := s.workspaceRepo.SpaceCount(ctx, id)
 	if err != nil {
 		return fmt.Errorf("checking space count: %w", err)
@@ -77,7 +120,7 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id string) error
 		return ErrWorkspaceNotEmpty
 	}
 
-	if err := s.workspaceRepo.Delete(ctx, id); err != nil {
+	if err := s.workspaceRepo.SoftDelete(ctx, id); err != nil {
 		if errors.Is(err, repositories.ErrWorkspaceNotFound) {
 			return ErrWorkspaceNotFound
 		}
@@ -87,9 +130,9 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id string) error
 	return nil
 }
 
-// ListWorkspaces returns all workspaces.
-func (s *WorkspaceService) ListWorkspaces(ctx context.Context) ([]models.Workspace, error) {
-	workspaces, err := s.workspaceRepo.ListAll(ctx)
+// ListWorkspaces returns all workspaces the user is a member of.
+func (s *WorkspaceService) ListWorkspaces(ctx context.Context, userID string) ([]models.Workspace, error) {
+	workspaces, err := s.workspaceRepo.ListByUser(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("listing workspaces: %w", err)
 	}
@@ -115,4 +158,15 @@ func (s *WorkspaceService) GetDefaultWorkspaceID(ctx context.Context) (string, e
 		return "", fmt.Errorf("getting default workspace id: %w", err)
 	}
 	return id, nil
+}
+
+func (s *WorkspaceService) requireWorkspaceOwner(ctx context.Context, workspaceID, userID string) error {
+	role, err := s.workspaceRepo.GetMemberRole(ctx, workspaceID, userID)
+	if err != nil {
+		return fmt.Errorf("checking workspace role: %w", err)
+	}
+	if role == "owner" {
+		return nil
+	}
+	return errors.New("permission denied for this workspace")
 }

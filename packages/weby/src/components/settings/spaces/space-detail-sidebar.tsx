@@ -21,13 +21,13 @@ const getInitials = (text: string) =>
 
 const memberRoleLabel = (role: string) => {
   switch (role) {
-    case "owner": {
+    case "admin": {
       return "full access";
     }
-    case "admin": {
+    case "writer": {
       return "can edit";
     }
-    case "member": {
+    case "reader": {
       return "can view";
     }
     default: {
@@ -287,9 +287,9 @@ export const SpaceDetailSidebar = ({
                           onChange={(e) => handleRoleChange(member, e.target.value)}
                           value={member.role}
                         >
-                          <option value="owner">full access</option>
-                          <option value="admin">can edit</option>
-                          <option value="member">can view</option>
+                          <option value="admin">full access</option>
+                          <option value="writer">can edit</option>
+                          <option value="reader">can view</option>
                         </select>
                       )}
                       {disableControls ? (

@@ -31,7 +31,7 @@ func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, err
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
-		WHERE slug_id = $1 AND is_published = true`
+		WHERE slug_id = $1 AND is_published = true AND deleted_at IS NULL`
 
 	var p models.Page
 	var contentJSONBytes []byte
@@ -61,7 +61,7 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
-		WHERE is_published = true
+		WHERE is_published = true AND deleted_at IS NULL
 		ORDER BY created_at DESC`
 
 	rows, err := r.pool.Query(ctx, query)
@@ -96,13 +96,14 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 	return pages, nil
 }
 
-// ListAll returns all pages (both published and drafts), ordered by created_at desc.
+// ListAll returns all non-deleted pages (both published and drafts), ordered by created_at desc.
 func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
+		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC`
 
 	rows, err := r.pool.Query(ctx, query)
@@ -144,7 +145,7 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
-		WHERE id = $1`
+		WHERE id = $1 AND deleted_at IS NULL`
 
 	var p models.Page
 	var contentJSONBytes []byte
@@ -222,11 +223,11 @@ func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 	return nil
 }
 
-// Delete removes a page by its ID.
-func (r *PageRepo) Delete(ctx context.Context, id string) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM pages WHERE id = $1`, id)
+// SoftDelete marks a page as deleted.
+func (r *PageRepo) SoftDelete(ctx context.Context, id, deletedByID string) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE pages SET deleted_at = now(), deleted_by_id = $1 WHERE id = $2 AND deleted_at IS NULL`, deletedByID, id)
 	if err != nil {
-		return fmt.Errorf("deleting page %q: %w", id, err)
+		return fmt.Errorf("soft-deleting page %q: %w", id, err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("%w: page %q", ErrPageNotFound, id)
@@ -239,9 +240,9 @@ func (r *PageRepo) ListRoots(ctx context.Context, spaceID string) ([]models.Page
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
 		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
-		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
+		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id AND c.deleted_at IS NULL) AS has_children
 		FROM pages p
-		WHERE p.parent_page_id IS NULL AND p.space_id = $1
+		WHERE p.parent_page_id IS NULL AND p.space_id = $1 AND p.deleted_at IS NULL
 		ORDER BY p.position COLLATE "C"`
 
 	rows, err := r.pool.Query(ctx, query, spaceID)
@@ -258,9 +259,9 @@ func (r *PageRepo) ListChildren(ctx context.Context, parentID string) ([]models.
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
 		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
-		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
+		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id AND c.deleted_at IS NULL) AS has_children
 		FROM pages p
-		WHERE p.parent_page_id = $1
+		WHERE p.parent_page_id = $1 AND p.deleted_at IS NULL
 		ORDER BY p.position COLLATE "C"`
 
 	rows, err := r.pool.Query(ctx, query, parentID)
@@ -277,11 +278,11 @@ func (r *PageRepo) ListTree(ctx context.Context, spaceID string) ([]models.PageT
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
 		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
-		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
+		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id AND c.deleted_at IS NULL) AS has_children
 		FROM pages p
-		WHERE p.space_id = $1
+		WHERE p.space_id = $1 AND p.deleted_at IS NULL
 		ORDER BY
-			CASE WHEN p.parent_page_id IS NULL THEN p.position ELSE (SELECT pp.position FROM pages pp WHERE pp.id = p.parent_page_id) END COLLATE "C",
+			CASE WHEN p.parent_page_id IS NULL THEN p.position ELSE (SELECT pp.position FROM pages pp WHERE pp.id = p.parent_page_id AND pp.deleted_at IS NULL) END COLLATE "C",
 			p.position COLLATE "C"`
 
 	rows, err := r.pool.Query(ctx, query, spaceID)
@@ -301,14 +302,14 @@ func (r *PageRepo) LastPosition(ctx context.Context, spaceID string, parentID *s
 	if parentID != nil {
 		query = `
 			SELECT position FROM pages
-			WHERE space_id = $1 AND parent_page_id = $2
+			WHERE space_id = $1 AND parent_page_id = $2 AND deleted_at IS NULL
 			ORDER BY position COLLATE "C" DESC
 			LIMIT 1`
 		args = append(args, spaceID, *parentID)
 	} else {
 		query = `
 			SELECT position FROM pages
-			WHERE space_id = $1 AND parent_page_id IS NULL
+			WHERE space_id = $1 AND parent_page_id IS NULL AND deleted_at IS NULL
 			ORDER BY position COLLATE "C" DESC
 			LIMIT 1`
 		args = append(args, spaceID)
@@ -326,10 +327,10 @@ func (r *PageRepo) LastPosition(ctx context.Context, spaceID string, parentID *s
 	return position, nil
 }
 
-// CountPagesInSpace returns the number of pages in a space.
+// CountPagesInSpace returns the number of non-deleted pages in a space.
 func (r *PageRepo) CountPagesInSpace(ctx context.Context, spaceID string) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1`, spaceID).Scan(&count)
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1 AND deleted_at IS NULL`, spaceID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("counting pages in space %q: %w", spaceID, err)
 	}

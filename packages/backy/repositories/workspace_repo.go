@@ -30,7 +30,7 @@ func NewWorkspaceRepo() *WorkspaceRepo {
 // GetByID fetches a workspace by its primary key with member count.
 func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspace, error) {
 	query := `
-		SELECT w.id, w.name, w.slug, w.icon, w.enforce_mfa,
+		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, w.default_space_id, w.enforce_mfa,
 		       COALESCE(m.member_count, 0),
 		       w.created_at::text, w.updated_at::text
 		FROM workspaces w
@@ -39,11 +39,12 @@ func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspac
 			FROM workspace_members
 			GROUP BY workspace_id
 		) m ON m.workspace_id = w.id
-		WHERE w.id = $1`
+		WHERE w.id = $1 AND w.deleted_at IS NULL`
 
 	var w models.Workspace
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
+		&w.ID, &w.Name, &w.Slug, &w.Icon, &w.Description, &w.Settings, &w.DefaultSpaceID,
+		&w.EnforceMFA,
 		&w.MemberCount,
 		&w.CreatedAt, &w.UpdatedAt,
 	)
@@ -58,7 +59,7 @@ func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspac
 
 // GetDefaultWorkspaceID returns the ID of the default "personal" workspace.
 func (r *WorkspaceRepo) GetDefaultWorkspaceID(ctx context.Context) (string, error) {
-	query := `SELECT id FROM workspaces WHERE slug = 'personal' LIMIT 1`
+	query := `SELECT id FROM workspaces WHERE slug = 'personal' AND deleted_at IS NULL LIMIT 1`
 	var id string
 	err := r.pool.QueryRow(ctx, query).Scan(&id)
 	if err != nil {
@@ -70,10 +71,10 @@ func (r *WorkspaceRepo) GetDefaultWorkspaceID(ctx context.Context) (string, erro
 	return id, nil
 }
 
-// ListAll returns all workspaces ordered by name with member counts.
+// ListAll returns all non-deleted workspaces ordered by name with member counts.
 func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error) {
 	query := `
-		SELECT w.id, w.name, w.slug, w.icon, w.enforce_mfa,
+		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, w.default_space_id, w.enforce_mfa,
 		       COALESCE(m.member_count, 0),
 		       w.created_at::text, w.updated_at::text
 		FROM workspaces w
@@ -82,6 +83,7 @@ func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error)
 			FROM workspace_members
 			GROUP BY workspace_id
 		) m ON m.workspace_id = w.id
+		WHERE w.deleted_at IS NULL
 		ORDER BY w.name`
 
 	rows, err := r.pool.Query(ctx, query)
@@ -93,7 +95,7 @@ func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error)
 	var workspaces []models.Workspace
 	for rows.Next() {
 		var w models.Workspace
-		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
+		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.Description, &w.Settings, &w.DefaultSpaceID, &w.EnforceMFA,
 			&w.MemberCount, &w.CreatedAt, &w.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning workspace row: %w", err)
 		}
@@ -112,10 +114,10 @@ func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error)
 // Insert creates a new workspace row.
 func (r *WorkspaceRepo) Insert(ctx context.Context, w models.Workspace) error {
 	query := `
-		INSERT INTO workspaces (id, name, slug, icon, enforce_mfa, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, now(), now())`
+		INSERT INTO workspaces (id, name, slug, icon, description, settings, enforce_mfa, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, w.ID, w.Name, w.Slug, w.Icon, w.EnforceMFA)
+	_, err := r.pool.Exec(ctx, query, w.ID, w.Name, w.Slug, w.Icon, w.Description, w.Settings, w.EnforceMFA)
 	if err != nil {
 		return fmt.Errorf("inserting workspace %q: %w", w.Slug, err)
 	}
@@ -125,10 +127,10 @@ func (r *WorkspaceRepo) Insert(ctx context.Context, w models.Workspace) error {
 // Update modifies an existing workspace row.
 func (r *WorkspaceRepo) Update(ctx context.Context, w models.Workspace) error {
 	query := `
-		UPDATE workspaces SET name = $1, slug = $2, icon = $3, enforce_mfa = $4, updated_at = now()
-		WHERE id = $5`
+		UPDATE workspaces SET name = $1, slug = $2, icon = $3, description = $4, settings = $5, default_space_id = $6, enforce_mfa = $7, updated_at = now()
+		WHERE id = $8 AND deleted_at IS NULL`
 
-	tag, err := r.pool.Exec(ctx, query, w.Name, w.Slug, w.Icon, w.EnforceMFA, w.ID)
+	tag, err := r.pool.Exec(ctx, query, w.Name, w.Slug, w.Icon, w.Description, w.Settings, w.DefaultSpaceID, w.EnforceMFA, w.ID)
 	if err != nil {
 		return fmt.Errorf("updating workspace %q: %w", w.ID, err)
 	}
@@ -138,11 +140,11 @@ func (r *WorkspaceRepo) Update(ctx context.Context, w models.Workspace) error {
 	return nil
 }
 
-// Delete removes a workspace by ID.
-func (r *WorkspaceRepo) Delete(ctx context.Context, id string) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM workspaces WHERE id = $1`, id)
+// SoftDelete marks a workspace as deleted.
+func (r *WorkspaceRepo) SoftDelete(ctx context.Context, id string) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE workspaces SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL`, id)
 	if err != nil {
-		return fmt.Errorf("deleting workspace %q: %w", id, err)
+		return fmt.Errorf("soft-deleting workspace %q: %w", id, err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("%w: workspace %q", ErrWorkspaceNotFound, id)
@@ -150,10 +152,22 @@ func (r *WorkspaceRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// SpaceCount returns the number of spaces in a workspace.
+// SetDefaultSpaceID updates the default space for a workspace.
+func (r *WorkspaceRepo) SetDefaultSpaceID(ctx context.Context, workspaceID, spaceID string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE workspaces SET default_space_id = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL`,
+		spaceID, workspaceID,
+	)
+	if err != nil {
+		return fmt.Errorf("setting default space for workspace %q: %w", workspaceID, err)
+	}
+	return nil
+}
+
+// SpaceCount returns the number of non-deleted spaces in a workspace.
 func (r *WorkspaceRepo) SpaceCount(ctx context.Context, workspaceID string) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM spaces WHERE workspace_id = $1`, workspaceID).Scan(&count)
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM spaces WHERE workspace_id = $1 AND deleted_at IS NULL`, workspaceID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("counting spaces in workspace %q: %w", workspaceID, err)
 	}
@@ -272,7 +286,7 @@ func (r *WorkspaceRepo) HasOwnerOtherThan(ctx context.Context, workspaceID, user
 // ListByUser returns all workspaces a user is a member of.
 func (r *WorkspaceRepo) ListByUser(ctx context.Context, userID string) ([]models.Workspace, error) {
 	query := `
-		SELECT w.id, w.name, w.slug, w.icon, w.enforce_mfa,
+		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, w.default_space_id, w.enforce_mfa,
 		       COALESCE(m2.member_count, 0),
 		       w.created_at::text, w.updated_at::text
 		FROM workspaces w
@@ -282,7 +296,7 @@ func (r *WorkspaceRepo) ListByUser(ctx context.Context, userID string) ([]models
 			FROM workspace_members
 			GROUP BY workspace_id
 		) m2 ON m2.workspace_id = w.id
-		WHERE wm.user_id = $1
+		WHERE wm.user_id = $1 AND w.deleted_at IS NULL
 		ORDER BY w.name`
 
 	rows, err := r.pool.Query(ctx, query, userID)
@@ -294,7 +308,7 @@ func (r *WorkspaceRepo) ListByUser(ctx context.Context, userID string) ([]models
 	var workspaces []models.Workspace
 	for rows.Next() {
 		var w models.Workspace
-		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
+		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.Description, &w.Settings, &w.DefaultSpaceID, &w.EnforceMFA,
 			&w.MemberCount, &w.CreatedAt, &w.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning workspace row: %w", err)
 		}

@@ -35,7 +35,7 @@ func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.P
 	}
 }
 
-// CreateSpace creates a new space within a workspace and adds the creator as owner.
+// CreateSpace creates a new space within a workspace and adds the creator as admin.
 func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, description, workspaceID, userID string) (models.Space, error) {
 	space := models.Space{
 		ID:          uuid.New().String(),
@@ -45,15 +45,18 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 		Description: description,
 		WorkspaceID: workspaceID,
 		CreatedBy:   userID,
+		Visibility:  "private",
+		DefaultRole: models.SpaceRoleReader,
+		Settings:    "{}",
 	}
 
 	if err := s.spaceRepo.Insert(ctx, space); err != nil {
 		return models.Space{}, fmt.Errorf("creating space: %w", err)
 	}
 
-	// Add creator as owner
-	if err := s.spaceRepo.AddMember(ctx, space.ID, userID, "owner"); err != nil {
-		return models.Space{}, fmt.Errorf("adding creator as owner: %w", err)
+	// Add creator as admin
+	if err := s.spaceRepo.AddMember(ctx, space.ID, userID, models.SpaceRoleAdmin); err != nil {
+		return models.Space{}, fmt.Errorf("adding creator as admin: %w", err)
 	}
 
 	// Refresh member count
@@ -62,9 +65,9 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 	return space, nil
 }
 
-// UpdateSpace updates an existing space. Requires admin or owner role.
+// UpdateSpace updates an existing space. Requires admin role.
 func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, description, userID string) (models.Space, error) {
-	if err := s.requireAdminOrOwner(ctx, id, userID); err != nil {
+	if err := s.requireAdmin(ctx, id, userID); err != nil {
 		return models.Space{}, err
 	}
 
@@ -89,9 +92,9 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 	return existing, nil
 }
 
-// DeleteSpace deletes a space only if it has no pages. Requires owner role.
+// DeleteSpace soft-deletes a space only if it has no pages. Requires admin role.
 func (s *SpaceService) DeleteSpace(ctx context.Context, id, userID string) error {
-	if err := s.requireOwner(ctx, id, userID); err != nil {
+	if err := s.requireAdmin(ctx, id, userID); err != nil {
 		return err
 	}
 
@@ -103,7 +106,7 @@ func (s *SpaceService) DeleteSpace(ctx context.Context, id, userID string) error
 		return ErrSpaceNotEmpty
 	}
 
-	if err := s.spaceRepo.Delete(ctx, id); err != nil {
+	if err := s.spaceRepo.SoftDelete(ctx, id); err != nil {
 		if errors.Is(err, repositories.ErrSpaceNotFound) {
 			return ErrSpaceNotFound
 		}
@@ -145,34 +148,15 @@ func (s *SpaceService) GetDefaultSpaceID(ctx context.Context) (string, error) {
 
 // --- Role helpers ---
 
-func (s *SpaceService) requireAdminOrOwner(ctx context.Context, spaceID, userID string) error {
+func (s *SpaceService) requireAdmin(ctx context.Context, spaceID, userID string) error {
 	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
 	if err != nil {
 		return fmt.Errorf("checking role: %w", err)
 	}
-	if role == "owner" || role == "admin" {
+	if role == models.SpaceRoleAdmin {
 		return nil
 	}
-	// Fallback: creator of the space always has owner access
-	space, err := s.spaceRepo.GetByID(ctx, spaceID)
-	if err != nil {
-		return fmt.Errorf("checking creator: %w", err)
-	}
-	if space.CreatedBy == userID {
-		return nil
-	}
-	return ErrSpacePermissionDenied
-}
-
-func (s *SpaceService) requireOwner(ctx context.Context, spaceID, userID string) error {
-	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
-	if err != nil {
-		return fmt.Errorf("checking role: %w", err)
-	}
-	if role == "owner" {
-		return nil
-	}
-	// Fallback: creator of the space always has owner access
+	// Fallback: creator of the space always has admin access
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err != nil {
 		return fmt.Errorf("checking creator: %w", err)
@@ -197,7 +181,7 @@ func (s *SpaceService) GetSpaceMemberDetails(ctx context.Context, spaceID string
 
 // AddSpaceMember adds a user to a space with a role.
 func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role, actorID string) error {
-	if err := s.requireAdminOrOwner(ctx, spaceID, actorID); err != nil {
+	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	return s.spaceRepo.AddMember(ctx, spaceID, userID, role)
@@ -205,7 +189,7 @@ func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role
 
 // UpdateSpaceMemberRole updates a user's role in a space.
 func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userID, role, actorID string) error {
-	if err := s.requireAdminOrOwner(ctx, spaceID, actorID); err != nil {
+	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	return s.spaceRepo.UpdateMemberRole(ctx, spaceID, userID, role)
@@ -213,7 +197,7 @@ func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userI
 
 // RemoveSpaceMember removes a user from a space.
 func (s *SpaceService) RemoveSpaceMember(ctx context.Context, spaceID, userID, actorID string) error {
-	if err := s.requireAdminOrOwner(ctx, spaceID, actorID); err != nil {
+	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	return s.spaceRepo.RemoveMember(ctx, spaceID, userID)

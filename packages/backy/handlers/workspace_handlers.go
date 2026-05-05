@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"verso/backy/logger"
+	"verso/backy/middleware"
 	"verso/backy/models"
 	"verso/backy/services"
 )
@@ -20,7 +21,8 @@ func (h *Handlers) GetWorkspaces(c *gin.Context) {
 		return
 	}
 
-	workspaces, err := h.workspaceService.ListWorkspaces(c.Request.Context())
+	userID := middleware.GetCurrentUserID(c)
+	workspaces, err := h.workspaceService.ListWorkspaces(c.Request.Context(), userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("list workspaces error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list workspaces"})
@@ -50,7 +52,8 @@ func (h *Handlers) CreateWorkspace(c *gin.Context) {
 		return
 	}
 
-	workspace, err := h.workspaceService.CreateWorkspace(c.Request.Context(), req.Name, req.Slug, req.Icon)
+	userID := middleware.GetCurrentUserID(c)
+	workspace, err := h.workspaceService.CreateWorkspace(c.Request.Context(), req.Name, req.Slug, req.Icon, userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("create workspace error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create workspace"})
@@ -75,6 +78,7 @@ func (h *Handlers) UpdateWorkspace(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
 	var req UpdateWorkspaceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -82,7 +86,7 @@ func (h *Handlers) UpdateWorkspace(c *gin.Context) {
 		return
 	}
 
-	workspace, err := h.workspaceService.UpdateWorkspace(c.Request.Context(), id, req.Name, req.Slug, req.Icon)
+	workspace, err := h.workspaceService.UpdateWorkspace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, userID)
 	if err != nil {
 		if errors.Is(err, services.ErrWorkspaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "workspace not found"})
@@ -104,8 +108,9 @@ func (h *Handlers) DeleteWorkspace(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
-	if err := h.workspaceService.DeleteWorkspace(c.Request.Context(), id); err != nil {
+	if err := h.workspaceService.DeleteWorkspace(c.Request.Context(), id, userID); err != nil {
 		if errors.Is(err, services.ErrWorkspaceNotEmpty) {
 			c.JSON(http.StatusConflict, gin.H{"error": "workspace is not empty, remove spaces first"})
 			return

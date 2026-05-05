@@ -101,10 +101,13 @@ type Page struct {
 	TextContent     string          `json:"text_content"`
 	Position        string          `json:"position"`
 	IsPublished     bool            `json:"is_published"`
+	IsLocked        bool            `json:"is_locked"`
 	ParentPageID    *string         `json:"parent_page_id,omitempty"`
 	SpaceID         string          `json:"space_id"`
 	CreatorID       string          `json:"creator_id"`
 	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
+	DeletedAt       *time.Time      `json:"deleted_at,omitempty"`
+	DeletedByID     *string         `json:"deleted_by_id,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
 }
@@ -125,6 +128,13 @@ type PageTreeItem struct {
 	UpdatedAt    string  `json:"updatedAt"`
 }
 
+// SpaceRole constants for space membership.
+const (
+	SpaceRoleAdmin  = "admin"
+	SpaceRoleWriter = "writer"
+	SpaceRoleReader = "reader"
+)
+
 // Space represents a space grouping pages together.
 type Space struct {
 	ID          string `json:"id"`
@@ -134,6 +144,9 @@ type Space struct {
 	Description string `json:"description"`
 	WorkspaceID string `json:"workspaceId"`
 	CreatedBy   string `json:"createdBy,omitempty"`
+	Visibility  string `json:"visibility"`
+	DefaultRole string `json:"defaultRole"`
+	Settings    string `json:"settings"`
 	MemberCount int    `json:"memberCount"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
@@ -162,14 +175,17 @@ type SpaceMemberWithUser struct {
 
 // Workspace represents a top-level grouping of spaces.
 type Workspace struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Icon        string `json:"icon"`
-	EnforceMFA  bool   `json:"enforce_mfa"`
-	MemberCount int    `json:"memberCount"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug"`
+	Icon           string `json:"icon"`
+	Description    string `json:"description"`
+	Settings       string `json:"settings"`
+	DefaultSpaceID string `json:"defaultSpaceId,omitempty"`
+	EnforceMFA     bool   `json:"enforce_mfa"`
+	MemberCount    int    `json:"memberCount"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
 }
 
 // WorkspaceMember represents a user's membership in a workspace.

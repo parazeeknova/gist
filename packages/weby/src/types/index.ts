@@ -174,6 +174,9 @@ export interface Space {
   description: string;
   workspaceId: string;
   createdBy?: string;
+  visibility: string;
+  defaultRole: string;
+  settings: string;
   memberCount: number;
   createdAt: string;
   updatedAt: string;
@@ -195,6 +198,11 @@ export interface Workspace {
   name: string;
   slug: string;
   icon: string;
+  description: string;
+  settings: string;
+  defaultSpaceId?: string;
+  enforceMfa: boolean;
+  memberCount: number;
   createdAt: string;
   updatedAt: string;
 }
