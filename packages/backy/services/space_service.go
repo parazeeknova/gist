@@ -150,10 +150,18 @@ func (s *SpaceService) requireAdminOrOwner(ctx context.Context, spaceID, userID 
 	if err != nil {
 		return fmt.Errorf("checking role: %w", err)
 	}
-	if role != "owner" && role != "admin" {
-		return ErrSpacePermissionDenied
+	if role == "owner" || role == "admin" {
+		return nil
 	}
-	return nil
+	// Fallback: creator of the space always has owner access
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("checking creator: %w", err)
+	}
+	if space.CreatedBy == userID {
+		return nil
+	}
+	return ErrSpacePermissionDenied
 }
 
 func (s *SpaceService) requireOwner(ctx context.Context, spaceID, userID string) error {
@@ -161,10 +169,18 @@ func (s *SpaceService) requireOwner(ctx context.Context, spaceID, userID string)
 	if err != nil {
 		return fmt.Errorf("checking role: %w", err)
 	}
-	if role != "owner" {
-		return ErrSpacePermissionDenied
+	if role == "owner" {
+		return nil
 	}
-	return nil
+	// Fallback: creator of the space always has owner access
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("checking creator: %w", err)
+	}
+	if space.CreatedBy == userID {
+		return nil
+	}
+	return ErrSpacePermissionDenied
 }
 
 // --- Membership helpers ---

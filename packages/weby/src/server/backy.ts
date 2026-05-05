@@ -15,6 +15,7 @@ import type {
   Project,
   RestorePageInput,
   Space,
+  SpaceMemberWithUser,
   Stats,
   UpdatePageInput,
   Workspace,
@@ -253,7 +254,7 @@ export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | n
 };
 
 export const createSpace = (
-  input: { name: string; slug: string; icon?: string },
+  input: { name: string; slug: string; icon?: string; description?: string },
   cookieHeader?: string | null,
 ) =>
   fetchBacky<Space>("console/spaces", {
@@ -265,8 +266,48 @@ export const createSpace = (
     method: "POST",
   });
 
+export const updateSpace = (
+  id: string,
+  input: { name: string; slug: string; icon?: string; description?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Space>(`console/spaces/${id}`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
 export const deleteSpace = (id: string, cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>(`console/spaces/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const getSpaceMembers = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<SpaceMemberWithUser[]>(`console/spaces/${id}/members`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const updateSpaceMemberRole = (
+  spaceId: string,
+  userId: string,
+  role: string,
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<{ status: string }>(`console/spaces/${spaceId}/members/${userId}`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const removeSpaceMember = (spaceId: string, userId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/spaces/${spaceId}/members/${userId}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "DELETE",
   });

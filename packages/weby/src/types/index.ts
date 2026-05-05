@@ -173,6 +173,7 @@ export interface Space {
   icon: string;
   description: string;
   workspaceId: string;
+  createdBy?: string;
   memberCount: number;
   createdAt: string;
   updatedAt: string;

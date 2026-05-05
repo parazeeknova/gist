@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
 import { useTheme } from "#/hooks/use-theme";
+import { useAuth } from "#/hooks/use-auth";
 import {
   useRemoveSpaceMember,
   useSpaceMembers,
@@ -8,6 +9,7 @@ import {
   useUpdateSpaceMemberRole,
 } from "#/hooks/use-console-mutations";
 import type { Space, SpaceMemberWithUser } from "#/types";
+import { SpaceAvatarUploader } from "./space-avatar-uploader";
 
 const getInitials = (text: string) =>
   text
@@ -16,6 +18,23 @@ const getInitials = (text: string) =>
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
+const memberRoleLabel = (role: string) => {
+  switch (role) {
+    case "owner": {
+      return "full access";
+    }
+    case "admin": {
+      return "can edit";
+    }
+    case "member": {
+      return "can view";
+    }
+    default: {
+      return role;
+    }
+  }
+};
 
 interface SpaceDetailSidebarProps {
   isOpen: boolean;
@@ -36,10 +55,18 @@ export const SpaceDetailSidebar = ({
   const [name, setName] = useState(space.name);
   const [slug, setSlug] = useState(space.slug);
   const [description, setDescription] = useState(space.description ?? "");
+  const [icon, setIcon] = useState(space.icon ?? "");
   const [memberSearch, setMemberSearch] = useState("");
   const [updatingMember, setUpdatingMember] = useState<string | null>(null);
 
+  const hasChanges =
+    name.trim() !== space.name.trim() ||
+    slug.trim() !== space.slug.trim() ||
+    description.trim() !== (space.description ?? "").trim() ||
+    icon.trim() !== (space.icon ?? "").trim();
+
   const { data: members, isPending: membersPending } = useSpaceMembers(space.id);
+  const { data: currentUser } = useAuth();
   const updateSpace = useUpdateSpace();
   const updateRole = useUpdateSpaceMemberRole();
   const removeMember = useRemoveSpaceMember();
@@ -59,6 +86,7 @@ export const SpaceDetailSidebar = ({
       id: space.id,
       input: {
         description: description.trim(),
+        icon: icon.trim(),
         name: name.trim(),
         slug: slug.trim(),
       },
@@ -119,47 +147,53 @@ export const SpaceDetailSidebar = ({
               general
             </span>
 
-            <div className="flex items-start gap-3 mb-3">
-              {space.icon ? (
-                <img
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover shrink-0"
-                  src={space.icon}
-                />
-              ) : (
-                <span className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 bg-white/10 text-text-dark/60">
-                  {getInitials(name)}
-                </span>
-              )}
-              <div className="flex-1 space-y-2">
-                <input
-                  className={`w-full bg-transparent border-b py-1 text-[11px] outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
-                  onChange={(e) => setName(e.target.value)}
-                  onBlur={handleSaveDetails}
-                  placeholder="name"
-                  type="text"
-                  value={name}
-                />
-                <input
-                  className={`w-full bg-transparent border-b py-1 text-[11px] outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
-                  onChange={(e) => setSlug(e.target.value)}
-                  onBlur={handleSaveDetails}
-                  placeholder="slug"
-                  type="text"
-                  value={slug}
-                />
-                <input
-                  className={`w-full bg-transparent border-b py-1 text-[11px] outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={handleSaveDetails}
-                  placeholder="description"
-                  type="text"
-                  value={description}
-                />
-              </div>
+            <div className="flex flex-col items-center mb-4">
+              <SpaceAvatarUploader
+                avatarUrl={icon}
+                description={description}
+                name={name}
+                onAvatarChange={setIcon}
+                slug={slug}
+                spaceId={space.id}
+              />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="space-y-2">
+              <input
+                className={`w-full bg-transparent border-b py-1 text-[11px] outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="name"
+                type="text"
+                value={name}
+              />
+              <input
+                className={`w-full bg-transparent border-b py-1 text-[11px] outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="slug"
+                type="text"
+                value={slug}
+              />
+              <input
+                className={`w-full bg-transparent border-b py-1 text-[11px] outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="description"
+                type="text"
+                value={description}
+              />
+            </div>
+
+            <div className="flex items-center justify-end mt-2">
+              <button
+                className={`text-[10px] lowercase transition-opacity ${hasChanges ? t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90") : "opacity-30 cursor-not-allowed"}`}
+                disabled={!hasChanges}
+                onClick={handleSaveDetails}
+                type="button"
+              >
+                save
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 mt-3">
               <span
                 className={`text-[10px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
               >
@@ -206,48 +240,83 @@ export const SpaceDetailSidebar = ({
               </p>
             ) : (
               <div className="space-y-2">
-                {filteredMembers.map((member) => (
-                  <div key={member.user_id} className="flex items-center gap-2">
-                    {member.avatar_url ? (
-                      <img
-                        alt=""
-                        className="w-5 h-5 rounded-full object-cover shrink-0"
-                        src={member.avatar_url}
-                      />
-                    ) : (
-                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 bg-white/10 text-text-dark/60">
-                        {getInitials(member.name || member.email)}
-                      </span>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] truncate">{member.name || member.email}</p>
-                      {member.name && (
-                        <p
-                          className={`text-[10px] truncate ${t("text-text-dark/30", "text-text-light/30")}`}
+                {filteredMembers.map((member) => {
+                  const isSelf = member.user_id === currentUser?.id;
+                  const isCreator = member.user_id === space.createdBy;
+                  const disableControls = isSelf || isCreator;
+                  return (
+                    <div key={member.user_id} className="flex items-center gap-2">
+                      {member.avatar_url ? (
+                        <img
+                          alt=""
+                          className="w-5 h-5 rounded-full object-cover shrink-0"
+                          src={member.avatar_url}
+                        />
+                      ) : (
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 bg-white/10 text-text-dark/60">
+                          {getInitials(member.name || member.email)}
+                        </span>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] truncate">{member.name || member.email}</p>
+                        {member.name && (
+                          <p
+                            className={`text-[10px] truncate ${t("text-text-dark/30", "text-text-light/30")}`}
+                          >
+                            {member.email}
+                          </p>
+                        )}
+                      </div>
+                      {disableControls ? (
+                        <div className="group relative inline-flex">
+                          <span
+                            className={`text-[10px] lowercase cursor-not-allowed ${t("text-text-dark/20", "text-text-light/20")}`}
+                          >
+                            {isCreator ? "full access" : memberRoleLabel(member.role)}
+                          </span>
+                          <span
+                            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${t("bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+                          >
+                            {isCreator ? "space creator" : "no self actions"}
+                          </span>
+                        </div>
+                      ) : (
+                        <select
+                          className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.user_id ? "opacity-50" : ""}`}
+                          disabled={updatingMember === member.user_id}
+                          onChange={(e) => handleRoleChange(member, e.target.value)}
+                          value={member.role}
                         >
-                          {member.email}
-                        </p>
+                          <option value="owner">full access</option>
+                          <option value="admin">can edit</option>
+                          <option value="member">can view</option>
+                        </select>
+                      )}
+                      {disableControls ? (
+                        <div className="group relative inline-flex">
+                          <span
+                            className={`text-[10px] lowercase cursor-not-allowed ${t("text-text-dark/20", "text-text-light/20")}`}
+                          >
+                            remove
+                          </span>
+                          <span
+                            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${t("bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+                          >
+                            {isCreator ? "space creator" : "no self actions"}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-red-400", "text-text-light/30 hover:text-red-600")}`}
+                          onClick={() => handleRemoveMember(member.user_id)}
+                          type="button"
+                        >
+                          remove
+                        </button>
                       )}
                     </div>
-                    <select
-                      className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.user_id ? "opacity-50" : ""}`}
-                      disabled={updatingMember === member.user_id}
-                      onChange={(e) => handleRoleChange(member, e.target.value)}
-                      value={member.role}
-                    >
-                      <option value="owner">full access</option>
-                      <option value="admin">can edit</option>
-                      <option value="member">can view</option>
-                    </select>
-                    <button
-                      className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-red-400", "text-text-light/30 hover:text-red-600")}`}
-                      onClick={() => handleRemoveMember(member.user_id)}
-                      type="button"
-                    >
-                      remove
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
                 {filteredMembers.length === 0 && memberSearch && (
                   <p
                     className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}

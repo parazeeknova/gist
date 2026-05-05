@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { deleteSpace, updateSpace } from "#/server/backy";
+import { removeSpaceMember, updateSpaceMemberRole } from "#/server/backy";
 
-export const Route = createFileRoute("/api/console/spaces/$id")({
+export const Route = createFileRoute("/api/console/spaces/$id/members/$userId")({
   server: {
     handlers: {
       DELETE: async ({ params, request }) => {
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/console/spaces/$id")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const result = await deleteSpace(params.id, cookieHeader);
+        const result = await removeSpaceMember(params.id, params.userId, cookieHeader);
         return Response.json(result);
       },
       PUT: async ({ params, request }) => {
@@ -18,8 +18,13 @@ export const Route = createFileRoute("/api/console/spaces/$id")({
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const body = await request.json();
-        const space = await updateSpace(params.id, body, cookieHeader);
-        return Response.json(space);
+        const result = await updateSpaceMemberRole(
+          params.id,
+          params.userId,
+          body.role,
+          cookieHeader,
+        );
+        return Response.json(result);
       },
     },
   },
