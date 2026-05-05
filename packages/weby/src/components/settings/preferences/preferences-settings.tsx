@@ -160,7 +160,7 @@ const NotificationItem = ({
 
   if (disabled) {
     return (
-      <div className="group relative py-3 border-b last:border-b-0">
+      <div className="group relative py-3">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <span
@@ -186,7 +186,7 @@ const NotificationItem = ({
   }
 
   return (
-    <div className="py-3 border-b last:border-b-0">
+    <div className="py-3">
       <div className="flex items-center justify-between">
         <div className="flex flex-col">
           <span className={`text-[11px] lowercase ${t("text-text-dark/70", "text-text-light/70")}`}>
@@ -232,7 +232,7 @@ const SettingRow = ({
 }) => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   return (
-    <div className="flex items-center justify-between py-3 border-b last:border-b-0">
+    <div className="flex items-center justify-between py-3">
       <span className={`text-[11px] lowercase ${t("text-text-dark/70", "text-text-light/70")}`}>
         {label}
       </span>
