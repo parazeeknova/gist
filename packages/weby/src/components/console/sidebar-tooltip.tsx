@@ -20,13 +20,15 @@ export const SidebarTooltip = ({ children, label }: TooltipProps) => {
     >
       {children}
       {isVisible && (
-        <div
-          className={`pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded border px-2 py-1 text-[10px] shadow-sm ${t("border-border-dark bg-surface-dark text-text-dark", "border-border-light bg-surface-light text-text-light")}`}
-        >
-          {label}
+        <div className="pointer-events-none absolute inset-x-0 bottom-full z-50 mb-1.5 flex justify-start">
           <div
-            className={`absolute left-1/2 top-full h-1 w-1 -translate-x-1/2 rotate-45 border-b border-r ${t("border-border-dark bg-surface-dark", "border-border-light bg-surface-light")}`}
-          />
+            className={`relative whitespace-nowrap px-2 py-1 text-[10px] ${t("bg-neutral-800 text-white", "bg-neutral-200 text-black")}`}
+          >
+            {label}
+            <div
+              className={`absolute left-2 top-full h-1 w-1 rotate-45 ${t("bg-neutral-800", "bg-neutral-200")}`}
+            />
+          </div>
         </div>
       )}
     </div>
