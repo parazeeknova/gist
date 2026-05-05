@@ -170,3 +170,15 @@ func (s *WorkspaceService) requireWorkspaceOwner(ctx context.Context, workspaceI
 	}
 	return errors.New("permission denied for this workspace")
 }
+
+// RequireMembership checks if a user is a member of a workspace.
+func (s *WorkspaceService) RequireMembership(ctx context.Context, workspaceID, userID string) error {
+	isMember, err := s.workspaceRepo.IsMember(ctx, workspaceID, userID)
+	if err != nil {
+		return fmt.Errorf("checking workspace membership: %w", err)
+	}
+	if !isMember {
+		return errors.New("permission denied for this workspace")
+	}
+	return nil
+}

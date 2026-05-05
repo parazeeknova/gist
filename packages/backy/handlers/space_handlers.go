@@ -27,6 +27,12 @@ func (h *Handlers) GetSpaces(c *gin.Context) {
 		return
 	}
 
+	userID := middleware.GetCurrentUserID(c)
+	if err := h.workspaceService.RequireMembership(c.Request.Context(), workspaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
 	spaces, err := h.spaceService.ListSpaces(c.Request.Context(), workspaceID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("list spaces error")
@@ -60,6 +66,11 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 	}
 
 	userID := middleware.GetCurrentUserID(c)
+	if err := h.workspaceService.RequireMembership(c.Request.Context(), req.WorkspaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
 	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon, req.Description, req.WorkspaceID, userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("create space error")

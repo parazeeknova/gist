@@ -49,17 +49,13 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_session_id ON refresh_tokens (session_id);
 
--- Workspaces (without default_space_id FK yet -- circular with spaces)
+-- Workspaces
 CREATE TABLE IF NOT EXISTS workspaces (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     icon TEXT NOT NULL DEFAULT '',
-    description TEXT NOT NULL DEFAULT '',
-    settings JSONB NOT NULL DEFAULT '{}',
-    default_space_id UUID,
     enforce_mfa BOOLEAN NOT NULL DEFAULT false,
-    deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -70,23 +66,12 @@ CREATE TABLE IF NOT EXISTS spaces (
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     icon TEXT NOT NULL DEFAULT '',
-    description TEXT NOT NULL DEFAULT '',
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE RESTRICT,
-    created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-    visibility TEXT NOT NULL DEFAULT 'private' CHECK (visibility IN ('private', 'public')),
-    default_role TEXT NOT NULL DEFAULT 'reader' CHECK (default_role IN ('admin', 'writer', 'reader')),
-    settings JSONB NOT NULL DEFAULT '{}',
-    deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_spaces_workspace_id ON spaces (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_spaces_deleted_at ON spaces (deleted_at);
-
--- Add workspaces.default_space_id FK now that spaces exists
-ALTER TABLE workspaces ADD CONSTRAINT fk_workspaces_default_space_id
-    FOREIGN KEY (default_space_id) REFERENCES spaces(id) ON DELETE SET NULL;
 
 -- Pages
 CREATE TABLE IF NOT EXISTS pages (
@@ -100,14 +85,11 @@ CREATE TABLE IF NOT EXISTS pages (
     text_content TEXT NOT NULL DEFAULT '',
     position TEXT NOT NULL DEFAULT '',
     is_published BOOLEAN NOT NULL DEFAULT false,
-    is_locked BOOLEAN NOT NULL DEFAULT false,
     parent_page_id UUID REFERENCES pages (id) ON DELETE SET NULL,
     space_id UUID NOT NULL REFERENCES spaces(id) ON DELETE RESTRICT,
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE RESTRICT,
     creator_id UUID NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
     last_updated_by_id UUID REFERENCES users (id) ON DELETE SET NULL,
-    deleted_at TIMESTAMPTZ,
-    deleted_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -117,7 +99,6 @@ CREATE INDEX IF NOT EXISTS idx_pages_creator_id ON pages (creator_id);
 CREATE INDEX IF NOT EXISTS idx_pages_is_published ON pages (is_published);
 CREATE INDEX IF NOT EXISTS idx_pages_space_id ON pages (space_id);
 CREATE INDEX IF NOT EXISTS idx_pages_workspace_id ON pages (workspace_id);
-CREATE INDEX IF NOT EXISTS idx_pages_deleted_at ON pages (deleted_at);
 CREATE INDEX IF NOT EXISTS idx_pages_parent_position ON pages (parent_page_id, position COLLATE "C");
 CREATE INDEX IF NOT EXISTS idx_pages_space_parent_position ON pages (space_id, parent_page_id, position COLLATE "C");
 
@@ -179,3 +160,51 @@ CREATE TABLE IF NOT EXISTS space_members (
 
 CREATE INDEX IF NOT EXISTS idx_space_members_user_id ON space_members (user_id);
 CREATE INDEX IF NOT EXISTS idx_space_members_space_id ON space_members (space_id);
+
+-- ============================================================================
+-- Schema evolution: add columns safely to existing tables
+-- ============================================================================
+
+-- users
+ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'member';
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('owner', 'admin', 'member'));
+
+-- sessions
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device_name TEXT DEFAULT 'unknown device';
+
+-- workspaces
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS default_space_id UUID;
+ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+-- spaces
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS description TEXT NOT NULL DEFAULT '';
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'private';
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS default_role TEXT NOT NULL DEFAULT 'reader';
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE spaces ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+-- spaces visibility/default_role constraints
+ALTER TABLE spaces DROP CONSTRAINT IF EXISTS spaces_visibility_check;
+ALTER TABLE spaces ADD CONSTRAINT spaces_visibility_check CHECK (visibility IN ('private', 'public'));
+ALTER TABLE spaces DROP CONSTRAINT IF EXISTS spaces_default_role_check;
+ALTER TABLE spaces ADD CONSTRAINT spaces_default_role_check CHECK (default_role IN ('admin', 'writer', 'reader'));
+
+-- pages
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS is_locked BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS deleted_by_id UUID REFERENCES users(id) ON DELETE SET NULL;
+
+-- pages indexes
+CREATE INDEX IF NOT EXISTS idx_pages_deleted_at ON pages (deleted_at);
+CREATE INDEX IF NOT EXISTS idx_spaces_deleted_at ON spaces (deleted_at);
+
+-- workspaces FK to default_space_id
+ALTER TABLE workspaces DROP CONSTRAINT IF EXISTS fk_workspaces_default_space_id;
+ALTER TABLE workspaces ADD CONSTRAINT fk_workspaces_default_space_id
+    FOREIGN KEY (default_space_id) REFERENCES spaces(id) ON DELETE SET NULL;

@@ -100,7 +100,7 @@ func main() {
 		pageHistoryRepo := repositories.NewPageHistoryRepo(pool)
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
-		pageService := services.NewPageService(pageRepo, pageHistoryRepo)
+		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo)
 		spaceService := services.NewSpaceService(spaceRepo, pageRepo)
 		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo)
 		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService)

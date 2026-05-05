@@ -166,15 +166,19 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 	if params != nil && params.WorkspaceName != "" {
 		workspaceSlug := slugify(params.WorkspaceName)
 		w := models.Workspace{
-			ID:   uuid.New().String(),
-			Name: params.WorkspaceName,
-			Slug: workspaceSlug,
-			Icon: "",
+			ID:       uuid.New().String(),
+			Name:     params.WorkspaceName,
+			Slug:     workspaceSlug,
+			Icon:     "",
+			Settings: "{}",
 		}
 		if err := s.workspaceRepo.Insert(ctx, w); err != nil {
 			logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
 		} else {
 			workspaceID = w.ID
+			if err := s.workspaceRepo.AddMember(ctx, w.ID, userID, "owner"); err != nil {
+				logger.Log.Error().Err(err).Msg("bootstrap: failed to add owner to workspace")
+			}
 		}
 	}
 
@@ -187,9 +191,20 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 			Slug:        spaceSlug,
 			Icon:        "",
 			WorkspaceID: workspaceID,
+			CreatedBy:   userID,
+			Visibility:  "private",
+			DefaultRole: models.SpaceRoleReader,
+			Settings:    "{}",
 		}
 		if err := s.spaceRepo.Insert(ctx, sp); err != nil {
 			logger.Log.Error().Err(err).Msg("bootstrap: failed to create space")
+		} else {
+			if err := s.spaceRepo.AddMember(ctx, sp.ID, userID, models.SpaceRoleAdmin); err != nil {
+				logger.Log.Error().Err(err).Msg("bootstrap: failed to add admin to space")
+			}
+			if err := s.workspaceRepo.SetDefaultSpaceID(ctx, workspaceID, sp.ID); err != nil {
+				logger.Log.Error().Err(err).Msg("bootstrap: failed to set default space id")
+			}
 		}
 	}
 

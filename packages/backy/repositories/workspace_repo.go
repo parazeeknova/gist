@@ -30,7 +30,7 @@ func NewWorkspaceRepo() *WorkspaceRepo {
 // GetByID fetches a workspace by its primary key with member count.
 func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspace, error) {
 	query := `
-		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, w.default_space_id, w.enforce_mfa,
+		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, COALESCE(w.default_space_id::text, ''), w.enforce_mfa,
 		       COALESCE(m.member_count, 0),
 		       w.created_at::text, w.updated_at::text
 		FROM workspaces w
@@ -74,7 +74,7 @@ func (r *WorkspaceRepo) GetDefaultWorkspaceID(ctx context.Context) (string, erro
 // ListAll returns all non-deleted workspaces ordered by name with member counts.
 func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error) {
 	query := `
-		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, w.default_space_id, w.enforce_mfa,
+		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, COALESCE(w.default_space_id::text, ''), w.enforce_mfa,
 		       COALESCE(m.member_count, 0),
 		       w.created_at::text, w.updated_at::text
 		FROM workspaces w
@@ -286,7 +286,7 @@ func (r *WorkspaceRepo) HasOwnerOtherThan(ctx context.Context, workspaceID, user
 // ListByUser returns all workspaces a user is a member of.
 func (r *WorkspaceRepo) ListByUser(ctx context.Context, userID string) ([]models.Workspace, error) {
 	query := `
-		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, w.default_space_id, w.enforce_mfa,
+		SELECT w.id, w.name, w.slug, w.icon, w.description, w.settings, COALESCE(w.default_space_id::text, ''), w.enforce_mfa,
 		       COALESCE(m2.member_count, 0),
 		       w.created_at::text, w.updated_at::text
 		FROM workspaces w
