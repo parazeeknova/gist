@@ -93,11 +93,16 @@ export const SettingsSidebar = ({
           preferences
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <KeyIcon size={12} />
           api key
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
       </div>
 
@@ -124,11 +129,16 @@ export const SettingsSidebar = ({
           members
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <ShieldCheckIcon size={12} />
           security & sso
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
         <button
           className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
@@ -151,39 +161,64 @@ export const SettingsSidebar = ({
           spaces
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <GlobeIcon size={12} />
           public sharing
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <SealCheckIcon size={12} />
           verified pages
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <CodeIcon size={12} />
           api management
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <SparkleIcon size={12} />
           ai settings
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <ClockCounterClockwiseIcon size={12} />
           audit log
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
       </div>
 
@@ -209,11 +244,16 @@ export const SettingsSidebar = ({
           </button>
         )}
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
           type="button"
         >
           <ArrowClockwiseIcon size={12} />
           update
+          <span
+            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+          >
+            coming soon
+          </span>
         </button>
       </div>
     </div>
