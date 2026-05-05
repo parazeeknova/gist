@@ -11,11 +11,13 @@ import type { RowSelectionState, SortingState } from "@tanstack/react-table";
 import {
   CaretDownIcon,
   CaretUpDownIcon,
+  CopyIcon,
   MagnifyingGlassIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useTheme } from "#/hooks/use-theme";
 import { Check } from "#/components/console/check";
+import { useAuth } from "#/hooks/use-auth";
 import {
   useDeleteUser,
   useUpdateUserActive,
@@ -36,10 +38,11 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 
 interface RoleDropdownProps {
   currentRole: string;
+  disabled?: boolean;
   onChange: (role: string) => void;
 }
 
-const RoleDropdown = ({ currentRole, onChange }: RoleDropdownProps) => {
+const RoleDropdown = ({ currentRole, disabled, onChange }: RoleDropdownProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [open, setOpen] = useState(false);
@@ -115,6 +118,23 @@ const RoleDropdown = ({ currentRole, onChange }: RoleDropdownProps) => {
     </div>
   );
 
+  if (disabled) {
+    return (
+      <div className="group relative inline-flex">
+        <span
+          className={`text-[11px] lowercase cursor-not-allowed ${t("text-text-dark/20", "text-text-light/20")}`}
+        >
+          {currentRole}
+        </span>
+        <span
+          className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${t("bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+        >
+          no self actions
+        </span>
+      </div>
+    );
+  }
+
   return (
     <>
       <button
@@ -140,6 +160,34 @@ const getInitials = (text: string) =>
     .toUpperCase();
 
 const pluralize = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
+
+const CopyButton = ({ text, isDarkMode }: { text: string; isDarkMode: boolean }) => {
+  const [copied, setCopied] = useState(false);
+  const tc = (dark: string, light: string) => (isDarkMode ? dark : light);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  return (
+    <button
+      className={`relative ml-1 inline-flex items-center cursor-pointer ${tc("text-text-dark/20 hover:text-text-dark/50", "text-text-light/20 hover:text-text-light/50")}`}
+      onClick={handleCopy}
+      type="button"
+    >
+      <CopyIcon className="size-2.5" />
+      {copied && (
+        <span
+          className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap pointer-events-none border ${tc("bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+        >
+          copied
+        </span>
+      )}
+    </button>
+  );
+};
 
 const formatRelativeTime = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -235,6 +283,7 @@ const TableBody = ({
 export const MembersSettings = () => {
   const { isDarkMode } = useTheme();
   const { data: users, isPending } = useUsers();
+  const { data: currentUser } = useAuth();
   const updateRole = useUpdateUserRole();
   const updateActive = useUpdateUserActive();
   const deleteUser = useDeleteUser();
@@ -265,9 +314,14 @@ export const MembersSettings = () => {
   const columns = useMemo(
     () => [
       columnHelper.display({
-        cell: ({ row }) => (
-          <Check checked={row.getIsSelected()} onChange={() => row.toggleSelected()} />
-        ),
+        cell: ({ row }) => {
+          const user = row.original;
+          const isSelf = user.id === currentUser?.id;
+          if (isSelf) {
+            return <span className="inline-block w-3 h-3" />;
+          }
+          return <Check checked={row.getIsSelected()} onChange={() => row.toggleSelected()} />;
+        },
         header: ({ table }) => {
           const all = table.getIsAllRowsSelected();
           const some = table.getIsSomeRowsSelected();
@@ -312,15 +366,22 @@ export const MembersSettings = () => {
         header: "user",
       }),
       columnHelper.accessor("email", {
-        cell: (info) => <span className="text-[11px]">{info.getValue()}</span>,
+        cell: (info) => (
+          <span className="text-[11px] inline-flex items-center">
+            {info.getValue()}
+            <CopyButton isDarkMode={isDarkMode} text={info.getValue() as string} />
+          </span>
+        ),
         header: "email",
       }),
       columnHelper.accessor("role", {
         cell: (info) => {
           const user = info.row.original;
+          const isSelf = user.id === currentUser?.id;
           return (
             <RoleDropdown
               currentRole={user.role}
+              disabled={isSelf}
               onChange={(role) =>
                 updateRole.mutate(
                   { id: user.id, role },
@@ -339,6 +400,23 @@ export const MembersSettings = () => {
         cell: (info) => {
           const user = info.row.original;
           const isActive = info.getValue();
+          const isSelf = user.id === currentUser?.id;
+          if (isSelf) {
+            return (
+              <div className="group relative inline-flex">
+                <span
+                  className={`text-[11px] lowercase cursor-not-allowed ${tc(isDarkMode, "text-text-dark/20", "text-text-light/20")}`}
+                >
+                  {isActive ? "active" : "inactive"}
+                </span>
+                <span
+                  className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${tc(isDarkMode, "bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+                >
+                  no self actions
+                </span>
+              </div>
+            );
+          }
           return (
             <button
               className={`text-[11px] lowercase ${
@@ -388,7 +466,24 @@ export const MembersSettings = () => {
       columnHelper.display({
         cell: ({ row }) => {
           const user = row.original;
+          const isSelf = user.id === currentUser?.id;
           const isConfirm = confirmDelete === user.id;
+          if (isSelf) {
+            return (
+              <div className="group relative inline-flex">
+                <span
+                  className={`text-[11px] lowercase cursor-not-allowed ${tc(isDarkMode, "text-text-dark/20", "text-text-light/20")}`}
+                >
+                  delete
+                </span>
+                <span
+                  className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${tc(isDarkMode, "bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+                >
+                  no self actions
+                </span>
+              </div>
+            );
+          }
           return (
             <button
               className={`text-[11px] lowercase flex items-center gap-1 ${
@@ -430,6 +525,7 @@ export const MembersSettings = () => {
     ],
     [
       isDarkMode,
+      currentUser,
       updateRole,
       updateActive,
       deleteUser,
@@ -449,6 +545,33 @@ export const MembersSettings = () => {
     onSortingChange: setSorting,
     state: { rowSelection, sorting },
   });
+
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedCount = selectedRows.length;
+  const hasSelection = selectedCount > 0;
+  const selectedDeletableCount = selectedRows.filter(
+    (r) => r.original.id !== currentUser?.id,
+  ).length;
+  const canBulkDelete = selectedDeletableCount > 0;
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+
+  const handleBulkDelete = useCallback(async () => {
+    const ids = selectedRows
+      .filter((r) => r.original.id !== currentUser?.id)
+      .map((r) => r.original.id);
+    if (ids.length === 0) {
+      return;
+    }
+    try {
+      await Promise.all(ids.map((id) => deleteUser.mutateAsync(id)));
+      clearError();
+      setRowSelection({});
+      setBulkDeleteConfirm(false);
+      // oxlint-disable-next-line unicorn/catch-error-name
+    } catch (err) {
+      handleMutationError(err as Error);
+    }
+  }, [selectedRows, currentUser, deleteUser, handleMutationError, clearError]);
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
@@ -474,25 +597,61 @@ export const MembersSettings = () => {
           value={searchQuery}
         />
         <div className="ml-auto flex items-center gap-2">
-          <button
-            className={`flex items-center gap-1 text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-            onClick={() => table.toggleAllRowsSelected()}
-            type="button"
-          >
-            select all
-          </button>
-          <button
-            className={`flex items-center gap-1 text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-            type="button"
-          >
-            filter
-          </button>
-          <button
-            className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${t("text-text-dark/60 border-border-dark hover:bg-white/5", "text-text-light/60 border-border-light hover:bg-black/3")}`}
-            type="button"
-          >
-            invite
-          </button>
+          {hasSelection ? (
+            <>
+              <span
+                className={`text-[10px] lowercase ${t("text-text-dark/40", "text-text-light/40")}`}
+              >
+                {pluralize(selectedCount, "member")} selected
+              </span>
+              {canBulkDelete && (
+                <button
+                  className={`flex items-center gap-1 text-[10px] lowercase ${bulkDeleteConfirm ? "text-red-400" : t("text-text-dark/40 hover:text-red-400", "text-text-light/40 hover:text-red-600")}`}
+                  onClick={() => {
+                    if (bulkDeleteConfirm) {
+                      handleBulkDelete();
+                    } else {
+                      setBulkDeleteConfirm(true);
+                      setTimeout(() => setBulkDeleteConfirm(false), 3000);
+                    }
+                  }}
+                  type="button"
+                >
+                  <TrashIcon size={11} />
+                  {bulkDeleteConfirm ? "confirm?" : "delete"}
+                </button>
+              )}
+              <button
+                className={`text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+                onClick={() => setRowSelection({})}
+                type="button"
+              >
+                clear
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={`flex items-center gap-1 text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+                onClick={() => table.toggleAllRowsSelected()}
+                type="button"
+              >
+                select all
+              </button>
+              <button
+                className={`flex items-center gap-1 text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+                type="button"
+              >
+                filter
+              </button>
+              <button
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${t("text-text-dark/60 border-border-dark hover:bg-white/5", "text-text-light/60 border-border-light hover:bg-black/3")}`}
+                type="button"
+              >
+                invite
+              </button>
+            </>
+          )}
         </div>
       </div>
 
