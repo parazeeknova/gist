@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
+export type ThemePreference = "light" | "dark" | "system";
+
 let listeners: (() => void)[] = [];
 
-const getThemeSnapshot = (): boolean => {
-  if (typeof document === "undefined") {
-    return true;
+const getSystemTheme = (): "light" | "dark" => {
+  if (typeof window === "undefined") {
+    return "dark";
   }
-  return document.documentElement.dataset.theme !== "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 };
+
+const getResolvedTheme = (): "light" | "dark" => {
+  if (typeof document === "undefined") {
+    return "dark";
+  }
+  const dataset = document.documentElement.dataset.theme;
+  if (dataset === "light" || dataset === "dark") {
+    return dataset;
+  }
+  return "dark";
+};
+
+const getThemeSnapshot = (): boolean => getResolvedTheme() === "dark";
 
 // eslint-disable-next-line promise/prefer-await-to-callbacks -- useSyncExternalStore requires callback-based subscribe
 const subscribe = (callback: () => void) => {
@@ -32,15 +47,50 @@ const ensureInitialized = () => {
   }
   initialized = true;
   if (typeof document !== "undefined" && !document.documentElement.dataset.theme) {
-    let stored = "dark";
+    let preference: ThemePreference = "dark";
     try {
-      stored = localStorage.getItem("theme") || "dark";
+      const stored = localStorage.getItem("theme-preference");
+      if (stored === "light" || stored === "dark" || stored === "system") {
+        preference = stored;
+      } else {
+        const legacy = localStorage.getItem("theme");
+        if (legacy === "light" || legacy === "dark") {
+          preference = legacy;
+        }
+      }
     } catch {
-      // Storage unavailable (e.g., Safari private mode)
+      // Storage unavailable
     }
-    document.documentElement.dataset.theme = stored;
+    const resolved = preference === "system" ? getSystemTheme() : preference;
+    document.documentElement.dataset.theme = resolved;
     notify();
   }
+};
+
+const applyThemePreference = (preference: ThemePreference) => {
+  const resolved = preference === "system" ? getSystemTheme() : preference;
+  document.documentElement.dataset.theme = resolved;
+  try {
+    localStorage.setItem("theme-preference", preference);
+  } catch {
+    // Storage unavailable
+  }
+  notify();
+};
+
+export const getThemePreference = (): ThemePreference => {
+  if (typeof localStorage === "undefined") {
+    return "dark";
+  }
+  const stored = localStorage.getItem("theme-preference");
+  if (stored === "light" || stored === "dark" || stored === "system") {
+    return stored;
+  }
+  const legacy = localStorage.getItem("theme");
+  if (legacy === "light" || legacy === "dark") {
+    return legacy;
+  }
+  return "dark";
 };
 
 export const useTheme = () => {
@@ -52,14 +102,12 @@ export const useTheme = () => {
 
   const toggleTheme = useCallback(() => {
     const next = isDarkMode ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    try {
-      localStorage.setItem("theme", next);
-    } catch {
-      // Storage unavailable (e.g., Safari private mode)
-    }
-    notify();
+    applyThemePreference(next);
   }, [isDarkMode]);
 
-  return { isDarkMode, toggleTheme };
+  const setThemePreference = useCallback((preference: ThemePreference) => {
+    applyThemePreference(preference);
+  }, []);
+
+  return { isDarkMode, setThemePreference, toggleTheme };
 };

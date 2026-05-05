@@ -25,6 +25,7 @@ import { Route as ApiProfileRouteImport } from './routes/api/profile'
 import { Route as ApiExperienceRouteImport } from './routes/api/experience'
 import { Route as ApiBlogsRouteImport } from './routes/api/blogs'
 import { Route as SettingsAccountProfileRouteImport } from './routes/settings.account.profile'
+import { Route as SettingsAccountPreferencesRouteImport } from './routes/settings.account.preferences'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
 import { Route as ApiConsoleWorkspacesRouteImport } from './routes/api/console/workspaces'
 import { Route as ApiConsoleUsersRouteImport } from './routes/api/console/users'
@@ -144,6 +145,12 @@ const SettingsAccountProfileRoute = SettingsAccountProfileRouteImport.update({
   path: '/account/profile',
   getParentRoute: () => SettingsRoute,
 } as any)
+const SettingsAccountPreferencesRoute =
+  SettingsAccountPreferencesRouteImport.update({
+    id: '/account/preferences',
+    path: '/account/preferences',
+    getParentRoute: () => SettingsRoute,
+  } as any)
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   id: '/api/github/stats',
   path: '/api/github/stats',
@@ -375,6 +382,7 @@ export interface FileRoutesByFullPath {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
@@ -430,6 +438,7 @@ export interface FileRoutesByTo {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
@@ -487,6 +496,7 @@ export interface FileRoutesById {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
@@ -600,6 +611,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
@@ -656,6 +668,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
@@ -829,6 +842,13 @@ declare module '@tanstack/react-router' {
       path: '/account/profile'
       fullPath: '/settings/account/profile'
       preLoaderRoute: typeof SettingsAccountProfileRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/account/preferences': {
+      id: '/settings/account/preferences'
+      path: '/account/preferences'
+      fullPath: '/settings/account/preferences'
+      preLoaderRoute: typeof SettingsAccountPreferencesRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/api/github/stats': {
@@ -1115,12 +1135,14 @@ const HomeRouteWithChildren = HomeRoute._addFileChildren(HomeRouteChildren)
 interface SettingsRouteChildren {
   SettingsMembersRoute: typeof SettingsMembersRoute
   SettingsWorkspaceRoute: typeof SettingsWorkspaceRoute
+  SettingsAccountPreferencesRoute: typeof SettingsAccountPreferencesRoute
   SettingsAccountProfileRoute: typeof SettingsAccountProfileRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsMembersRoute: SettingsMembersRoute,
   SettingsWorkspaceRoute: SettingsWorkspaceRoute,
+  SettingsAccountPreferencesRoute: SettingsAccountPreferencesRoute,
   SettingsAccountProfileRoute: SettingsAccountProfileRoute,
 }
 
