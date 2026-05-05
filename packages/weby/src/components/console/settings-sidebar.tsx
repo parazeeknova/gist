@@ -18,6 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useTheme } from "../../hooks/use-theme";
+import { SidebarTooltip } from "./sidebar-tooltip";
 
 interface SettingsSidebarProps {
   currentWorkspaceName?: string;
@@ -92,18 +93,15 @@ export const SettingsSidebar = ({
           <SlidersHorizontalIcon size={12} />
           preferences
         </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <KeyIcon size={12} />
-          api key
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
+            <KeyIcon size={12} />
+            api key
+          </button>
+        </SidebarTooltip>
       </div>
 
       <div className="mt-4">
@@ -128,18 +126,15 @@ export const SettingsSidebar = ({
           <UsersIcon size={12} />
           members
         </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <ShieldCheckIcon size={12} />
-          security & sso
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
+            <ShieldCheckIcon size={12} />
+            security & sso
+          </button>
+        </SidebarTooltip>
         <button
           className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
           type="button"
@@ -160,66 +155,51 @@ export const SettingsSidebar = ({
           <SquaresFourIcon size={12} />
           spaces
         </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <GlobeIcon size={12} />
-          public sharing
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <SealCheckIcon size={12} />
-          verified pages
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+            <GlobeIcon size={12} />
+            public sharing
+          </button>
+        </SidebarTooltip>
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <CodeIcon size={12} />
-          api management
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+            <SealCheckIcon size={12} />
+            verified pages
+          </button>
+        </SidebarTooltip>
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <SparkleIcon size={12} />
-          ai settings
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+            <CodeIcon size={12} />
+            api management
+          </button>
+        </SidebarTooltip>
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <ClockCounterClockwiseIcon size={12} />
-          audit log
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+            <SparkleIcon size={12} />
+            ai settings
+          </button>
+        </SidebarTooltip>
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
+            <ClockCounterClockwiseIcon size={12} />
+            audit log
+          </button>
+        </SidebarTooltip>
       </div>
 
       <div className="mt-4">
@@ -243,18 +223,15 @@ export const SettingsSidebar = ({
             debug
           </button>
         )}
-        <button
-          className={`group relative flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
-          type="button"
-        >
-          <ArrowClockwiseIcon size={12} />
-          update
-          <span
-            className={`pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded px-2 py-1 text-[10px] opacity-0 transition-opacity group-hover:opacity-100 ${t("bg-surface-dark text-text-dark", "bg-surface-light text-text-light")}`}
+        <SidebarTooltip label="coming soon">
+          <button
+            className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+            type="button"
           >
-            coming soon
-          </span>
-        </button>
+            <ArrowClockwiseIcon size={12} />
+            update
+          </button>
+        </SidebarTooltip>
       </div>
     </div>
   );
