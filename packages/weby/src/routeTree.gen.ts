@@ -17,6 +17,7 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HomeIndexRouteImport } from './routes/home.index'
 import { Route as SettingsWorkspaceRouteImport } from './routes/settings.workspace'
+import { Route as SettingsSpacesRouteImport } from './routes/settings.spaces'
 import { Route as SettingsMembersRouteImport } from './routes/settings.members'
 import { Route as HomeDebugRouteImport } from './routes/home.debug'
 import { Route as ApiStatsRouteImport } from './routes/api/stats'
@@ -103,6 +104,11 @@ const HomeIndexRoute = HomeIndexRouteImport.update({
 const SettingsWorkspaceRoute = SettingsWorkspaceRouteImport.update({
   id: '/workspace',
   path: '/workspace',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const SettingsSpacesRoute = SettingsSpacesRouteImport.update({
+  id: '/spaces',
+  path: '/spaces',
   getParentRoute: () => SettingsRoute,
 } as any)
 const SettingsMembersRoute = SettingsMembersRouteImport.update({
@@ -368,6 +374,7 @@ export interface FileRoutesByFullPath {
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
   '/settings/members': typeof SettingsMembersRoute
+  '/settings/spaces': typeof SettingsSpacesRoute
   '/settings/workspace': typeof SettingsWorkspaceRoute
   '/home/': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
@@ -424,6 +431,7 @@ export interface FileRoutesByTo {
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
   '/settings/members': typeof SettingsMembersRoute
+  '/settings/spaces': typeof SettingsSpacesRoute
   '/settings/workspace': typeof SettingsWorkspaceRoute
   '/home': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
@@ -482,6 +490,7 @@ export interface FileRoutesById {
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
   '/settings/members': typeof SettingsMembersRoute
+  '/settings/spaces': typeof SettingsSpacesRoute
   '/settings/workspace': typeof SettingsWorkspaceRoute
   '/home/': typeof HomeIndexRoute
   '/api/auth/bootstrap-state': typeof ApiAuthBootstrapStateRoute
@@ -541,6 +550,7 @@ export interface FileRouteTypes {
     | '/api/stats'
     | '/home/debug'
     | '/settings/members'
+    | '/settings/spaces'
     | '/settings/workspace'
     | '/home/'
     | '/api/auth/bootstrap-state'
@@ -597,6 +607,7 @@ export interface FileRouteTypes {
     | '/api/stats'
     | '/home/debug'
     | '/settings/members'
+    | '/settings/spaces'
     | '/settings/workspace'
     | '/home'
     | '/api/auth/bootstrap-state'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/api/stats'
     | '/home/debug'
     | '/settings/members'
+    | '/settings/spaces'
     | '/settings/workspace'
     | '/home/'
     | '/api/auth/bootstrap-state'
@@ -786,6 +798,13 @@ declare module '@tanstack/react-router' {
       path: '/workspace'
       fullPath: '/settings/workspace'
       preLoaderRoute: typeof SettingsWorkspaceRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/settings/spaces': {
+      id: '/settings/spaces'
+      path: '/spaces'
+      fullPath: '/settings/spaces'
+      preLoaderRoute: typeof SettingsSpacesRouteImport
       parentRoute: typeof SettingsRoute
     }
     '/settings/members': {
@@ -1134,6 +1153,7 @@ const HomeRouteWithChildren = HomeRoute._addFileChildren(HomeRouteChildren)
 
 interface SettingsRouteChildren {
   SettingsMembersRoute: typeof SettingsMembersRoute
+  SettingsSpacesRoute: typeof SettingsSpacesRoute
   SettingsWorkspaceRoute: typeof SettingsWorkspaceRoute
   SettingsAccountPreferencesRoute: typeof SettingsAccountPreferencesRoute
   SettingsAccountProfileRoute: typeof SettingsAccountProfileRoute
@@ -1141,6 +1161,7 @@ interface SettingsRouteChildren {
 
 const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsMembersRoute: SettingsMembersRoute,
+  SettingsSpacesRoute: SettingsSpacesRoute,
   SettingsWorkspaceRoute: SettingsWorkspaceRoute,
   SettingsAccountPreferencesRoute: SettingsAccountPreferencesRoute,
   SettingsAccountProfileRoute: SettingsAccountProfileRoute,

@@ -206,7 +206,7 @@ export const useSpaces = (workspaceId: string) =>
 export const useCreateSpace = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name: string; slug: string; icon?: string }) =>
+    mutationFn: (input: { name: string; slug: string; icon?: string; workspaceId: string }) =>
       fetchProtected<Space>("/api/console/spaces", {
         body: JSON.stringify(input),
         headers: { "Content-Type": "application/json" },
