@@ -8,6 +8,8 @@ import type {
   ConsoleUser,
   CreatePageInput,
   ExperienceItem,
+  Group,
+  GroupMember,
   MovePageInput,
   PageHistoryItem,
   PageTreeItem,
@@ -456,6 +458,67 @@ export const updateUserActive = (id: string, isActive: boolean, cookieHeader?: s
 
 export const deleteUser = (id: string, cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>(`console/users/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+// Group functions
+export const getGroups = (workspaceId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ groups: Group[] }>(`console/workspaces/${workspaceId}/groups`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const createGroup = (
+  workspaceId: string,
+  input: { name: string; description?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Group>(`console/workspaces/${workspaceId}/groups`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const updateGroup = (
+  id: string,
+  input: { name?: string; description?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Group>(`console/groups/${id}`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const deleteGroup = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/groups/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const getGroupMembers = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<GroupMember[]>(`console/groups/${id}/members`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const addGroupMember = (id: string, userId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/groups/${id}/members`, {
+    body: JSON.stringify({ userId }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const removeGroupMember = (groupId: string, userId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/groups/${groupId}/members/${userId}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "DELETE",
   });

@@ -136,6 +136,38 @@ const (
 	SpaceRoleReader = "reader"
 )
 
+// Group represents a workspace-scoped permission bundle.
+type Group struct {
+	ID          string `json:"id"`
+	WorkspaceID string `json:"workspaceId"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsDefault   bool   `json:"isDefault"`
+	CreatorID   string `json:"creatorId,omitempty"`
+	MemberCount int    `json:"memberCount"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+// GroupUser represents a user's membership in a group.
+type GroupUser struct {
+	ID      string `json:"id"`
+	GroupID string `json:"group_id"`
+	UserID  string `json:"user_id"`
+	AddedAt string `json:"added_at"`
+}
+
+// GroupMemberWithUser represents a group membership enriched with user details.
+type GroupMemberWithUser struct {
+	ID        string `json:"id"`
+	UserID    string `json:"user_id"`
+	GroupID   string `json:"group_id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+	AddedAt   string `json:"added_at"`
+}
+
 // Space represents a space grouping pages together.
 type Space struct {
 	ID          string `json:"id"`
@@ -153,10 +185,11 @@ type Space struct {
 	UpdatedAt   string `json:"updatedAt"`
 }
 
-// SpaceMember represents a user's membership in a space.
+// SpaceMember represents a membership in a space (user or group).
 type SpaceMember struct {
 	ID       string `json:"id"`
-	UserID   string `json:"user_id"`
+	UserID   string `json:"user_id,omitempty"`
+	GroupID  string `json:"group_id,omitempty"`
 	SpaceID  string `json:"space_id"`
 	Role     string `json:"role"`
 	JoinedAt string `json:"joined_at"`

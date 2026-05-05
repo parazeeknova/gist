@@ -229,7 +229,7 @@ func (r *SpaceRepo) AddMemberTx(ctx context.Context, tx pgx.Tx, spaceID, userID,
 	query := `
 		INSERT INTO space_members (space_id, user_id, role)
 		VALUES ($1, $2, $3)
-		ON CONFLICT (user_id, space_id) DO UPDATE SET role = EXCLUDED.role`
+		ON CONFLICT (space_id, user_id) WHERE user_id IS NOT NULL DO UPDATE SET role = EXCLUDED.role`
 	_, err := tx.Exec(ctx, query, spaceID, userID, role)
 	if err != nil {
 		return fmt.Errorf("adding member to space %q: %w", spaceID, err)
@@ -237,7 +237,33 @@ func (r *SpaceRepo) AddMemberTx(ctx context.Context, tx pgx.Tx, spaceID, userID,
 	return nil
 }
 
-// GetMemberRole returns a user's role in a space, or empty string if not a member.
+// AddGroupMember adds a group to a space with a given role.
+func (r *SpaceRepo) AddGroupMember(ctx context.Context, spaceID, groupID, role string) error {
+	query := `
+		INSERT INTO space_members (space_id, group_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (space_id, group_id) WHERE group_id IS NOT NULL DO UPDATE SET role = EXCLUDED.role`
+	_, err := r.pool.Exec(ctx, query, spaceID, groupID, role)
+	if err != nil {
+		return fmt.Errorf("adding group to space %q: %w", spaceID, err)
+	}
+	return nil
+}
+
+// AddGroupMemberTx adds a group to a space with a given role within a transaction.
+func (r *SpaceRepo) AddGroupMemberTx(ctx context.Context, tx pgx.Tx, spaceID, groupID, role string) error {
+	query := `
+		INSERT INTO space_members (space_id, group_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (space_id, group_id) WHERE group_id IS NOT NULL DO UPDATE SET role = EXCLUDED.role`
+	_, err := tx.Exec(ctx, query, spaceID, groupID, role)
+	if err != nil {
+		return fmt.Errorf("adding group to space %q: %w", spaceID, err)
+	}
+	return nil
+}
+
+// GetMemberRole returns a user's direct role in a space, or empty string if not a direct member.
 func (r *SpaceRepo) GetMemberRole(ctx context.Context, spaceID, userID string) (string, error) {
 	var role string
 	err := r.pool.QueryRow(ctx,
@@ -251,6 +277,48 @@ func (r *SpaceRepo) GetMemberRole(ctx context.Context, spaceID, userID string) (
 		return "", fmt.Errorf("getting member role: %w", err)
 	}
 	return role, nil
+}
+
+// GetEffectiveRole returns the highest role a user has in a space through direct or group membership.
+// Priority: admin > writer > reader.
+func (r *SpaceRepo) GetEffectiveRole(ctx context.Context, spaceID, userID string, groupIDs []string) (string, error) {
+	// Check direct membership first.
+	directRole, err := r.GetMemberRole(ctx, spaceID, userID)
+	if err != nil {
+		return "", err
+	}
+	if directRole == models.SpaceRoleAdmin {
+		return models.SpaceRoleAdmin, nil
+	}
+
+	// Check group-derived roles.
+	var groupRole string
+	if len(groupIDs) > 0 {
+		query := `
+			SELECT role FROM space_members
+			WHERE space_id = $1 AND group_id = ANY($2)
+			ORDER BY CASE role
+				WHEN 'admin' THEN 1
+				WHEN 'writer' THEN 2
+				WHEN 'reader' THEN 3
+			END
+			LIMIT 1`
+		err := r.pool.QueryRow(ctx, query, spaceID, groupIDs).Scan(&groupRole)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return "", fmt.Errorf("getting group role: %w", err)
+		}
+	}
+
+	// Pick the highest role.
+	roles := []string{directRole, groupRole}
+	for _, r := range []string{models.SpaceRoleAdmin, models.SpaceRoleWriter, models.SpaceRoleReader} {
+		for _, role := range roles {
+			if role == r {
+				return r, nil
+			}
+		}
+	}
+	return "", nil
 }
 
 // IsMember checks if a user is a member of a space.

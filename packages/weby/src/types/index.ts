@@ -193,6 +193,27 @@ export interface SpaceMemberWithUser {
   avatar_url: string;
 }
 
+export interface Group {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMember {
+  id: string;
+  user_id: string;
+  group_id: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+  added_at: string;
+}
+
 export interface Workspace {
   id: string;
   name: string;

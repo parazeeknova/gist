@@ -22,6 +22,7 @@ import { SidebarTooltip } from "./sidebar-tooltip";
 
 interface SettingsSidebarProps {
   currentWorkspaceName?: string;
+  isGroupsRoute: boolean;
   isMembersRoute: boolean;
   isPreferencesRoute: boolean;
   isProfileRoute: boolean;
@@ -33,6 +34,7 @@ interface SettingsSidebarProps {
 
 export const SettingsSidebar = ({
   currentWorkspaceName,
+  isGroupsRoute,
   isMembersRoute,
   isPreferencesRoute,
   isProfileRoute,
@@ -136,7 +138,8 @@ export const SettingsSidebar = ({
           </button>
         </SidebarTooltip>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
+          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(isGroupsRoute)}`}
+          onClick={() => navigate({ to: "/settings/groups" })}
           type="button"
         >
           <UsersThreeIcon size={12} />

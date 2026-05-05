@@ -3,10 +3,14 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"verso/backy/auth"
 	"verso/backy/database"
@@ -19,11 +23,50 @@ type testDB struct {
 	userRepo        *repositories.UserRepo
 	workspaceRepo   *repositories.WorkspaceRepo
 	spaceRepo       *repositories.SpaceRepo
+	groupRepo       *repositories.GroupRepo
 	pageRepo        *repositories.PageRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
 	workspaceSvc    *WorkspaceService
 	spaceSvc        *SpaceService
 	pageSvc         *PageService
+	groupSvc        *GroupService
+}
+
+func getTestDatabaseURL(t *testing.T, databaseURL string) string {
+	t.Helper()
+
+	u, err := url.Parse(databaseURL)
+	if err != nil {
+		t.Fatalf("parse database url: %v", err)
+	}
+
+	originalDB := strings.TrimPrefix(u.Path, "/")
+	if originalDB == "" {
+		originalDB = "verso"
+	}
+	testDBName := originalDB + "_test"
+
+	// Connect to postgres db to create test db
+	u.Path = "/postgres"
+	adminCfg := database.Config{DatabaseURL: u.String()}
+
+	ctx := context.Background()
+	adminPool, err := database.NewPool(ctx, adminCfg)
+	if err != nil {
+		t.Fatalf("connect to postgres db: %v", err)
+	}
+	defer adminPool.Close()
+
+	_, err = adminPool.Exec(ctx, fmt.Sprintf(`CREATE DATABASE "%s"`, testDBName))
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if !(errors.As(err, &pgErr) && pgErr.Code == "42P04") {
+			t.Fatalf("create test database: %v", err)
+		}
+	}
+
+	u.Path = "/" + testDBName
+	return u.String()
 }
 
 func setupTestDB(t *testing.T) *testDB {
@@ -35,9 +78,15 @@ func setupTestDB(t *testing.T) *testDB {
 	}
 
 	ctx := context.Background()
-	cfg := database.Config{DatabaseURL: databaseURL}
+	testDatabaseURL := getTestDatabaseURL(t, databaseURL)
+	cfg := database.Config{DatabaseURL: testDatabaseURL}
+
+	database.ClosePool()
 	if err := database.InitPool(ctx, cfg); err != nil {
 		t.Fatalf("init pool: %v", err)
+	}
+	if err := database.MigrateUp(ctx, database.GetPool()); err != nil {
+		t.Fatalf("migrate up: %v", err)
 	}
 
 	pool := database.GetPool()
@@ -49,9 +98,11 @@ func setupTestDB(t *testing.T) *testDB {
 		pageHistoryRepo: repositories.NewPageHistoryRepo(pool),
 	}
 
-	db.workspaceSvc = NewWorkspaceService(db.workspaceRepo, db.spaceRepo)
-	db.spaceSvc = NewSpaceService(db.spaceRepo, db.pageRepo)
+	db.groupRepo = repositories.NewGroupRepo()
+	db.workspaceSvc = NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
+	db.spaceSvc = NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
 	db.pageSvc = NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo)
+	db.groupSvc = NewGroupService(db.groupRepo, db.workspaceRepo)
 
 	truncateTables(t, ctx)
 
@@ -560,5 +611,293 @@ func TestWorkspaceService_UserACannotListWorkspaceBSpaces(t *testing.T) {
 	err = db.workspaceSvc.RequireMembership(ctx, wB.ID, userA)
 	if !errors.Is(err, ErrWorkspacePermissionDenied) {
 		t.Fatalf("expected ErrWorkspacePermissionDenied, got %v", err)
+	}
+}
+
+// ============================================================================
+// Group tests
+// ============================================================================
+
+func TestGroupService_DefaultGroupCreatedWithWorkspace(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	// Default group should exist.
+	groups, err := db.groupSvc.ListGroups(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("list groups: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(groups))
+	}
+	if groups[0].Name != "Everyone" {
+		t.Fatalf("expected 'Everyone', got %s", groups[0].Name)
+	}
+	if !groups[0].IsDefault {
+		t.Fatal("expected default group")
+	}
+
+	// Creator should be in the default group.
+	members, err := db.groupSvc.GetGroupMembers(ctx, groups[0].ID)
+	if err != nil {
+		t.Fatalf("get group members: %v", err)
+	}
+	if len(members) != 1 {
+		t.Fatalf("expected 1 member, got %d", len(members))
+	}
+	if members[0].UserID != ownerID {
+		t.Fatalf("expected owner in default group")
+	}
+}
+
+func TestGroupService_GroupUniquenessPerWorkspace(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	// Creating a group with the same name in the same workspace should fail.
+	_, err := db.groupSvc.CreateGroup(ctx, w.ID, "Everyone", "desc", ownerID)
+	if err == nil {
+		t.Fatal("expected error creating duplicate group name in workspace")
+	}
+
+	// Creating a group with a different name should succeed.
+	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Engineering", "eng team", ownerID)
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+	if g.Name != "Engineering" {
+		t.Fatalf("expected Engineering, got %s", g.Name)
+	}
+}
+
+func TestGroupService_AddRemoveMembers(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Engineering", "eng team", ownerID)
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+
+	if err := db.groupSvc.AddGroupMember(ctx, g.ID, memberID, ownerID); err != nil {
+		t.Fatalf("add group member: %v", err)
+	}
+
+	members, err := db.groupSvc.GetGroupMembers(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("get group members: %v", err)
+	}
+	if len(members) != 1 {
+		t.Fatalf("expected 1 member, got %d", len(members))
+	}
+
+	if err := db.groupSvc.RemoveGroupMember(ctx, g.ID, memberID, ownerID); err != nil {
+		t.Fatalf("remove group member: %v", err)
+	}
+
+	members, err = db.groupSvc.GetGroupMembers(ctx, g.ID)
+	if err != nil {
+		t.Fatalf("get group members after remove: %v", err)
+	}
+	if len(members) != 0 {
+		t.Fatalf("expected 0 members after remove, got %d", len(members))
+	}
+}
+
+func TestGroupService_DefaultGroupImmutable(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	defaultGroupID, err := db.groupSvc.GetDefaultGroupID(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("get default group: %v", err)
+	}
+
+	// Cannot rename default group.
+	_, err = db.groupSvc.UpdateGroup(ctx, defaultGroupID, "New Name", "", ownerID)
+	if !errors.Is(err, ErrDefaultGroupImmutable) {
+		t.Fatalf("expected ErrDefaultGroupImmutable, got %v", err)
+	}
+
+	// Cannot delete default group.
+	err = db.groupSvc.DeleteGroup(ctx, defaultGroupID, ownerID)
+	if !errors.Is(err, ErrDefaultGroupImmutable) {
+		t.Fatalf("expected ErrDefaultGroupImmutable, got %v", err)
+	}
+
+	// Cannot remove member from default group.
+	err = db.groupSvc.RemoveGroupMember(ctx, defaultGroupID, ownerID, ownerID)
+	if !errors.Is(err, ErrDefaultGroupImmutable) {
+		t.Fatalf("expected ErrDefaultGroupImmutable, got %v", err)
+	}
+}
+
+func TestGroupService_GroupBasedSpaceAccess(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	// Add member to workspace and default group (which gives writer access to default space).
+	if err := db.workspaceRepo.AddMember(ctx, w.ID, memberID, "member"); err != nil {
+		t.Fatalf("add workspace member: %v", err)
+	}
+	defaultGroupID, err := db.groupSvc.GetDefaultGroupID(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("get default group: %v", err)
+	}
+	if err := db.groupRepo.AddUser(ctx, defaultGroupID, memberID); err != nil {
+		t.Fatalf("add to default group: %v", err)
+	}
+
+	// Member should have writer access to default space through default group.
+	spaceID := w.DefaultSpaceID
+	if err := db.spaceSvc.RequireRead(ctx, spaceID, memberID); err != nil {
+		t.Fatalf("member should have read access: %v", err)
+	}
+
+	// Member should NOT have admin access.
+	if err := db.spaceSvc.requireAdmin(ctx, spaceID, memberID); err == nil {
+		t.Fatal("member should not have admin access")
+	}
+}
+
+func TestGroupService_HighestRoleResolution(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	// Create a new space.
+	s, err := db.spaceSvc.CreateSpace(ctx, "Test Space", "test-space", "", "", w.ID, ownerID)
+	if err != nil {
+		t.Fatalf("create space: %v", err)
+	}
+
+	// Create a group with reader access to the space.
+	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Readers", "read-only", ownerID)
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+	if err := db.spaceRepo.AddGroupMember(ctx, s.ID, g.ID, models.SpaceRoleReader); err != nil {
+		t.Fatalf("add group to space: %v", err)
+	}
+
+	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
+	if err := db.workspaceRepo.AddMember(ctx, w.ID, memberID, "member"); err != nil {
+		t.Fatalf("add workspace member: %v", err)
+	}
+	if err := db.groupRepo.AddUser(ctx, g.ID, memberID); err != nil {
+		t.Fatalf("add to group: %v", err)
+	}
+
+	// Member should have reader access through group.
+	if err := db.spaceSvc.RequireRead(ctx, s.ID, memberID); err != nil {
+		t.Fatalf("member should have read access: %v", err)
+	}
+
+	// Member should NOT have write access (group is reader).
+	p := models.Page{
+		ID:          uuid.New().String(),
+		SlugID:      uuid.New().String(),
+		Title:       "Test Page",
+		SpaceID:     s.ID,
+		CreatorID:   memberID,
+		ContentJSON: []byte("{}"),
+	}
+	if err := db.pageSvc.CreatePage(ctx, p); err == nil {
+		t.Fatal("member should not have write access")
+	}
+
+	// Now give the user direct writer access (higher than group reader).
+	if err := db.spaceRepo.AddMember(ctx, s.ID, memberID, models.SpaceRoleWriter); err != nil {
+		t.Fatalf("add direct writer: %v", err)
+	}
+
+	// Member should now have write access.
+	if err := db.pageSvc.CreatePage(ctx, p); err != nil {
+		t.Fatalf("member should now have write access: %v", err)
+	}
+}
+
+func TestGroupService_AccessRevocationAfterGroupRemoval(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+
+	// Create a group and space.
+	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Temp", "temp group", ownerID)
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+	s, err := db.spaceSvc.CreateSpace(ctx, "Test Space", "test-space", "", "", w.ID, ownerID)
+	if err != nil {
+		t.Fatalf("create space: %v", err)
+	}
+
+	if err := db.spaceRepo.AddGroupMember(ctx, s.ID, g.ID, models.SpaceRoleWriter); err != nil {
+		t.Fatalf("add group to space: %v", err)
+	}
+	if err := db.workspaceRepo.AddMember(ctx, w.ID, memberID, "member"); err != nil {
+		t.Fatalf("add workspace member: %v", err)
+	}
+	if err := db.groupRepo.AddUser(ctx, g.ID, memberID); err != nil {
+		t.Fatalf("add to group: %v", err)
+	}
+
+	// Member has access.
+	if err := db.spaceSvc.RequireRead(ctx, s.ID, memberID); err != nil {
+		t.Fatalf("member should have access: %v", err)
+	}
+
+	// Remove member from group.
+	if err := db.groupSvc.RemoveGroupMember(ctx, g.ID, memberID, ownerID); err != nil {
+		t.Fatalf("remove from group: %v", err)
+	}
+
+	// Member should lose access.
+	if err := db.spaceSvc.RequireRead(ctx, s.ID, memberID); err == nil {
+		t.Fatal("member should lose access after group removal")
+	}
+}
+
+func TestGroupService_CrossWorkspaceIsolation(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	userA := createTestUser(t, ctx, db, "userA", "a@example.com")
+	userB := createTestUser(t, ctx, db, "userB", "b@example.com")
+	wA := createTestWorkspace(t, ctx, db, "Workspace A", "workspace-a", userA)
+	_ = createTestWorkspace(t, ctx, db, "Workspace B", "workspace-b", userB)
+
+	// User A creates a group in workspace A.
+	gA, err := db.groupSvc.CreateGroup(ctx, wA.ID, "Eng", "eng", userA)
+	if err != nil {
+		t.Fatalf("create group: %v", err)
+	}
+
+	// User B should not be able to modify group in workspace A.
+	_, err = db.groupSvc.UpdateGroup(ctx, gA.ID, "Hacked", "", userB)
+	if !errors.Is(err, ErrGroupPermissionDenied) {
+		t.Fatalf("expected ErrGroupPermissionDenied, got %v", err)
 	}
 }

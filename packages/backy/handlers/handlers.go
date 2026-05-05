@@ -30,6 +30,7 @@ type Handlers struct {
 	pageService      *services.PageService
 	spaceService     *services.SpaceService
 	workspaceService *services.WorkspaceService
+	groupService     *services.GroupService
 }
 
 // Config holds application configuration
@@ -48,11 +49,12 @@ func New(cfg Config) *Handlers {
 }
 
 // NewWithDB creates a new handlers instance with database-backed services.
-func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService, workspaceService *services.WorkspaceService) *Handlers {
+func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService, workspaceService *services.WorkspaceService, groupService *services.GroupService) *Handlers {
 	h := New(cfg)
 	h.pageService = pageService
 	h.spaceService = spaceService
 	h.workspaceService = workspaceService
+	h.groupService = groupService
 	return h
 }
 

@@ -60,6 +60,7 @@ const RootComponent = () => {
         hasRestored.current = true;
         await queryClient.resumePausedMutations();
         await queryClient.invalidateQueries({ queryKey: ["github-stats"] });
+        await queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
       }}
       persistOptions={{ persister }}
     >

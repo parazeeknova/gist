@@ -22,17 +22,19 @@ var (
 type WorkspaceService struct {
 	workspaceRepo *repositories.WorkspaceRepo
 	spaceRepo     *repositories.SpaceRepo
+	groupRepo     *repositories.GroupRepo
 }
 
 // NewWorkspaceService creates a new workspace service.
-func NewWorkspaceService(workspaceRepo *repositories.WorkspaceRepo, spaceRepo *repositories.SpaceRepo) *WorkspaceService {
+func NewWorkspaceService(workspaceRepo *repositories.WorkspaceRepo, spaceRepo *repositories.SpaceRepo, groupRepo *repositories.GroupRepo) *WorkspaceService {
 	return &WorkspaceService{
 		workspaceRepo: workspaceRepo,
 		spaceRepo:     spaceRepo,
+		groupRepo:     groupRepo,
 	}
 }
 
-// CreateWorkspace creates a new workspace with a default space and memberships atomically.
+// CreateWorkspace creates a new workspace with a default group, default space, and memberships atomically.
 func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon, userID string) (models.Workspace, error) {
 	w := models.Workspace{
 		ID:       uuid.New().String(),
@@ -40,6 +42,15 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon
 		Slug:     slug,
 		Icon:     icon,
 		Settings: "{}",
+	}
+
+	defaultGroup := models.Group{
+		ID:          uuid.New().String(),
+		WorkspaceID: w.ID,
+		Name:        "Everyone",
+		Description: "All workspace members",
+		IsDefault:   true,
+		CreatorID:   userID,
 	}
 
 	space := models.Space{
@@ -68,10 +79,24 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon
 		return models.Workspace{}, fmt.Errorf("adding creator as workspace owner: %w", err)
 	}
 
+	if err := s.groupRepo.InsertTx(ctx, tx, defaultGroup); err != nil {
+		return models.Workspace{}, fmt.Errorf("creating default group: %w", err)
+	}
+
+	if err := s.groupRepo.AddUserTx(ctx, tx, defaultGroup.ID, userID); err != nil {
+		return models.Workspace{}, fmt.Errorf("adding creator to default group: %w", err)
+	}
+
 	if err := s.spaceRepo.InsertTx(ctx, tx, space); err != nil {
 		return models.Workspace{}, fmt.Errorf("creating default space: %w", err)
 	}
 
+	// Add default group to default space as writer.
+	if err := s.spaceRepo.AddGroupMemberTx(ctx, tx, space.ID, defaultGroup.ID, models.SpaceRoleWriter); err != nil {
+		return models.Workspace{}, fmt.Errorf("adding default group to space: %w", err)
+	}
+
+	// Add creator directly to default space as admin (highest role wins).
 	if err := s.spaceRepo.AddMemberTx(ctx, tx, space.ID, userID, models.SpaceRoleAdmin); err != nil {
 		return models.Workspace{}, fmt.Errorf("adding creator to default space: %w", err)
 	}
@@ -202,4 +227,21 @@ func (s *WorkspaceService) RequireOwnerOrAdmin(ctx context.Context, workspaceID,
 		return nil
 	}
 	return ErrWorkspacePermissionDenied
+}
+
+// AddWorkspaceMember adds a user to a workspace and the default group.
+func (s *WorkspaceService) AddWorkspaceMember(ctx context.Context, workspaceID, userID, role string) error {
+	if err := s.workspaceRepo.AddMember(ctx, workspaceID, userID, role); err != nil {
+		return fmt.Errorf("adding workspace member: %w", err)
+	}
+	if s.groupRepo != nil {
+		defaultGroupID, err := s.groupRepo.GetDefaultGroupID(ctx, workspaceID)
+		if err != nil {
+			return fmt.Errorf("finding default group: %w", err)
+		}
+		if err := s.groupRepo.AddUser(ctx, defaultGroupID, userID); err != nil {
+			return fmt.Errorf("adding to default group: %w", err)
+		}
+	}
+	return nil
 }

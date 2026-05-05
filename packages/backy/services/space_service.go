@@ -25,13 +25,15 @@ var ErrSpacePermissionDenied = errors.New("permission denied for this space")
 type SpaceService struct {
 	spaceRepo *repositories.SpaceRepo
 	pageRepo  *repositories.PageRepo
+	groupRepo *repositories.GroupRepo
 }
 
 // NewSpaceService creates a new space service.
-func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.PageRepo) *SpaceService {
+func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.PageRepo, groupRepo *repositories.GroupRepo) *SpaceService {
 	return &SpaceService{
 		spaceRepo: spaceRepo,
 		pageRepo:  pageRepo,
+		groupRepo: groupRepo,
 	}
 }
 
@@ -148,20 +150,34 @@ func (s *SpaceService) GetDefaultSpaceID(ctx context.Context) (string, error) {
 
 // --- Role helpers ---
 
+func (s *SpaceService) userGroupIDs(ctx context.Context, userID, workspaceID string) ([]string, error) {
+	if s.groupRepo == nil {
+		return nil, nil
+	}
+	return s.groupRepo.ListUserGroupIDsInWorkspace(ctx, userID, workspaceID)
+}
+
 func (s *SpaceService) requireAdmin(ctx context.Context, spaceID, userID string) error {
-	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
-	if err != nil {
-		return fmt.Errorf("checking role: %w", err)
-	}
-	if role == models.SpaceRoleAdmin {
-		return nil
-	}
-	// Fallback: creator of the space always has admin access
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err != nil {
-		return fmt.Errorf("checking creator: %w", err)
+		return fmt.Errorf("getting space: %w", err)
 	}
+
+	// Creator always has admin.
 	if space.CreatedBy == userID {
+		return nil
+	}
+
+	groupIDs, err := s.userGroupIDs(ctx, userID, space.WorkspaceID)
+	if err != nil {
+		return fmt.Errorf("getting user groups: %w", err)
+	}
+
+	role, err := s.spaceRepo.GetEffectiveRole(ctx, spaceID, userID, groupIDs)
+	if err != nil {
+		return fmt.Errorf("checking effective role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin {
 		return nil
 	}
 	return ErrSpacePermissionDenied
@@ -169,19 +185,26 @@ func (s *SpaceService) requireAdmin(ctx context.Context, spaceID, userID string)
 
 // RequireRead checks if a user has at least reader access to a space.
 func (s *SpaceService) RequireRead(ctx context.Context, spaceID, userID string) error {
-	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
-	if err != nil {
-		return fmt.Errorf("checking space role: %w", err)
-	}
-	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter || role == models.SpaceRoleReader {
-		return nil
-	}
-	// Fallback: creator of the space always has read access
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err != nil {
-		return fmt.Errorf("checking space creator: %w", err)
+		return fmt.Errorf("getting space: %w", err)
 	}
+
+	// Creator always has access.
 	if space.CreatedBy == userID {
+		return nil
+	}
+
+	groupIDs, err := s.userGroupIDs(ctx, userID, space.WorkspaceID)
+	if err != nil {
+		return fmt.Errorf("getting user groups: %w", err)
+	}
+
+	role, err := s.spaceRepo.GetEffectiveRole(ctx, spaceID, userID, groupIDs)
+	if err != nil {
+		return fmt.Errorf("checking effective role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter || role == models.SpaceRoleReader {
 		return nil
 	}
 	return ErrSpacePermissionDenied

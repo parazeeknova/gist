@@ -100,10 +100,12 @@ func main() {
 		pageHistoryRepo := repositories.NewPageHistoryRepo(pool)
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
+		groupRepo := repositories.NewGroupRepo()
 		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo)
-		spaceService := services.NewSpaceService(spaceRepo, pageRepo)
-		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo)
-		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService)
+		spaceService := services.NewSpaceService(spaceRepo, pageRepo, groupRepo)
+		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
+		groupService := services.NewGroupService(groupRepo, workspaceRepo)
+		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService, groupService)
 	} else {
 		h = handlers.New(cfg)
 	}
@@ -229,6 +231,15 @@ func main() {
 			console.GET("/spaces/:id/members", h.GetSpaceMembers)
 			console.PUT("/spaces/:id/members/:userId", h.UpdateSpaceMemberRole)
 			console.DELETE("/spaces/:id/members/:userId", h.RemoveSpaceMember)
+
+			// Groups
+			console.GET("/workspaces/:workspaceId/groups", h.GetGroups)
+			console.POST("/workspaces/:workspaceId/groups", h.CreateGroup)
+			console.PUT("/groups/:id", h.UpdateGroup)
+			console.DELETE("/groups/:id", h.DeleteGroup)
+			console.GET("/groups/:id/members", h.GetGroupMembers)
+			console.POST("/groups/:id/members", h.AddGroupMember)
+			console.DELETE("/groups/:id/members/:userId", h.RemoveGroupMember)
 
 			// Page CRUD
 			console.GET("/pages", h.GetConsolePages)

@@ -79,6 +79,7 @@ export const ConsoleLayout = () => {
   const isWorkspaceRoute = routerState.location.pathname === "/settings/workspace";
   const isMembersRoute = routerState.location.pathname === "/settings/members";
   const isSpacesRoute = routerState.location.pathname === "/settings/spaces";
+  const isGroupsRoute = routerState.location.pathname === "/settings/groups";
   const debugSelectedTable =
     ((routerState.location.search as Record<string, unknown> | undefined)?.table as string) ?? null;
 
@@ -189,6 +190,7 @@ export const ConsoleLayout = () => {
     sidebarContent = (
       <SettingsSidebar
         currentWorkspaceName={currentWorkspace?.name}
+        isGroupsRoute={isGroupsRoute}
         isMembersRoute={isMembersRoute}
         isPreferencesRoute={isPreferencesRoute}
         isProfileRoute={isProfileRoute}
