@@ -31,6 +31,7 @@ type Handlers struct {
 	spaceService     *services.SpaceService
 	workspaceService *services.WorkspaceService
 	groupService     *services.GroupService
+	notifier         services.Notifier
 }
 
 // Config holds application configuration
@@ -45,7 +46,13 @@ func New(cfg Config) *Handlers {
 		githubService: services.NewGitHubService(10 * time.Minute),
 		statsCache:    cache.NewStatsCache(10 * time.Minute),
 		config:        cfg,
+		notifier:      services.NoopNotifier(),
 	}
+}
+
+// SetNotifier sets the notification service on the handlers.
+func (h *Handlers) SetNotifier(n services.Notifier) {
+	h.notifier = n
 }
 
 // NewWithDB creates a new handlers instance with database-backed services.

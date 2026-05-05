@@ -193,6 +193,22 @@ export interface SpaceMemberWithUser {
   avatar_url: string;
 }
 
+export interface SpaceMemberMixed {
+  memberType: "user" | "group";
+  id: string;
+  userId?: string;
+  groupId?: string;
+  spaceId: string;
+  role: string;
+  joinedAt: string;
+  name: string;
+  email?: string;
+  avatarUrl?: string;
+  description?: string;
+  memberCount?: number;
+  isDefault?: boolean;
+}
+
 export interface Group {
   id: string;
   workspaceId: string;
@@ -226,4 +242,28 @@ export interface Workspace {
   memberCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  workspaceId: string;
+  recipientUserId: string;
+  actorUserId?: string;
+  type: string;
+  title: string;
+  body: string;
+  entityType: string;
+  entityId: string;
+  metadata: string;
+  readAt: string | null;
+  createdAt: string;
+  actorName?: string;
+  actorAvatarUrl?: string;
+}
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string;
 }

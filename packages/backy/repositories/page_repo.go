@@ -223,7 +223,8 @@ func (r *PageRepo) Insert(ctx context.Context, p models.Page) error {
 		                   last_updated_by_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
 
-	_, err := r.pool.Exec(ctx, query,
+	_, err := r.pool.Exec(
+		ctx, query,
 		p.ID, p.SlugID, p.Title, p.Icon, p.CoverPhoto,
 		contentJSONBytes, p.YDoc, p.TextContent, p.Position, p.IsPublished,
 		p.ParentPageID, p.SpaceID, p.CreatorID, p.LastUpdatedByID,
@@ -250,7 +251,8 @@ func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 		    last_updated_by_id = $10, updated_at = $11
 		WHERE id = $12`
 
-	tag, err := r.pool.Exec(ctx, query,
+	tag, err := r.pool.Exec(
+		ctx, query,
 		p.Title, p.Icon, p.CoverPhoto, contentJSONBytes, p.YDoc,
 		p.TextContent, p.Position, p.IsPublished, p.ParentPageID,
 		p.LastUpdatedByID, p.UpdatedAt, p.ID,

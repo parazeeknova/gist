@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
-import { MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, UsersThreeIcon, XIcon } from "@phosphor-icons/react";
+import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "#/hooks/use-theme";
 import { useAuth } from "#/hooks/use-auth";
 import {
+  useAddSpaceGroup,
+  useRemoveSpaceGroup,
   useRemoveSpaceMember,
   useSpaceMembers,
   useUpdateSpace,
+  useUpdateSpaceGroupRole,
   useUpdateSpaceMemberRole,
 } from "#/hooks/use-console-mutations";
-import type { Space, SpaceMemberWithUser } from "#/types";
+import { fetchProtected } from "#/hooks/fetch-protected";
+import type { Group, Space, SpaceMemberMixed } from "#/types";
 import { SpaceAvatarUploader } from "./space-avatar-uploader";
 
 const getInitials = (text: string) =>
@@ -36,6 +41,16 @@ const memberRoleLabel = (role: string) => {
   }
 };
 
+const useGroups = (workspaceId: string) =>
+  useQuery<{ groups: Group[] }>({
+    enabled: workspaceId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<{ groups: Group[] }>(`/api/console/workspaces/${workspaceId}/groups`, {
+        signal,
+      }),
+    queryKey: ["groups", workspaceId],
+  });
+
 interface SpaceDetailSidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -58,6 +73,8 @@ export const SpaceDetailSidebar = ({
   const [icon, setIcon] = useState(space.icon ?? "");
   const [memberSearch, setMemberSearch] = useState("");
   const [updatingMember, setUpdatingMember] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [addGroupRole, setAddGroupRole] = useState("writer");
 
   const hasChanges =
     name.trim() !== space.name.trim() ||
@@ -67,19 +84,36 @@ export const SpaceDetailSidebar = ({
 
   const { data: members, isPending: membersPending } = useSpaceMembers(space.id);
   const { data: currentUser } = useAuth();
+  const { data: groupsData } = useGroups(space.workspaceId);
   const updateSpace = useUpdateSpace();
   const updateRole = useUpdateSpaceMemberRole();
   const removeMember = useRemoveSpaceMember();
+  const addSpaceGroup = useAddSpaceGroup();
+  const updateGroupRole = useUpdateSpaceGroupRole();
+  const removeGroup = useRemoveSpaceGroup();
 
   const filteredMembers = useMemo(() => {
     if (!memberSearch || !members) {
       return members ?? [];
     }
     const term = memberSearch.toLowerCase();
-    return members.filter(
-      (m) => m.name.toLowerCase().includes(term) || m.email.toLowerCase().includes(term),
-    );
+    return members.filter((m) => {
+      if (m.memberType === "user") {
+        return m.name.toLowerCase().includes(term) || (m.email?.toLowerCase() ?? "").includes(term);
+      }
+      return (
+        m.name.toLowerCase().includes(term) || (m.description?.toLowerCase() ?? "").includes(term)
+      );
+    });
   }, [members, memberSearch]);
+
+  const availableGroups = useMemo(() => {
+    const all = groupsData?.groups ?? [];
+    const existingGroupIds = new Set(
+      (members ?? []).filter((m) => m.memberType === "group").map((m) => m.groupId),
+    );
+    return all.filter((g) => !existingGroupIds.has(g.id));
+  }, [groupsData, members]);
 
   const handleSaveDetails = () => {
     updateSpace.mutate({
@@ -93,10 +127,10 @@ export const SpaceDetailSidebar = ({
     });
   };
 
-  const handleRoleChange = (member: SpaceMemberWithUser, newRole: string) => {
-    setUpdatingMember(member.user_id);
+  const handleRoleChange = (userId: string, newRole: string) => {
+    setUpdatingMember(userId);
     updateRole.mutate(
-      { role: newRole, spaceId: space.id, userId: member.user_id },
+      { role: newRole, spaceId: space.id, userId },
       {
         onSettled: () => setUpdatingMember(null),
       },
@@ -105,6 +139,35 @@ export const SpaceDetailSidebar = ({
 
   const handleRemoveMember = (userId: string) => {
     removeMember.mutate({ spaceId: space.id, userId });
+  };
+
+  const handleGroupRoleChange = (groupId: string, newRole: string) => {
+    setUpdatingMember(groupId);
+    updateGroupRole.mutate(
+      { groupId, role: newRole, spaceId: space.id },
+      {
+        onSettled: () => setUpdatingMember(null),
+      },
+    );
+  };
+
+  const handleRemoveGroup = (groupId: string) => {
+    removeGroup.mutate({ groupId, spaceId: space.id });
+  };
+
+  const handleAddGroup = () => {
+    if (!selectedGroupId) {
+      return;
+    }
+    addSpaceGroup.mutate(
+      { groupId: selectedGroupId, role: addGroupRole, spaceId: space.id },
+      {
+        onSuccess: () => {
+          setSelectedGroupId("");
+          setAddGroupRole("writer");
+        },
+      },
+    );
   };
 
   if (!isOpen) {
@@ -232,6 +295,40 @@ export const SpaceDetailSidebar = ({
               />
             </div>
 
+            {availableGroups.length > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <select
+                  className={`flex-1 bg-transparent py-1 text-[10px] lowercase outline-none border-b cursor-pointer ${t("border-border-dark text-text-dark/60", "border-border-light text-text-light/60")}`}
+                  onChange={(e) => setSelectedGroupId(e.target.value)}
+                  value={selectedGroupId}
+                >
+                  <option value="">add group...</option>
+                  {availableGroups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className={`bg-transparent py-1 text-[10px] lowercase outline-none border-b cursor-pointer ${t("border-border-dark text-text-dark/60", "border-border-light text-text-light/60")}`}
+                  onChange={(e) => setAddGroupRole(e.target.value)}
+                  value={addGroupRole}
+                >
+                  <option value="writer">can edit</option>
+                  <option value="admin">full access</option>
+                  <option value="reader">can view</option>
+                </select>
+                <button
+                  className={`text-[10px] lowercase ${selectedGroupId ? t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90") : "opacity-30 cursor-not-allowed"}`}
+                  disabled={!selectedGroupId || addSpaceGroup.isPending}
+                  onClick={handleAddGroup}
+                  type="button"
+                >
+                  add
+                </button>
+              </div>
+            )}
+
             {membersPending ? (
               <p
                 className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}
@@ -240,21 +337,63 @@ export const SpaceDetailSidebar = ({
               </p>
             ) : (
               <div className="space-y-2">
-                {filteredMembers.map((member) => {
-                  const isSelf = member.user_id === currentUser?.id;
-                  const isCreator = member.user_id === space.createdBy;
+                {filteredMembers.map((member: SpaceMemberMixed) => {
+                  if (member.memberType === "group") {
+                    return (
+                      <div key={member.groupId} className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-white/10">
+                          <UsersThreeIcon
+                            className={t("text-text-dark/60", "text-text-light/60")}
+                            size={10}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] truncate">{member.name}</p>
+                          {member.description && (
+                            <p
+                              className={`text-[10px] truncate ${t("text-text-dark/30", "text-text-light/30")}`}
+                            >
+                              {member.description}
+                            </p>
+                          )}
+                        </div>
+                        <select
+                          className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.groupId ? "opacity-50" : ""}`}
+                          disabled={updatingMember === member.groupId}
+                          onChange={(e) =>
+                            handleGroupRoleChange(member.groupId ?? "", e.target.value)
+                          }
+                          value={member.role}
+                        >
+                          <option value="admin">full access</option>
+                          <option value="writer">can edit</option>
+                          <option value="reader">can view</option>
+                        </select>
+                        <button
+                          className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-red-400", "text-text-light/30 hover:text-red-600")}`}
+                          onClick={() => handleRemoveGroup(member.groupId ?? "")}
+                          type="button"
+                        >
+                          remove
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  const isSelf = member.userId === currentUser?.id;
+                  const isCreator = member.userId === space.createdBy;
                   const disableControls = isSelf || isCreator;
                   return (
-                    <div key={member.user_id} className="flex items-center gap-2">
-                      {member.avatar_url ? (
+                    <div key={member.userId} className="flex items-center gap-2">
+                      {member.avatarUrl ? (
                         <img
                           alt=""
                           className="w-5 h-5 rounded-full object-cover shrink-0"
-                          src={member.avatar_url}
+                          src={member.avatarUrl}
                         />
                       ) : (
                         <span className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 bg-white/10 text-text-dark/60">
-                          {getInitials(member.name || member.email)}
+                          {getInitials(member.name || (member.email ?? ""))}
                         </span>
                       )}
                       <div className="flex-1 min-w-0">
@@ -282,9 +421,9 @@ export const SpaceDetailSidebar = ({
                         </div>
                       ) : (
                         <select
-                          className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.user_id ? "opacity-50" : ""}`}
-                          disabled={updatingMember === member.user_id}
-                          onChange={(e) => handleRoleChange(member, e.target.value)}
+                          className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.userId ? "opacity-50" : ""}`}
+                          disabled={updatingMember === member.userId}
+                          onChange={(e) => handleRoleChange(member.userId ?? "", e.target.value)}
                           value={member.role}
                         >
                           <option value="admin">full access</option>
@@ -308,7 +447,7 @@ export const SpaceDetailSidebar = ({
                       ) : (
                         <button
                           className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-red-400", "text-text-light/30 hover:text-red-600")}`}
-                          onClick={() => handleRemoveMember(member.user_id)}
+                          onClick={() => handleRemoveMember(member.userId ?? "")}
                           type="button"
                         >
                           remove

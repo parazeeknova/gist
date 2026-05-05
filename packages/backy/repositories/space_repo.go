@@ -266,7 +266,8 @@ func (r *SpaceRepo) AddGroupMemberTx(ctx context.Context, tx pgx.Tx, spaceID, gr
 // GetMemberRole returns a user's direct role in a space, or empty string if not a direct member.
 func (r *SpaceRepo) GetMemberRole(ctx context.Context, spaceID, userID string) (string, error) {
 	var role string
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT role FROM space_members WHERE space_id = $1 AND user_id = $2`,
 		spaceID, userID,
 	).Scan(&role)
@@ -324,7 +325,8 @@ func (r *SpaceRepo) GetEffectiveRole(ctx context.Context, spaceID, userID string
 // IsMember checks if a user is a member of a space.
 func (r *SpaceRepo) IsMember(ctx context.Context, spaceID, userID string) (bool, error) {
 	var exists bool
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT EXISTS(SELECT 1 FROM space_members WHERE space_id = $1 AND user_id = $2)`,
 		spaceID, userID,
 	).Scan(&exists)
@@ -336,7 +338,8 @@ func (r *SpaceRepo) IsMember(ctx context.Context, spaceID, userID string) (bool,
 
 // RemoveMember removes a user from a space.
 func (r *SpaceRepo) RemoveMember(ctx context.Context, spaceID, userID string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`DELETE FROM space_members WHERE space_id = $1 AND user_id = $2`,
 		spaceID, userID,
 	)
@@ -349,7 +352,8 @@ func (r *SpaceRepo) RemoveMember(ctx context.Context, spaceID, userID string) er
 // GetMemberCount returns the number of members in a space.
 func (r *SpaceRepo) GetMemberCount(ctx context.Context, spaceID string) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT COUNT(*) FROM space_members WHERE space_id = $1`, spaceID,
 	).Scan(&count)
 	if err != nil {
@@ -392,9 +396,79 @@ func (r *SpaceRepo) GetMembersWithUsers(ctx context.Context, spaceID string) ([]
 	return members, nil
 }
 
+// GetMembersMixed returns all members of a space as a mixed collection of users and groups.
+func (r *SpaceRepo) GetMembersMixed(ctx context.Context, spaceID string) ([]models.SpaceMemberMixed, error) {
+	query := `
+		SELECT 'user', sm.id, sm.user_id, NULL, sm.space_id, sm.role, sm.joined_at::text,
+		       COALESCE(u.name, ''), COALESCE(u.email, ''), COALESCE(u.avatar_url, ''),
+		       NULL, NULL, NULL
+		FROM space_members sm
+		JOIN users u ON u.id = sm.user_id
+		WHERE sm.space_id = $1
+		UNION ALL
+		SELECT 'group', sm.id, NULL, sm.group_id, sm.space_id, sm.role, sm.joined_at::text,
+		       g.name, NULL, NULL,
+		       g.description, g.member_count,
+		       g.is_default
+		FROM space_members sm
+		JOIN groups g ON g.id = sm.group_id
+		WHERE sm.space_id = $1
+		ORDER BY 7 DESC`
+
+	rows, err := r.pool.Query(ctx, query, spaceID)
+	if err != nil {
+		return nil, fmt.Errorf("listing mixed space members: %w", err)
+	}
+	defer rows.Close()
+
+	var members []models.SpaceMemberMixed
+	for rows.Next() {
+		var m models.SpaceMemberMixed
+		var memberCount *int
+		if err := rows.Scan(&m.MemberType, &m.ID, &m.UserID, &m.GroupID, &m.SpaceID, &m.Role, &m.JoinedAt,
+			&m.Name, &m.Email, &m.AvatarURL, &m.Description, &memberCount, &m.IsDefault); err != nil {
+			return nil, fmt.Errorf("scanning mixed space member: %w", err)
+		}
+		if memberCount != nil {
+			m.MemberCount = *memberCount
+		}
+		members = append(members, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating mixed space members: %w", err)
+	}
+	if members == nil {
+		members = []models.SpaceMemberMixed{}
+	}
+	return members, nil
+}
+
+// UpdateGroupMemberRole updates a group's role in a space.
+func (r *SpaceRepo) UpdateGroupMemberRole(ctx context.Context, spaceID, groupID, role string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE space_members SET role = $1 WHERE space_id = $2 AND group_id = $3`,
+		role, spaceID, groupID)
+	if err != nil {
+		return fmt.Errorf("updating group member role: %w", err)
+	}
+	return nil
+}
+
+// RemoveGroupMember removes a group from a space.
+func (r *SpaceRepo) RemoveGroupMember(ctx context.Context, spaceID, groupID string) error {
+	_, err := r.pool.Exec(ctx,
+		`DELETE FROM space_members WHERE space_id = $1 AND group_id = $2`,
+		spaceID, groupID)
+	if err != nil {
+		return fmt.Errorf("removing group from space %q: %w", spaceID, err)
+	}
+	return nil
+}
+
 // GetMembers returns all members of a space.
 func (r *SpaceRepo) GetMembers(ctx context.Context, spaceID string) ([]models.SpaceMember, error) {
-	rows, err := r.pool.Query(ctx,
+	rows, err := r.pool.Query(
+		ctx,
 		`SELECT id, user_id, space_id, role, joined_at::text FROM space_members WHERE space_id = $1`,
 		spaceID,
 	)
@@ -422,7 +496,8 @@ func (r *SpaceRepo) GetMembers(ctx context.Context, spaceID string) ([]models.Sp
 
 // UpdateMemberRole updates a user's role in a space.
 func (r *SpaceRepo) UpdateMemberRole(ctx context.Context, spaceID, userID, role string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE space_members SET role = $1 WHERE space_id = $2 AND user_id = $3`,
 		role, spaceID, userID,
 	)
@@ -435,7 +510,8 @@ func (r *SpaceRepo) UpdateMemberRole(ctx context.Context, spaceID, userID, role 
 // HasAdminOtherThan checks if there's another admin besides the given user.
 func (r *SpaceRepo) HasAdminOtherThan(ctx context.Context, spaceID, userID string) (bool, error) {
 	var exists bool
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT EXISTS(SELECT 1 FROM space_members WHERE space_id = $1 AND user_id != $2 AND role = 'admin')`,
 		spaceID, userID,
 	).Scan(&exists)
@@ -443,4 +519,30 @@ func (r *SpaceRepo) HasAdminOtherThan(ctx context.Context, spaceID, userID strin
 		return false, fmt.Errorf("checking other admins: %w", err)
 	}
 	return exists, nil
+}
+
+// ListWorkspaceMemberIDs returns all user IDs that are members of a workspace.
+func (r *SpaceRepo) ListWorkspaceMemberIDs(ctx context.Context, workspaceID string) ([]string, error) {
+	rows, err := r.pool.Query(
+		ctx,
+		`SELECT user_id FROM workspace_members WHERE workspace_id = $1`,
+		workspaceID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing workspace member IDs: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scanning member ID: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating member IDs: %w", err)
+	}
+	return ids, nil
 }

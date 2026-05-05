@@ -683,6 +683,7 @@ func TestGroupService_AddRemoveMembers(t *testing.T) {
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
 	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	addWorkspaceMember(t, ctx, db, w.ID, memberID, "member")
 
 	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Engineering", "eng team", ownerID)
 	if err != nil {

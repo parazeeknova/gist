@@ -207,6 +207,23 @@ type SpaceMemberWithUser struct {
 	AvatarURL string `json:"avatar_url"`
 }
 
+// SpaceMemberMixed represents a space membership that may be a user or a group.
+type SpaceMemberMixed struct {
+	MemberType  string `json:"memberType"`
+	ID          string `json:"id"`
+	UserID      string `json:"userId,omitempty"`
+	GroupID     string `json:"groupId,omitempty"`
+	SpaceID     string `json:"spaceId"`
+	Role        string `json:"role"`
+	JoinedAt    string `json:"joinedAt"`
+	Name        string `json:"name"`
+	Email       string `json:"email,omitempty"`
+	AvatarURL   string `json:"avatarUrl,omitempty"`
+	Description string `json:"description,omitempty"`
+	MemberCount int    `json:"memberCount,omitempty"`
+	IsDefault   bool   `json:"isDefault,omitempty"`
+}
+
 // Workspace represents a top-level grouping of spaces.
 type Workspace struct {
 	ID             string `json:"id"`
@@ -315,4 +332,50 @@ type AuthRefreshToken struct {
 	CreatedAt string `json:"created_at"`
 	RotatedAt string `json:"rotated_at,omitempty"`
 	RevokedAt string `json:"revoked_at,omitempty"`
+}
+
+// Notification represents a persistent in-app notification row.
+type Notification struct {
+	ID              string     `json:"id"`
+	WorkspaceID     string     `json:"workspaceId"`
+	RecipientUserID string     `json:"recipientUserId"`
+	ActorUserID     *string    `json:"actorUserId,omitempty"`
+	Type            string     `json:"type"`
+	Title           string     `json:"title"`
+	Body            string     `json:"body"`
+	EntityType      string     `json:"entityType"`
+	EntityID        string     `json:"entityId"`
+	Metadata        string     `json:"metadata"`
+	ReadAt          *time.Time `json:"readAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+}
+
+// NotificationWithActor is a notification enriched with actor user details for display.
+type NotificationWithActor struct {
+	ID              string     `json:"id"`
+	WorkspaceID     string     `json:"workspaceId"`
+	RecipientUserID string     `json:"recipientUserId"`
+	ActorUserID     *string    `json:"actorUserId,omitempty"`
+	Type            string     `json:"type"`
+	Title           string     `json:"title"`
+	Body            string     `json:"body"`
+	EntityType      string     `json:"entityType"`
+	EntityID        string     `json:"entityId"`
+	Metadata        string     `json:"metadata"`
+	ReadAt          *time.Time `json:"readAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	ActorName       string     `json:"actorName,omitempty"`
+	ActorAvatarURL  string     `json:"actorAvatarUrl,omitempty"`
+}
+
+// PushSubscription represents a browser push notification subscription.
+type PushSubscription struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Endpoint  string    `json:"endpoint"`
+	P256DH    string    `json:"p256dh"`
+	Auth      string    `json:"auth"`
+	UserAgent string    `json:"userAgent"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

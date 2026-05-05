@@ -26,6 +26,7 @@ type SpaceService struct {
 	spaceRepo *repositories.SpaceRepo
 	pageRepo  *repositories.PageRepo
 	groupRepo *repositories.GroupRepo
+	notifier  Notifier
 }
 
 // NewSpaceService creates a new space service.
@@ -34,7 +35,13 @@ func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.P
 		spaceRepo: spaceRepo,
 		pageRepo:  pageRepo,
 		groupRepo: groupRepo,
+		notifier:  NoopNotifier(),
 	}
+}
+
+// SetNotifier sets the notification service on the space service.
+func (s *SpaceService) SetNotifier(n Notifier) {
+	s.notifier = n
 }
 
 // CreateSpace creates a new space within a workspace and adds the creator as admin.
@@ -64,6 +71,18 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 	// Refresh member count
 	space.MemberCount = 1
 
+	// Notify workspace members (excluding creator)
+	recipients, _ := s.workspaceMemberIDsForSpace(ctx, space.WorkspaceID)
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventSpaceCreated,
+		WorkspaceID:  workspaceID,
+		ActorID:      userID,
+		RecipientIDs: recipients,
+		EntityType:   "space",
+		EntityID:     space.ID,
+		Metadata:     map[string]string{"name": name},
+	})
+
 	return space, nil
 }
 
@@ -91,7 +110,26 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 		return models.Space{}, fmt.Errorf("updating space: %w", err)
 	}
 
+	recipients, _ := s.workspaceMemberIDsForSpace(ctx, existing.WorkspaceID)
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventSpaceRenamed,
+		WorkspaceID:  existing.WorkspaceID,
+		ActorID:      userID,
+		RecipientIDs: recipients,
+		EntityType:   "space",
+		EntityID:     id,
+		Metadata:     map[string]string{"name": name},
+	})
+
 	return existing, nil
+}
+
+func (s *SpaceService) workspaceMemberIDsForSpace(ctx context.Context, workspaceID string) ([]string, error) {
+	members, err := s.spaceRepo.ListWorkspaceMemberIDs(ctx, workspaceID)
+	if err != nil {
+		return nil, fmt.Errorf("listing workspace members: %w", err)
+	}
+	return members, nil
 }
 
 // DeleteSpace soft-deletes a space only if it has no pages. Requires admin role.
@@ -247,4 +285,57 @@ func (s *SpaceService) RemoveSpaceMember(ctx context.Context, spaceID, userID, a
 		return err
 	}
 	return s.spaceRepo.RemoveMember(ctx, spaceID, userID)
+}
+
+// GetSpaceMembersMixed returns all members of a space as a mixed collection of users and groups.
+func (s *SpaceService) GetSpaceMembersMixed(ctx context.Context, spaceID string) ([]models.SpaceMemberMixed, error) {
+	return s.spaceRepo.GetMembersMixed(ctx, spaceID)
+}
+
+// AddSpaceGroup adds a group to a space with a role. Validates the group belongs to the space's workspace.
+func (s *SpaceService) AddSpaceGroup(ctx context.Context, spaceID, groupID, role, actorID string) error {
+	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
+		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
+	}
+	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+		return err
+	}
+
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("getting space: %w", err)
+	}
+
+	group, err := s.groupRepo.GetByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrGroupNotFound) {
+			return ErrSpaceNotFound
+		}
+		return fmt.Errorf("getting group: %w", err)
+	}
+
+	if group.WorkspaceID != space.WorkspaceID {
+		return fmt.Errorf("group does not belong to this workspace")
+	}
+
+	return s.spaceRepo.AddGroupMember(ctx, spaceID, groupID, role)
+}
+
+// UpdateSpaceGroupRole updates a group's role in a space.
+func (s *SpaceService) UpdateSpaceGroupRole(ctx context.Context, spaceID, groupID, role, actorID string) error {
+	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
+		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
+	}
+	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+		return err
+	}
+	return s.spaceRepo.UpdateGroupMemberRole(ctx, spaceID, groupID, role)
+}
+
+// RemoveSpaceGroup removes a group from a space.
+func (s *SpaceService) RemoveSpaceGroup(ctx context.Context, spaceID, groupID, actorID string) error {
+	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+		return err
+	}
+	return s.spaceRepo.RemoveGroupMember(ctx, spaceID, groupID)
 }

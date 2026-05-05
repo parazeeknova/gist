@@ -23,6 +23,7 @@ type WorkspaceService struct {
 	workspaceRepo *repositories.WorkspaceRepo
 	spaceRepo     *repositories.SpaceRepo
 	groupRepo     *repositories.GroupRepo
+	notifier      Notifier
 }
 
 // NewWorkspaceService creates a new workspace service.
@@ -31,7 +32,13 @@ func NewWorkspaceService(workspaceRepo *repositories.WorkspaceRepo, spaceRepo *r
 		workspaceRepo: workspaceRepo,
 		spaceRepo:     spaceRepo,
 		groupRepo:     groupRepo,
+		notifier:      NoopNotifier(),
 	}
+}
+
+// SetNotifier sets the notification service on the workspace service.
+func (s *WorkspaceService) SetNotifier(n Notifier) {
+	s.notifier = n
 }
 
 // CreateWorkspace creates a new workspace with a default group, default space, and memberships atomically.
@@ -137,7 +144,28 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 		return models.Workspace{}, fmt.Errorf("updating workspace: %w", err)
 	}
 
+	recipients, _ := s.workspaceMemberIDs(ctx, id)
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventWorkspaceRenamed,
+		WorkspaceID:  id,
+		ActorID:      userID,
+		RecipientIDs: recipients,
+		Metadata:     map[string]string{"name": name},
+	})
+
 	return existing, nil
+}
+
+func (s *WorkspaceService) workspaceMemberIDs(ctx context.Context, workspaceID string) ([]string, error) {
+	members, err := s.workspaceRepo.GetMembers(ctx, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(members))
+	for _, m := range members {
+		ids = append(ids, m.UserID)
+	}
+	return ids, nil
 }
 
 // DeleteWorkspace soft-deletes a workspace only if it has no non-deleted spaces.
@@ -243,5 +271,18 @@ func (s *WorkspaceService) AddWorkspaceMember(ctx context.Context, workspaceID, 
 			return fmt.Errorf("adding to default group: %w", err)
 		}
 	}
+
+	ws, _ := s.workspaceRepo.GetByID(ctx, workspaceID)
+	wsName := "a workspace"
+	if ws.Name != "" {
+		wsName = ws.Name
+	}
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventWorkspaceMemberAdded,
+		WorkspaceID:  workspaceID,
+		ActorID:      userID,
+		RecipientIDs: []string{userID},
+		Metadata:     map[string]string{"name": wsName},
+	})
 	return nil
 }

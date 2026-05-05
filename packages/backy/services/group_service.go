@@ -21,6 +21,7 @@ var (
 type GroupService struct {
 	groupRepo     *repositories.GroupRepo
 	workspaceRepo *repositories.WorkspaceRepo
+	notifier      Notifier
 }
 
 // NewGroupService creates a new group service.
@@ -28,7 +29,13 @@ func NewGroupService(groupRepo *repositories.GroupRepo, workspaceRepo *repositor
 	return &GroupService{
 		groupRepo:     groupRepo,
 		workspaceRepo: workspaceRepo,
+		notifier:      NoopNotifier(),
 	}
+}
+
+// SetNotifier sets the notification service on the group service.
+func (s *GroupService) SetNotifier(n Notifier) {
+	s.notifier = n
 }
 
 // CreateGroup creates a new group in a workspace. Requires workspace owner or admin.
@@ -142,6 +149,7 @@ func (s *GroupService) GetDefaultGroupID(ctx context.Context, workspaceID string
 // --- Membership helpers ---
 
 // AddGroupMember adds a user to a group. Requires workspace owner or admin.
+// Also verifies that the target user is a member of the group's workspace.
 func (s *GroupService) AddGroupMember(ctx context.Context, groupID, memberUserID, actorID string) error {
 	g, err := s.groupRepo.GetByID(ctx, groupID)
 	if err != nil {
@@ -155,7 +163,27 @@ func (s *GroupService) AddGroupMember(ctx context.Context, groupID, memberUserID
 		return err
 	}
 
-	return s.groupRepo.AddUser(ctx, groupID, memberUserID)
+	isWorkspaceMember, err := s.workspaceRepo.IsMember(ctx, g.WorkspaceID, memberUserID)
+	if err != nil {
+		return fmt.Errorf("checking workspace membership: %w", err)
+	}
+	if !isWorkspaceMember {
+		return fmt.Errorf("user is not a member of this workspace")
+	}
+
+	if err := s.groupRepo.AddUser(ctx, groupID, memberUserID); err != nil {
+		return err
+	}
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventGroupMemberAdded,
+		WorkspaceID:  g.WorkspaceID,
+		ActorID:      actorID,
+		RecipientIDs: []string{memberUserID},
+		EntityType:   "group",
+		EntityID:     groupID,
+		Metadata:     map[string]string{"groupName": g.Name},
+	})
+	return nil
 }
 
 // RemoveGroupMember removes a user from a non-default group. Requires workspace owner or admin.
@@ -176,7 +204,19 @@ func (s *GroupService) RemoveGroupMember(ctx context.Context, groupID, memberUse
 		return ErrDefaultGroupImmutable
 	}
 
-	return s.groupRepo.RemoveUser(ctx, groupID, memberUserID)
+	if err := s.groupRepo.RemoveUser(ctx, groupID, memberUserID); err != nil {
+		return err
+	}
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventGroupMemberRemoved,
+		WorkspaceID:  g.WorkspaceID,
+		ActorID:      actorID,
+		RecipientIDs: []string{memberUserID},
+		EntityType:   "group",
+		EntityID:     groupID,
+		Metadata:     map[string]string{"groupName": g.Name},
+	})
+	return nil
 }
 
 // GetGroupMembers returns all members of a group.

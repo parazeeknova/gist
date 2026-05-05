@@ -10,7 +10,7 @@ import type {
   PageTreeItem,
   RestorePageInput,
   Space,
-  SpaceMemberWithUser,
+  SpaceMemberMixed,
   UpdatePageInput,
   Workspace,
 } from "#/types";
@@ -264,10 +264,10 @@ export const useDeleteSpace = () => {
 };
 
 export const useSpaceMembers = (spaceId: string) =>
-  useQuery<SpaceMemberWithUser[]>({
+  useQuery<SpaceMemberMixed[]>({
     enabled: spaceId !== "",
     queryFn: ({ signal }) =>
-      fetchProtected<SpaceMemberWithUser[]>(`/api/console/spaces/${spaceId}/members`, { signal }),
+      fetchProtected<SpaceMemberMixed[]>(`/api/console/spaces/${spaceId}/members`, { signal }),
     queryKey: ["spaceMembers", spaceId],
     staleTime: 30 * 1000,
   });
@@ -292,6 +292,51 @@ export const useRemoveSpaceMember = () => {
   return useMutation({
     mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
       fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useAddSpaceGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, role, spaceId }: { groupId: string; role: string; spaceId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useUpdateSpaceGroupRole = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, role, spaceId }: { groupId: string; role: string; spaceId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+    },
+  });
+};
+
+export const useRemoveSpaceGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, spaceId }: { groupId: string; spaceId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
         method: "DELETE",
       }),
     onSuccess: (_data, variables) => {

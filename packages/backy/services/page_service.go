@@ -22,6 +22,7 @@ type PageService struct {
 	pageRepo        *repositories.PageRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
 	spaceRepo       *repositories.SpaceRepo
+	notifier        Notifier
 }
 
 // NewPageService creates a new page service
@@ -30,7 +31,13 @@ func NewPageService(pageRepo *repositories.PageRepo, pageHistoryRepo *repositori
 		pageRepo:        pageRepo,
 		pageHistoryRepo: pageHistoryRepo,
 		spaceRepo:       spaceRepo,
+		notifier:        NoopNotifier(),
 	}
+}
+
+// SetNotifier sets the notification service on the page service.
+func (s *PageService) SetNotifier(n Notifier) {
+	s.notifier = n
 }
 
 // UpdatePageInput holds the fields that can be updated on a page.
@@ -117,7 +124,8 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 		page.Position = fractional.NextPosition(lastPos)
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`INSERT INTO pages (id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		                   text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		                   last_updated_by_id, created_at, updated_at)
@@ -139,6 +147,17 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 		return fmt.Errorf("commit tx: %w", err)
 	}
 
+	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventPageCreated,
+		WorkspaceID:  page.WorkspaceID,
+		ActorID:      page.CreatorID,
+		RecipientIDs: recipients,
+		EntityType:   "page",
+		EntityID:     page.ID,
+		Metadata:     map[string]string{"name": page.Title},
+	})
+
 	return nil
 }
 
@@ -154,7 +173,8 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 	// Fetch current page within transaction so we can merge fields.
 	var current models.Page
 	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
+	err = tx.QueryRow(
+		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
@@ -203,7 +223,8 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		newContentJSONBytes = []byte("{}")
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages
 		 SET title = $1, icon = $2, cover_photo = $3, content_json = $4,
 		     text_content = $5, position = $6, is_published = $7, parent_page_id = $8,
@@ -224,6 +245,20 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 
 	if err := tx.Commit(ctx); err != nil {
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
+	}
+
+	ws, _ := s.spaceRepo.GetByID(ctx, current.SpaceID)
+	if ws.WorkspaceID != "" {
+		recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, ws.WorkspaceID)
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventPageUpdated,
+			WorkspaceID:  ws.WorkspaceID,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			EntityType:   "page",
+			EntityID:     current.ID,
+			Metadata:     map[string]string{"name": current.Title},
+		})
 	}
 
 	return current, nil
@@ -298,7 +333,8 @@ func (s *PageService) setPublished(ctx context.Context, pageID string, userID st
 	page.UpdatedAt = time.Now().UTC()
 	page.LastUpdatedByID = &userID
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages SET is_published = $1, updated_at = $2, last_updated_by_id = $3 WHERE id = $4`,
 		page.IsPublished, page.UpdatedAt, page.LastUpdatedByID, page.ID,
 	)
@@ -358,7 +394,8 @@ func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
+	err = tx.QueryRow(
+		ctx,
 		`SELECT content_json
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(&contentJSONBytes)
@@ -387,7 +424,8 @@ func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *
 	page.UpdatedAt = time.Now().UTC()
 	page.LastUpdatedByID = &userID
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages SET parent_page_id = $1, position = $2, updated_at = $3, last_updated_by_id = $4 WHERE id = $5`,
 		page.ParentPageID, page.Position, page.UpdatedAt, page.LastUpdatedByID, page.ID,
 	)
@@ -458,7 +496,8 @@ func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID 
 		newContentJSONBytes = []byte("{}")
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages SET title = $1, content_json = $2, text_content = $3,
 		     updated_at = $4, last_updated_by_id = $5 WHERE id = $6`,
 		page.Title, newContentJSONBytes, page.TextContent,
@@ -570,7 +609,8 @@ func (s *PageService) insertHistoryTx(ctx context.Context, tx pgx.Tx, page model
 		historyContentJSON = []byte("{}")
 	}
 
-	_, err := tx.Exec(ctx,
+	_, err := tx.Exec(
+		ctx,
 		`INSERT INTO page_history (id, page_id, title, content_json, ydoc,
 		                          text_content, operation, created_by_id, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -615,7 +655,8 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 	// Record history before soft-deleting.
 	var page models.Page
 	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
+	err = tx.QueryRow(
+		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at

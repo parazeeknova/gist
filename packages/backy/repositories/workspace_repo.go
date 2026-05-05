@@ -167,7 +167,8 @@ func (r *WorkspaceRepo) SoftDelete(ctx context.Context, id string) error {
 
 // SetDefaultSpaceID updates the default space for a workspace.
 func (r *WorkspaceRepo) SetDefaultSpaceID(ctx context.Context, workspaceID, spaceID string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE workspaces SET default_space_id = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL`,
 		spaceID, workspaceID,
 	)
@@ -179,7 +180,8 @@ func (r *WorkspaceRepo) SetDefaultSpaceID(ctx context.Context, workspaceID, spac
 
 // SetDefaultSpaceIDTx updates the default space for a workspace within a transaction.
 func (r *WorkspaceRepo) SetDefaultSpaceIDTx(ctx context.Context, tx pgx.Tx, workspaceID, spaceID string) error {
-	_, err := tx.Exec(ctx,
+	_, err := tx.Exec(
+		ctx,
 		`UPDATE workspaces SET default_space_id = $1, updated_at = now() WHERE id = $2 AND deleted_at IS NULL`,
 		spaceID, workspaceID,
 	)
@@ -230,7 +232,8 @@ func (r *WorkspaceRepo) AddMemberTx(ctx context.Context, tx pgx.Tx, workspaceID,
 // GetMemberRole returns a user's role in a workspace, or empty string if not a member.
 func (r *WorkspaceRepo) GetMemberRole(ctx context.Context, workspaceID, userID string) (string, error) {
 	var role string
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT role FROM workspace_members WHERE workspace_id = $1 AND user_id = $2`,
 		workspaceID, userID,
 	).Scan(&role)
@@ -246,7 +249,8 @@ func (r *WorkspaceRepo) GetMemberRole(ctx context.Context, workspaceID, userID s
 // IsMember checks if a user is a member of a workspace.
 func (r *WorkspaceRepo) IsMember(ctx context.Context, workspaceID, userID string) (bool, error) {
 	var exists bool
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2)`,
 		workspaceID, userID,
 	).Scan(&exists)
@@ -258,7 +262,8 @@ func (r *WorkspaceRepo) IsMember(ctx context.Context, workspaceID, userID string
 
 // RemoveMember removes a user from a workspace.
 func (r *WorkspaceRepo) RemoveMember(ctx context.Context, workspaceID, userID string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2`,
 		workspaceID, userID,
 	)
@@ -271,7 +276,8 @@ func (r *WorkspaceRepo) RemoveMember(ctx context.Context, workspaceID, userID st
 // GetMemberCount returns the number of members in a workspace.
 func (r *WorkspaceRepo) GetMemberCount(ctx context.Context, workspaceID string) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT COUNT(*) FROM workspace_members WHERE workspace_id = $1`, workspaceID,
 	).Scan(&count)
 	if err != nil {
@@ -282,7 +288,8 @@ func (r *WorkspaceRepo) GetMemberCount(ctx context.Context, workspaceID string) 
 
 // GetMembers returns all members of a workspace.
 func (r *WorkspaceRepo) GetMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, error) {
-	rows, err := r.pool.Query(ctx,
+	rows, err := r.pool.Query(
+		ctx,
 		`SELECT id, user_id, workspace_id, role, joined_at::text FROM workspace_members WHERE workspace_id = $1`,
 		workspaceID,
 	)
@@ -311,7 +318,8 @@ func (r *WorkspaceRepo) GetMembers(ctx context.Context, workspaceID string) ([]m
 // HasOwnerOtherThan checks if there's another owner besides the given user.
 func (r *WorkspaceRepo) HasOwnerOtherThan(ctx context.Context, workspaceID, userID string) (bool, error) {
 	var exists bool
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id != $2 AND role = 'owner')`,
 		workspaceID, userID,
 	).Scan(&exists)

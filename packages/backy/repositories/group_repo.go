@@ -150,7 +150,8 @@ func (r *GroupRepo) SoftDelete(ctx context.Context, id string) error {
 // GetDefaultGroupID returns the ID of the default group for a workspace.
 func (r *GroupRepo) GetDefaultGroupID(ctx context.Context, workspaceID string) (string, error) {
 	var id string
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT id FROM groups WHERE workspace_id = $1 AND is_default = true AND deleted_at IS NULL`,
 		workspaceID,
 	).Scan(&id)
@@ -204,7 +205,8 @@ func (r *GroupRepo) RemoveUser(ctx context.Context, groupID, userID string) erro
 // IsUserInGroup checks if a user is in a group.
 func (r *GroupRepo) IsUserInGroup(ctx context.Context, groupID, userID string) (bool, error) {
 	var exists bool
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		`SELECT EXISTS(SELECT 1 FROM group_users WHERE group_id = $1 AND user_id = $2)`,
 		groupID, userID,
 	).Scan(&exists)

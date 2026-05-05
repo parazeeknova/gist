@@ -36,7 +36,8 @@ func (r *PageHistoryRepo) Insert(ctx context.Context, h models.PageHistory) erro
 		                          text_content, operation, created_by_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 
-	_, err := r.pool.Exec(ctx, query,
+	_, err := r.pool.Exec(
+		ctx, query,
 		h.ID, h.PageID, h.Title, contentJSONBytes, h.YDoc,
 		h.TextContent, h.Operation, h.CreatedByID, h.CreatedAt,
 	)

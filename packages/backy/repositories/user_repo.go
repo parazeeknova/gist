@@ -46,7 +46,8 @@ func (r *UserRepo) CreateUser(ctx context.Context, username, email, name, passwo
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	var userID string
-	err = tx.QueryRow(ctx,
+	err = tx.QueryRow(
+		ctx,
 		`INSERT INTO users (username, email, name, role, is_active)
 		 VALUES ($1, $2, $3, $4, true)
 		 RETURNING id`,
@@ -60,7 +61,8 @@ func (r *UserRepo) CreateUser(ctx context.Context, username, email, name, passwo
 		return "", fmt.Errorf("insert user: %w", err)
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`INSERT INTO password_credentials (user_id, password_hash)
 		 VALUES ($1, $2)`,
 		userID, passwordHash,
@@ -173,7 +175,8 @@ func (r *UserRepo) ListUsers(ctx context.Context) ([]models.ConsoleUser, error) 
 
 // UpdateUserRole updates a user's role.
 func (r *UserRepo) UpdateUserRole(ctx context.Context, userID, role string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2`,
 		role, userID,
 	)
@@ -185,7 +188,8 @@ func (r *UserRepo) UpdateUserRole(ctx context.Context, userID, role string) erro
 
 // UpdateUserActive updates a user's active status.
 func (r *UserRepo) UpdateUserActive(ctx context.Context, userID string, isActive bool) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE users SET is_active = $1, updated_at = NOW() WHERE id = $2`,
 		isActive, userID,
 	)
@@ -206,7 +210,8 @@ func (r *UserRepo) DeleteUser(ctx context.Context, userID string) error {
 
 // UpdateUserProfile updates a user's name and avatar_url.
 func (r *UserRepo) UpdateUserProfile(ctx context.Context, userID, name, avatarURL string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE users SET name = $1, avatar_url = $2, updated_at = NOW() WHERE id = $3`,
 		name, avatarURL, userID,
 	)
@@ -218,7 +223,8 @@ func (r *UserRepo) UpdateUserProfile(ctx context.Context, userID, name, avatarUR
 
 // UpdatePasswordHash updates the password hash for a user.
 func (r *UserRepo) UpdatePasswordHash(ctx context.Context, userID, passwordHash string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE password_credentials SET password_hash = $1 WHERE user_id = $2`,
 		passwordHash, userID,
 	)
@@ -231,7 +237,8 @@ func (r *UserRepo) UpdatePasswordHash(ctx context.Context, userID, passwordHash 
 // GetPasswordHash retrieves the stored password hash for a user.
 func (r *UserRepo) GetPasswordHash(ctx context.Context, userID string) (string, error) {
 	var hash string
-	err := r.pool.QueryRow(ctx,
+	err := r.pool.QueryRow(
+		ctx,
 		"SELECT password_hash FROM password_credentials WHERE user_id = $1",
 		userID,
 	).Scan(&hash)

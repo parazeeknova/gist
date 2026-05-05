@@ -94,6 +94,7 @@ func main() {
 	}
 
 	var h *handlers.Handlers
+	var notificationService *services.NotificationService
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
@@ -105,7 +106,20 @@ func main() {
 		spaceService := services.NewSpaceService(spaceRepo, pageRepo, groupRepo)
 		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
 		groupService := services.NewGroupService(groupRepo, workspaceRepo)
+
+		// Notification service
+		notifRepo := repositories.NewNotificationRepo()
+		pushSubRepo := repositories.NewPushSubscriptionRepo()
+		notificationService = services.NewNotificationService(notifRepo, pushSubRepo)
+
+		// Wire notification service into domain services
+		workspaceService.SetNotifier(notificationService)
+		spaceService.SetNotifier(notificationService)
+		groupService.SetNotifier(notificationService)
+		pageService.SetNotifier(notificationService)
+
 		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService, groupService)
+		h.SetNotifier(notificationService)
 	} else {
 		h = handlers.New(cfg)
 	}
@@ -116,6 +130,13 @@ func main() {
 	authHandlers := handlers.NewAuthHandlers(authService, mfaService)
 	profileHandlers := handlers.NewProfileHandlers(authService)
 	mfaHandlers := handlers.NewMFAHandlers(mfaService)
+
+	var notifHandlers *handlers.NotificationHandlers
+	var pushHandlers *handlers.PushSubscriptionHandlers
+	if notificationService != nil {
+		notifHandlers = handlers.NewNotificationHandlers(notificationService)
+		pushHandlers = handlers.NewPushSubscriptionHandlers(notificationService)
+	}
 
 	r := gin.New()
 
@@ -231,6 +252,9 @@ func main() {
 			console.GET("/spaces/:id/members", h.GetSpaceMembers)
 			console.PUT("/spaces/:id/members/:userId", h.UpdateSpaceMemberRole)
 			console.DELETE("/spaces/:id/members/:userId", h.RemoveSpaceMember)
+			console.POST("/spaces/:id/groups/:groupId", h.AddSpaceGroup)
+			console.PUT("/spaces/:id/groups/:groupId", h.UpdateSpaceGroupRole)
+			console.DELETE("/spaces/:id/groups/:groupId", h.RemoveSpaceGroup)
 
 			// Groups
 			console.GET("/workspaces/:workspaceId/groups", h.GetGroups)
@@ -261,6 +285,16 @@ func main() {
 			console.GET("/pages/:id/history", h.GetConsolePageHistory)
 			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
 			console.POST("/pages/:id/restore", h.RestoreConsolePage)
+
+			// Notifications
+			if notifHandlers != nil {
+				notifHandlers.RegisterRoutes(console)
+			}
+
+			// Push subscriptions
+			if pushHandlers != nil {
+				pushHandlers.RegisterRoutes(console)
+			}
 
 			// Debug (owner-only, gated by env)
 			if os.Getenv("ENABLE_DEBUG_ROUTES") == "true" {

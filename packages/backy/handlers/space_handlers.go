@@ -163,7 +163,7 @@ func (h *Handlers) DeleteSpace(c *gin.Context) {
 // GetSpaceMembers handles GET /api/console/spaces/:id/members.
 func (h *Handlers) GetSpaceMembers(c *gin.Context) {
 	if h.spaceService == nil {
-		c.JSON(http.StatusOK, []models.SpaceMemberWithUser{})
+		c.JSON(http.StatusOK, []models.SpaceMemberMixed{})
 		return
 	}
 
@@ -180,7 +180,7 @@ func (h *Handlers) GetSpaceMembers(c *gin.Context) {
 		return
 	}
 
-	members, err := h.spaceService.GetSpaceMemberDetails(c.Request.Context(), id)
+	members, err := h.spaceService.GetSpaceMembersMixed(c.Request.Context(), id)
 	if err != nil {
 		logger.Log.Error().Str("id", id).Err(err).Msg("list space members error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list space members"})
@@ -247,6 +247,107 @@ func (h *Handlers) RemoveSpaceMember(c *gin.Context) {
 		}
 		logger.Log.Error().Str("spaceId", spaceID).Str("userId", userID).Err(err).Msg("remove space member error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove member"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "removed"})
+}
+
+// AddSpaceGroupRequest is the request body for adding a group to a space.
+type AddSpaceGroupRequest struct {
+	Role string `json:"role" binding:"required"`
+}
+
+// AddSpaceGroup handles POST /api/console/spaces/:id/groups/:groupId.
+func (h *Handlers) AddSpaceGroup(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	groupID := c.Param("groupId")
+	actorID := middleware.GetCurrentUserID(c)
+
+	var req AddSpaceGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.spaceService.AddSpaceGroup(c.Request.Context(), spaceID, groupID, req.Role, actorID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		if strings.Contains(err.Error(), "invalid role") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if strings.Contains(err.Error(), "group does not belong") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("groupId", groupID).Err(err).Msg("add space group error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add group to space"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "added"})
+}
+
+// UpdateSpaceGroupRole handles PUT /api/console/spaces/:id/groups/:groupId.
+func (h *Handlers) UpdateSpaceGroupRole(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	groupID := c.Param("groupId")
+	actorID := middleware.GetCurrentUserID(c)
+
+	var req UpdateSpaceMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.spaceService.UpdateSpaceGroupRole(c.Request.Context(), spaceID, groupID, req.Role, actorID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		if strings.Contains(err.Error(), "invalid role") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("groupId", groupID).Err(err).Msg("update space group role error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update group role"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "updated"})
+}
+
+// RemoveSpaceGroup handles DELETE /api/console/spaces/:id/groups/:groupId.
+func (h *Handlers) RemoveSpaceGroup(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	groupID := c.Param("groupId")
+	actorID := middleware.GetCurrentUserID(c)
+
+	if err := h.spaceService.RemoveSpaceGroup(c.Request.Context(), spaceID, groupID, actorID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("groupId", groupID).Err(err).Msg("remove space group error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove group from space"})
 		return
 	}
 

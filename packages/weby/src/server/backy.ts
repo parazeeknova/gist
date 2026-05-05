@@ -11,10 +11,12 @@ import type {
   Group,
   GroupMember,
   MovePageInput,
+  NotificationItem,
   PageHistoryItem,
   PageTreeItem,
   Profile,
   Project,
+  PushSubscriptionPayload,
   RestorePageInput,
   Space,
   SpaceMemberWithUser,
@@ -140,6 +142,41 @@ export const postBackyWithCookies = (
     body: JSON.stringify(body),
     headers,
     method: "POST",
+  });
+};
+
+export const putBackyWithCookies = (
+  endpoint: string,
+  body: unknown,
+  cookieHeader?: string | null,
+): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  return fetch(url, {
+    body: JSON.stringify(body),
+    headers,
+    method: "PUT",
+  });
+};
+
+export const deleteBackyWithCookies = (
+  endpoint: string,
+  cookieHeader?: string | null,
+): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  return fetch(url, {
+    headers,
+    method: "DELETE",
   });
 };
 
@@ -520,5 +557,54 @@ export const addGroupMember = (id: string, userId: string, cookieHeader?: string
 export const removeGroupMember = (groupId: string, userId: string, cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>(`console/groups/${groupId}/members/${userId}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+// Notification functions
+export const getNotifications = (cookieHeader?: string | null) =>
+  fetchBacky<NotificationItem[]>("console/notifications", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getUnreadNotificationCount = (cookieHeader?: string | null) =>
+  fetchBacky<{ count: number }>("console/notifications/unread-count", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const markNotificationRead = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/notifications/${id}/read`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "PUT",
+  });
+
+export const markAllNotificationsRead = (cookieHeader?: string | null) =>
+  fetchBacky<{ status: string; count: number }>("console/notifications/read-all", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "PUT",
+  });
+
+// Push subscription functions
+export const getVapidPublicKey = (cookieHeader?: string | null) =>
+  fetchBacky<{ publicKey: string }>("console/push/public-key", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const subscribePush = (payload: PushSubscriptionPayload, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>("console/push/subscribe", {
+    body: JSON.stringify(payload),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const unsubscribePush = (endpoint: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>("console/push/unsubscribe", {
+    body: JSON.stringify({ endpoint }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
     method: "DELETE",
   });
