@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"verso/backy/logger"
+	"verso/backy/middleware"
 	"verso/backy/models"
 	"verso/backy/services"
 )
@@ -57,7 +58,8 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 		return
 	}
 
-	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon, req.WorkspaceID)
+	userID := middleware.GetCurrentUserID(c)
+	space, err := h.spaceService.CreateSpace(c.Request.Context(), req.Name, req.Slug, req.Icon, req.WorkspaceID, userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("create space error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create space"})
@@ -82,6 +84,7 @@ func (h *Handlers) UpdateSpace(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
 	var req UpdateSpaceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -89,10 +92,14 @@ func (h *Handlers) UpdateSpace(c *gin.Context) {
 		return
 	}
 
-	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon)
+	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, userID)
 	if err != nil {
 		if errors.Is(err, services.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
+			return
+		}
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("update space error")
@@ -111,14 +118,19 @@ func (h *Handlers) DeleteSpace(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
-	if err := h.spaceService.DeleteSpace(c.Request.Context(), id); err != nil {
+	if err := h.spaceService.DeleteSpace(c.Request.Context(), id, userID); err != nil {
 		if errors.Is(err, services.ErrSpaceNotEmpty) {
 			c.JSON(http.StatusConflict, gin.H{"error": "space is not empty, remove pages first"})
 			return
 		}
 		if errors.Is(err, services.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
+			return
+		}
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("delete space error")

@@ -27,17 +27,24 @@ func NewSpaceRepo() *SpaceRepo {
 	return &SpaceRepo{pool: database.GetPool()}
 }
 
-// GetByID fetches a space by its primary key.
+// GetByID fetches a space by its primary key with member count.
 func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error) {
 	query := `
-		SELECT id, name, slug, icon, workspace_id,
-		       created_at::text, updated_at::text
-		FROM spaces
-		WHERE id = $1`
+		SELECT s.id, s.name, s.slug, s.icon, s.workspace_id, s.created_by,
+		       COALESCE(m.member_count, 0),
+		       s.created_at::text, s.updated_at::text
+		FROM spaces s
+		LEFT JOIN (
+			SELECT space_id, COUNT(*) AS member_count
+			FROM space_members
+			GROUP BY space_id
+		) m ON m.space_id = s.id
+		WHERE s.id = $1`
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedBy,
+		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
@@ -49,17 +56,24 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 	return s, nil
 }
 
-// GetBySlug fetches a space by its slug.
+// GetBySlug fetches a space by its slug with member count.
 func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, error) {
 	query := `
-		SELECT id, name, slug, icon, workspace_id,
-		       created_at::text, updated_at::text
-		FROM spaces
-		WHERE slug = $1`
+		SELECT s.id, s.name, s.slug, s.icon, s.workspace_id, s.created_by,
+		       COALESCE(m.member_count, 0),
+		       s.created_at::text, s.updated_at::text
+		FROM spaces s
+		LEFT JOIN (
+			SELECT space_id, COUNT(*) AS member_count
+			FROM space_members
+			GROUP BY space_id
+		) m ON m.space_id = s.id
+		WHERE s.slug = $1`
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedBy,
+		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
 	)
 	if err != nil {
@@ -85,14 +99,20 @@ func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
 	return id, nil
 }
 
-// ListAll returns all spaces ordered by name.
+// ListAll returns all spaces for a workspace ordered by name with member counts.
 func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.Space, error) {
 	query := `
-		SELECT id, name, slug, icon, workspace_id,
-		       created_at::text, updated_at::text
-		FROM spaces
-		WHERE workspace_id = $1
-		ORDER BY name`
+		SELECT s.id, s.name, s.slug, s.icon, s.workspace_id, s.created_by,
+		       COALESCE(m.member_count, 0),
+		       s.created_at::text, s.updated_at::text
+		FROM spaces s
+		LEFT JOIN (
+			SELECT space_id, COUNT(*) AS member_count
+			FROM space_members
+			GROUP BY space_id
+		) m ON m.space_id = s.id
+		WHERE s.workspace_id = $1
+		ORDER BY s.name`
 
 	rows, err := r.pool.Query(ctx, query, workspaceID)
 	if err != nil {
@@ -103,7 +123,8 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 	var spaces []models.Space
 	for rows.Next() {
 		var s models.Space
-		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.WorkspaceID, &s.CreatedBy,
+			&s.MemberCount, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning space row: %w", err)
 		}
 		spaces = append(spaces, s)
@@ -121,10 +142,10 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 // Insert creates a new space row.
 func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 	query := `
-		INSERT INTO spaces (id, name, slug, icon, workspace_id, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, now(), now())`
+		INSERT INTO spaces (id, name, slug, icon, workspace_id, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.WorkspaceID)
+	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.WorkspaceID, s.CreatedBy)
 	if err != nil {
 		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
 	}
@@ -167,4 +188,113 @@ func (r *SpaceRepo) PageCount(ctx context.Context, spaceID string) (int, error) 
 		return 0, fmt.Errorf("counting pages in space %q: %w", spaceID, err)
 	}
 	return count, nil
+}
+
+// --- Space Membership ---
+
+// AddMember adds a user to a space with a given role.
+func (r *SpaceRepo) AddMember(ctx context.Context, spaceID, userID, role string) error {
+	query := `
+		INSERT INTO space_members (space_id, user_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, space_id) DO UPDATE SET role = EXCLUDED.role`
+	_, err := r.pool.Exec(ctx, query, spaceID, userID, role)
+	if err != nil {
+		return fmt.Errorf("adding member to space %q: %w", spaceID, err)
+	}
+	return nil
+}
+
+// GetMemberRole returns a user's role in a space, or empty string if not a member.
+func (r *SpaceRepo) GetMemberRole(ctx context.Context, spaceID, userID string) (string, error) {
+	var role string
+	err := r.pool.QueryRow(ctx,
+		`SELECT role FROM space_members WHERE space_id = $1 AND user_id = $2`,
+		spaceID, userID,
+	).Scan(&role)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", fmt.Errorf("getting member role: %w", err)
+	}
+	return role, nil
+}
+
+// IsMember checks if a user is a member of a space.
+func (r *SpaceRepo) IsMember(ctx context.Context, spaceID, userID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM space_members WHERE space_id = $1 AND user_id = $2)`,
+		spaceID, userID,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking membership: %w", err)
+	}
+	return exists, nil
+}
+
+// RemoveMember removes a user from a space.
+func (r *SpaceRepo) RemoveMember(ctx context.Context, spaceID, userID string) error {
+	_, err := r.pool.Exec(ctx,
+		`DELETE FROM space_members WHERE space_id = $1 AND user_id = $2`,
+		spaceID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("removing member from space %q: %w", spaceID, err)
+	}
+	return nil
+}
+
+// GetMemberCount returns the number of members in a space.
+func (r *SpaceRepo) GetMemberCount(ctx context.Context, spaceID string) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM space_members WHERE space_id = $1`, spaceID,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("counting space members: %w", err)
+	}
+	return count, nil
+}
+
+// GetMembers returns all members of a space.
+func (r *SpaceRepo) GetMembers(ctx context.Context, spaceID string) ([]models.SpaceMember, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, space_id, role, joined_at::text FROM space_members WHERE space_id = $1`,
+		spaceID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing space members: %w", err)
+	}
+	defer rows.Close()
+
+	var members []models.SpaceMember
+	for rows.Next() {
+		var m models.SpaceMember
+		if err := rows.Scan(&m.ID, &m.UserID, &m.SpaceID, &m.Role, &m.JoinedAt); err != nil {
+			return nil, fmt.Errorf("scanning space member: %w", err)
+		}
+		members = append(members, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating space members: %w", err)
+	}
+	if members == nil {
+		members = []models.SpaceMember{}
+	}
+	return members, nil
+}
+
+// HasOwnerOtherThan checks if there's another owner besides the given user.
+func (r *SpaceRepo) HasOwnerOtherThan(ctx context.Context, spaceID, userID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM space_members WHERE space_id = $1 AND user_id != $2 AND role = 'owner')`,
+		spaceID, userID,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking other owners: %w", err)
+	}
+	return exists, nil
 }

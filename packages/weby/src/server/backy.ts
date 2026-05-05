@@ -243,10 +243,14 @@ export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: 
   });
 
 // Space functions
-export const getSpaces = (cookieHeader?: string | null) =>
-  fetchBacky<Space[]>("console/spaces", {
+export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | null) => {
+  const url = workspaceId
+    ? `console/spaces?workspaceId=${encodeURIComponent(workspaceId)}`
+    : "console/spaces";
+  return fetchBacky<Space[]>(url, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
+};
 
 export const createSpace = (
   input: { name: string; slug: string; icon?: string },

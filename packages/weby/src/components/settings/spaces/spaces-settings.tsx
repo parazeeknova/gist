@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { CaretUpDownIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CaretUpDownIcon, MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import {
   createColumnHelper,
   flexRender,
@@ -84,20 +83,26 @@ const getInitials = (text: string) =>
 
 const pluralize = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
 
-interface CreateSpaceModalProps {
+interface CreateSpaceDropdownProps {
   isDarkMode: boolean;
   isOpen: boolean;
   workspaceId: string;
   onClose: () => void;
 }
 
-const CreateSpaceModal = ({ isDarkMode, isOpen, workspaceId, onClose }: CreateSpaceModalProps) => {
+const CreateSpaceDropdown = ({
+  isDarkMode,
+  isOpen,
+  workspaceId,
+  onClose,
+}: CreateSpaceDropdownProps) => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const createSpace = useCreateSpace();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -107,6 +112,23 @@ const CreateSpaceModal = ({ isDarkMode, isOpen, workspaceId, onClose }: CreateSp
       setError("");
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (menuRef.current?.contains(target)) {
+        return;
+      }
+      onClose();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isOpen, onClose]);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -149,103 +171,57 @@ const CreateSpaceModal = ({ isDarkMode, isOpen, workspaceId, onClose }: CreateSp
     return null;
   }
 
-  const modal = (
-    <div className="fixed inset-0 z-[9999]">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} role="presentation" />
-      <div
-        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md border p-6 shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className={`text-sm font-normal lowercase ${t("text-text-dark", "text-text-light")}`}>
-            create space
-          </h2>
-          <button
-            className={`${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-            onClick={onClose}
-            type="button"
-          >
-            <XIcon size={14} />
-          </button>
-        </div>
+  return (
+    <div
+      ref={menuRef}
+      className={`absolute right-0 top-full mt-1 w-64 border p-3 shadow-xl z-50 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+    >
+      {error && (
+        <p className={`mb-2 text-[10px] lowercase ${t("text-red-400", "text-red-600")}`}>{error}</p>
+      )}
 
-        {error && (
-          <p className={`mb-4 text-[11px] lowercase ${t("text-red-400", "text-red-600")}`}>
-            {error}
-          </p>
-        )}
+      <div className="space-y-2">
+        <input
+          className={`w-full bg-transparent border-b py-1.5 text-[11px] lowercase outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
+          onChange={(e) => handleNameChange(e.target.value)}
+          placeholder="space name"
+          type="text"
+          value={name}
+        />
+        <input
+          className={`w-full bg-transparent border-b py-1.5 text-[11px] lowercase outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
+          onChange={(e) => setSlug(e.target.value)}
+          placeholder="space slug"
+          type="text"
+          value={slug}
+        />
+        <input
+          className={`w-full bg-transparent border-b py-1.5 text-[11px] lowercase outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="description"
+          type="text"
+          value={description}
+        />
+      </div>
 
-        <div className="space-y-4">
-          <div>
-            <label
-              className={`block text-[10px] uppercase tracking-wider mb-1 ${t("text-text-dark/30", "text-text-light/30")}`}
-              htmlFor="space-name"
-            >
-              name
-            </label>
-            <input
-              className={`w-full bg-transparent border-b py-2 text-[13px] lowercase outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
-              id="space-name"
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="space name"
-              type="text"
-              value={name}
-            />
-          </div>
-          <div>
-            <label
-              className={`block text-[10px] uppercase tracking-wider mb-1 ${t("text-text-dark/30", "text-text-light/30")}`}
-              htmlFor="space-slug"
-            >
-              slug
-            </label>
-            <input
-              className={`w-full bg-transparent border-b py-2 text-[13px] lowercase outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
-              id="space-slug"
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="space-slug"
-              type="text"
-              value={slug}
-            />
-          </div>
-          <div>
-            <label
-              className={`block text-[10px] uppercase tracking-wider mb-1 ${t("text-text-dark/30", "text-text-light/30")}`}
-              htmlFor="space-description"
-            >
-              description
-            </label>
-            <input
-              className={`w-full bg-transparent border-b py-2 text-[13px] lowercase outline-none transition-colors ${t("border-border-dark text-text-dark placeholder:text-text-dark/20 focus:border-text-dark/50", "border-border-light text-text-light placeholder:text-text-light/20 focus:border-text-light/50")}`}
-              id="space-description"
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="short description"
-              type="text"
-              value={description}
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 mt-6">
-          <button
-            className={`text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-            onClick={onClose}
-            type="button"
-          >
-            cancel
-          </button>
-          <button
-            className={`px-3 py-1.5 text-[11px] lowercase border ${t("text-text-dark/60 border-border-dark hover:bg-white/5", "text-text-light/60 border-border-light hover:bg-black/3")}`}
-            onClick={handleSubmit}
-            type="button"
-          >
-            create space
-          </button>
-        </div>
+      <div className="flex items-center justify-end gap-2 mt-2">
+        <button
+          className={`text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+          onClick={onClose}
+          type="button"
+        >
+          cancel
+        </button>
+        <button
+          className={`text-[10px] lowercase ${t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90")}`}
+          onClick={handleSubmit}
+          type="button"
+        >
+          create
+        </button>
       </div>
     </div>
   );
-
-  return createPortal(modal, document.body);
 };
 
 interface SpacesSettingsProps {
@@ -312,13 +288,16 @@ export const SpacesSettings = ({ urlWorkspaceName }: SpacesSettingsProps) => {
         header: "space",
       }),
       columnHelper.display({
-        cell: () => (
-          <span
-            className={`text-[11px] ${tc(isDarkMode, "text-text-dark/30", "text-text-light/30")}`}
-          >
-            —
-          </span>
-        ),
+        cell: (info) => {
+          const space = info.row.original;
+          return (
+            <span
+              className={`text-[11px] ${tc(isDarkMode, "text-text-dark/30", "text-text-light/30")}`}
+            >
+              {space.memberCount} member{space.memberCount === 1 ? "" : "s"}
+            </span>
+          );
+        },
         header: "members",
         id: "members",
       }),
@@ -364,15 +343,21 @@ export const SpacesSettings = ({ urlWorkspaceName }: SpacesSettingsProps) => {
           type="text"
           value={searchQuery}
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 relative">
           <button
-            className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${t("text-text-dark/60 border-border-dark hover:bg-white/5", "text-text-light/60 border-border-light hover:bg-black/3")}`}
-            onClick={() => setShowCreateModal(true)}
+            className={`flex items-center gap-1 text-[10px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+            onClick={() => setShowCreateModal((v) => !v)}
             type="button"
           >
             <PlusIcon size={11} />
             create space
           </button>
+          <CreateSpaceDropdown
+            isDarkMode={isDarkMode}
+            isOpen={showCreateModal}
+            workspaceId={workspace?.id ?? ""}
+            onClose={() => setShowCreateModal(false)}
+          />
         </div>
       </div>
 
@@ -429,13 +414,6 @@ export const SpacesSettings = ({ urlWorkspaceName }: SpacesSettingsProps) => {
       <div className={`mt-4 text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
         {pluralize(filteredSpaces.length, "space")}
       </div>
-
-      <CreateSpaceModal
-        isDarkMode={isDarkMode}
-        isOpen={showCreateModal}
-        workspaceId={workspace?.id ?? ""}
-        onClose={() => setShowCreateModal(false)}
-      />
     </div>
   );
 };

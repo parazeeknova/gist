@@ -132,19 +132,40 @@ type Space struct {
 	Slug        string `json:"slug"`
 	Icon        string `json:"icon"`
 	WorkspaceID string `json:"workspaceId"`
+	CreatedBy   string `json:"createdBy,omitempty"`
+	MemberCount int    `json:"memberCount"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
 }
 
+// SpaceMember represents a user's membership in a space.
+type SpaceMember struct {
+	ID       string `json:"id"`
+	UserID   string `json:"user_id"`
+	SpaceID  string `json:"space_id"`
+	Role     string `json:"role"`
+	JoinedAt string `json:"joined_at"`
+}
+
 // Workspace represents a top-level grouping of spaces.
 type Workspace struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Slug       string `json:"slug"`
-	Icon       string `json:"icon"`
-	EnforceMFA bool   `json:"enforce_mfa"`
-	CreatedAt  string `json:"createdAt"`
-	UpdatedAt  string `json:"updatedAt"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Icon        string `json:"icon"`
+	EnforceMFA  bool   `json:"enforce_mfa"`
+	MemberCount int    `json:"memberCount"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+// WorkspaceMember represents a user's membership in a workspace.
+type WorkspaceMember struct {
+	ID          string `json:"id"`
+	UserID      string `json:"user_id"`
+	WorkspaceID string `json:"workspace_id"`
+	Role        string `json:"role"`
+	JoinedAt    string `json:"joined_at"`
 }
 
 // UserMFA represents a user's MFA configuration.

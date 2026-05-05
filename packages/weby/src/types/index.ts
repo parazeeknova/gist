@@ -172,6 +172,7 @@ export interface Space {
   slug: string;
   icon: string;
   workspaceId: string;
+  memberCount: number;
   createdAt: string;
   updatedAt: string;
 }

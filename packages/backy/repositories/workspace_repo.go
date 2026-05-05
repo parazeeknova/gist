@@ -27,17 +27,24 @@ func NewWorkspaceRepo() *WorkspaceRepo {
 	return &WorkspaceRepo{pool: database.GetPool()}
 }
 
-// GetByID fetches a workspace by its primary key.
+// GetByID fetches a workspace by its primary key with member count.
 func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspace, error) {
 	query := `
-		SELECT id, name, slug, icon, enforce_mfa,
-		       created_at::text, updated_at::text
-		FROM workspaces
-		WHERE id = $1`
+		SELECT w.id, w.name, w.slug, w.icon, w.enforce_mfa,
+		       COALESCE(m.member_count, 0),
+		       w.created_at::text, w.updated_at::text
+		FROM workspaces w
+		LEFT JOIN (
+			SELECT workspace_id, COUNT(*) AS member_count
+			FROM workspace_members
+			GROUP BY workspace_id
+		) m ON m.workspace_id = w.id
+		WHERE w.id = $1`
 
 	var w models.Workspace
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
+		&w.MemberCount,
 		&w.CreatedAt, &w.UpdatedAt,
 	)
 	if err != nil {
@@ -63,13 +70,19 @@ func (r *WorkspaceRepo) GetDefaultWorkspaceID(ctx context.Context) (string, erro
 	return id, nil
 }
 
-// ListAll returns all workspaces ordered by name.
+// ListAll returns all workspaces ordered by name with member counts.
 func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error) {
 	query := `
-		SELECT id, name, slug, icon, enforce_mfa,
-		       created_at::text, updated_at::text
-		FROM workspaces
-		ORDER BY name`
+		SELECT w.id, w.name, w.slug, w.icon, w.enforce_mfa,
+		       COALESCE(m.member_count, 0),
+		       w.created_at::text, w.updated_at::text
+		FROM workspaces w
+		LEFT JOIN (
+			SELECT workspace_id, COUNT(*) AS member_count
+			FROM workspace_members
+			GROUP BY workspace_id
+		) m ON m.workspace_id = w.id
+		ORDER BY w.name`
 
 	rows, err := r.pool.Query(ctx, query)
 	if err != nil {
@@ -80,7 +93,8 @@ func (r *WorkspaceRepo) ListAll(ctx context.Context) ([]models.Workspace, error)
 	var workspaces []models.Workspace
 	for rows.Next() {
 		var w models.Workspace
-		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA, &w.CreatedAt, &w.UpdatedAt); err != nil {
+		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
+			&w.MemberCount, &w.CreatedAt, &w.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning workspace row: %w", err)
 		}
 		workspaces = append(workspaces, w)
@@ -144,4 +158,153 @@ func (r *WorkspaceRepo) SpaceCount(ctx context.Context, workspaceID string) (int
 		return 0, fmt.Errorf("counting spaces in workspace %q: %w", workspaceID, err)
 	}
 	return count, nil
+}
+
+// --- Workspace Membership ---
+
+// AddMember adds a user to a workspace with a given role.
+func (r *WorkspaceRepo) AddMember(ctx context.Context, workspaceID, userID, role string) error {
+	query := `
+		INSERT INTO workspace_members (workspace_id, user_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, workspace_id) DO UPDATE SET role = EXCLUDED.role`
+	_, err := r.pool.Exec(ctx, query, workspaceID, userID, role)
+	if err != nil {
+		return fmt.Errorf("adding member to workspace %q: %w", workspaceID, err)
+	}
+	return nil
+}
+
+// GetMemberRole returns a user's role in a workspace, or empty string if not a member.
+func (r *WorkspaceRepo) GetMemberRole(ctx context.Context, workspaceID, userID string) (string, error) {
+	var role string
+	err := r.pool.QueryRow(ctx,
+		`SELECT role FROM workspace_members WHERE workspace_id = $1 AND user_id = $2`,
+		workspaceID, userID,
+	).Scan(&role)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", nil
+		}
+		return "", fmt.Errorf("getting member role: %w", err)
+	}
+	return role, nil
+}
+
+// IsMember checks if a user is a member of a workspace.
+func (r *WorkspaceRepo) IsMember(ctx context.Context, workspaceID, userID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id = $2)`,
+		workspaceID, userID,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking membership: %w", err)
+	}
+	return exists, nil
+}
+
+// RemoveMember removes a user from a workspace.
+func (r *WorkspaceRepo) RemoveMember(ctx context.Context, workspaceID, userID string) error {
+	_, err := r.pool.Exec(ctx,
+		`DELETE FROM workspace_members WHERE workspace_id = $1 AND user_id = $2`,
+		workspaceID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("removing member from workspace %q: %w", workspaceID, err)
+	}
+	return nil
+}
+
+// GetMemberCount returns the number of members in a workspace.
+func (r *WorkspaceRepo) GetMemberCount(ctx context.Context, workspaceID string) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM workspace_members WHERE workspace_id = $1`, workspaceID,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("counting workspace members: %w", err)
+	}
+	return count, nil
+}
+
+// GetMembers returns all members of a workspace.
+func (r *WorkspaceRepo) GetMembers(ctx context.Context, workspaceID string) ([]models.WorkspaceMember, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT id, user_id, workspace_id, role, joined_at::text FROM workspace_members WHERE workspace_id = $1`,
+		workspaceID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("listing workspace members: %w", err)
+	}
+	defer rows.Close()
+
+	var members []models.WorkspaceMember
+	for rows.Next() {
+		var m models.WorkspaceMember
+		if err := rows.Scan(&m.ID, &m.UserID, &m.WorkspaceID, &m.Role, &m.JoinedAt); err != nil {
+			return nil, fmt.Errorf("scanning workspace member: %w", err)
+		}
+		members = append(members, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating workspace members: %w", err)
+	}
+	if members == nil {
+		members = []models.WorkspaceMember{}
+	}
+	return members, nil
+}
+
+// HasOwnerOtherThan checks if there's another owner besides the given user.
+func (r *WorkspaceRepo) HasOwnerOtherThan(ctx context.Context, workspaceID, userID string) (bool, error) {
+	var exists bool
+	err := r.pool.QueryRow(ctx,
+		`SELECT EXISTS(SELECT 1 FROM workspace_members WHERE workspace_id = $1 AND user_id != $2 AND role = 'owner')`,
+		workspaceID, userID,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking other owners: %w", err)
+	}
+	return exists, nil
+}
+
+// ListByUser returns all workspaces a user is a member of.
+func (r *WorkspaceRepo) ListByUser(ctx context.Context, userID string) ([]models.Workspace, error) {
+	query := `
+		SELECT w.id, w.name, w.slug, w.icon, w.enforce_mfa,
+		       COALESCE(m2.member_count, 0),
+		       w.created_at::text, w.updated_at::text
+		FROM workspaces w
+		JOIN workspace_members wm ON wm.workspace_id = w.id
+		LEFT JOIN (
+			SELECT workspace_id, COUNT(*) AS member_count
+			FROM workspace_members
+			GROUP BY workspace_id
+		) m2 ON m2.workspace_id = w.id
+		WHERE wm.user_id = $1
+		ORDER BY w.name`
+
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("listing user workspaces: %w", err)
+	}
+	defer rows.Close()
+
+	var workspaces []models.Workspace
+	for rows.Next() {
+		var w models.Workspace
+		if err := rows.Scan(&w.ID, &w.Name, &w.Slug, &w.Icon, &w.EnforceMFA,
+			&w.MemberCount, &w.CreatedAt, &w.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scanning workspace row: %w", err)
+		}
+		workspaces = append(workspaces, w)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating workspace rows: %w", err)
+	}
+	if workspaces == nil {
+		workspaces = []models.Workspace{}
+	}
+	return workspaces, nil
 }
