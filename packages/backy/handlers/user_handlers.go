@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,8 +12,28 @@ import (
 	"verso/backy/repositories"
 )
 
+func (h *Handlers) requireOwnerOrAdmin(c *gin.Context) error {
+	userID := middleware.GetCurrentUserID(c)
+	if userID == "" {
+		return errors.New("unauthenticated")
+	}
+	repo := repositories.NewUserRepo()
+	user, err := repo.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		return err
+	}
+	if user.Role != "owner" && user.Role != "admin" {
+		return errors.New("insufficient permissions")
+	}
+	return nil
+}
+
 // GetUsers handles GET /api/console/users.
 func (h *Handlers) GetUsers(c *gin.Context) {
+	if err := h.requireOwnerOrAdmin(c); err != nil {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
+		return
+	}
 	users, err := repositories.NewUserRepo().ListUsers(c.Request.Context())
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("list users error")
@@ -24,6 +45,10 @@ func (h *Handlers) GetUsers(c *gin.Context) {
 
 // UpdateUserRole handles PUT /api/console/users/:id/role.
 func (h *Handlers) UpdateUserRole(c *gin.Context) {
+	if err := h.requireOwnerOrAdmin(c); err != nil {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
+		return
+	}
 	currentUserID := middleware.GetCurrentUserID(c)
 	if currentUserID == "" {
 		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
@@ -57,6 +82,10 @@ func (h *Handlers) UpdateUserRole(c *gin.Context) {
 
 // UpdateUserActive handles PUT /api/console/users/:id/active.
 func (h *Handlers) UpdateUserActive(c *gin.Context) {
+	if err := h.requireOwnerOrAdmin(c); err != nil {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
+		return
+	}
 	currentUserID := middleware.GetCurrentUserID(c)
 	if currentUserID == "" {
 		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
@@ -90,6 +119,10 @@ func (h *Handlers) UpdateUserActive(c *gin.Context) {
 
 // DeleteUser handles DELETE /api/console/users/:id.
 func (h *Handlers) DeleteUser(c *gin.Context) {
+	if err := h.requireOwnerOrAdmin(c); err != nil {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
+		return
+	}
 	currentUserID := middleware.GetCurrentUserID(c)
 	if currentUserID == "" {
 		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})

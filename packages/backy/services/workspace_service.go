@@ -136,17 +136,22 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 		return models.Workspace{}, fmt.Errorf("getting workspace: %w", err)
 	}
 
+	oldName := existing.Name
+	oldIcon := existing.Icon
+
 	existing.Name = name
 	existing.Slug = slug
-	iconChanged := existing.Icon != icon
 	existing.Icon = icon
 
 	if err := s.workspaceRepo.Update(ctx, existing); err != nil {
 		return models.Workspace{}, fmt.Errorf("updating workspace: %w", err)
 	}
 
+	nameChanged := oldName != name
+	iconChanged := oldIcon != icon
+
 	recipients, _ := s.workspaceMemberIDs(ctx, id)
-	if iconChanged && name == existing.Name {
+	if iconChanged && !nameChanged {
 		s.notifier.Notify(ctx, NotificationEvent{
 			Type:         EventWorkspaceIconChanged,
 			WorkspaceID:  id,
@@ -154,7 +159,7 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 			RecipientIDs: recipients,
 			Metadata:     map[string]string{"name": name},
 		})
-	} else {
+	} else if nameChanged {
 		s.notifier.Notify(ctx, NotificationEvent{
 			Type:         EventWorkspaceRenamed,
 			WorkspaceID:  id,

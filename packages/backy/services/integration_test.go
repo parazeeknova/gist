@@ -641,7 +641,7 @@ func TestGroupService_DefaultGroupCreatedWithWorkspace(t *testing.T) {
 	}
 
 	// Creator should be in the default group.
-	members, err := db.groupSvc.GetGroupMembers(ctx, groups[0].ID)
+	members, err := db.groupSvc.GetGroupMembers(ctx, groups[0].ID, ownerID)
 	if err != nil {
 		t.Fatalf("get group members: %v", err)
 	}
@@ -694,7 +694,7 @@ func TestGroupService_AddRemoveMembers(t *testing.T) {
 		t.Fatalf("add group member: %v", err)
 	}
 
-	members, err := db.groupSvc.GetGroupMembers(ctx, g.ID)
+	members, err := db.groupSvc.GetGroupMembers(ctx, g.ID, ownerID)
 	if err != nil {
 		t.Fatalf("get group members: %v", err)
 	}
@@ -706,7 +706,7 @@ func TestGroupService_AddRemoveMembers(t *testing.T) {
 		t.Fatalf("remove group member: %v", err)
 	}
 
-	members, err = db.groupSvc.GetGroupMembers(ctx, g.ID)
+	members, err = db.groupSvc.GetGroupMembers(ctx, g.ID, ownerID)
 	if err != nil {
 		t.Fatalf("get group members after remove: %v", err)
 	}
@@ -975,7 +975,7 @@ func TestAuthService_Bootstrap_CreatesUserWorkspaceGroupAndSpace(t *testing.T) {
 	}
 
 	// Verify owner is in the Everyone group.
-	members, err := db.groupSvc.GetGroupMembers(ctx, groups[0].ID)
+	members, err := db.groupSvc.GetGroupMembers(ctx, groups[0].ID, userID)
 	if err != nil {
 		t.Fatalf("get group members: %v", err)
 	}

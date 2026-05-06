@@ -100,9 +100,12 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 		return models.Space{}, fmt.Errorf("getting space: %w", err)
 	}
 
+	oldName := existing.Name
+	oldSlug := existing.Slug
+	oldIcon := existing.Icon
+
 	existing.Name = name
 	existing.Slug = slug
-	iconChanged := existing.Icon != icon
 	existing.Icon = icon
 	existing.Description = description
 	existing.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -111,8 +114,11 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 		return models.Space{}, fmt.Errorf("updating space: %w", err)
 	}
 
+	nameOrSlugChanged := oldName != name || oldSlug != slug
+	iconChanged := oldIcon != icon
+
 	recipients, _ := s.workspaceMemberIDsForSpace(ctx, existing.WorkspaceID)
-	if iconChanged && name == existing.Name && slug == existing.Slug {
+	if iconChanged && !nameOrSlugChanged {
 		s.notifier.Notify(ctx, NotificationEvent{
 			Type:         EventSpaceIconChanged,
 			WorkspaceID:  existing.WorkspaceID,
@@ -122,7 +128,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 			EntityID:     id,
 			Metadata:     map[string]string{"name": name},
 		})
-	} else {
+	} else if nameOrSlugChanged {
 		s.notifier.Notify(ctx, NotificationEvent{
 			Type:         EventSpaceRenamed,
 			WorkspaceID:  existing.WorkspaceID,
@@ -390,6 +396,22 @@ func (s *SpaceService) UpdateSpaceGroupRole(ctx context.Context, spaceID, groupI
 	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
+
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("getting space: %w", err)
+	}
+	group, err := s.groupRepo.GetByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrGroupNotFound) {
+			return ErrSpaceNotFound
+		}
+		return fmt.Errorf("getting group: %w", err)
+	}
+	if group.WorkspaceID != space.WorkspaceID {
+		return fmt.Errorf("group does not belong to this workspace")
+	}
+
 	return s.spaceRepo.UpdateGroupMemberRole(ctx, spaceID, groupID, role)
 }
 
@@ -398,5 +420,21 @@ func (s *SpaceService) RemoveSpaceGroup(ctx context.Context, spaceID, groupID, a
 	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
+
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("getting space: %w", err)
+	}
+	group, err := s.groupRepo.GetByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrGroupNotFound) {
+			return ErrSpaceNotFound
+		}
+		return fmt.Errorf("getting group: %w", err)
+	}
+	if group.WorkspaceID != space.WorkspaceID {
+		return fmt.Errorf("group does not belong to this workspace")
+	}
+
 	return s.spaceRepo.RemoveGroupMember(ctx, spaceID, groupID)
 }

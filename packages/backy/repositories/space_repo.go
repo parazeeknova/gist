@@ -216,7 +216,7 @@ func (r *SpaceRepo) AddMember(ctx context.Context, spaceID, userID, role string)
 	query := `
 		INSERT INTO space_members (space_id, user_id, role)
 		VALUES ($1, $2, $3)
-		ON CONFLICT (user_id, space_id) DO UPDATE SET role = EXCLUDED.role`
+		ON CONFLICT (space_id, user_id) WHERE user_id IS NOT NULL DO UPDATE SET role = EXCLUDED.role`
 	_, err := r.pool.Exec(ctx, query, spaceID, userID, role)
 	if err != nil {
 		return fmt.Errorf("adding member to space %q: %w", spaceID, err)
@@ -445,22 +445,28 @@ func (r *SpaceRepo) GetMembersMixed(ctx context.Context, spaceID string) ([]mode
 
 // UpdateGroupMemberRole updates a group's role in a space.
 func (r *SpaceRepo) UpdateGroupMemberRole(ctx context.Context, spaceID, groupID, role string) error {
-	_, err := r.pool.Exec(ctx,
+	tag, err := r.pool.Exec(ctx,
 		`UPDATE space_members SET role = $1 WHERE space_id = $2 AND group_id = $3`,
 		role, spaceID, groupID)
 	if err != nil {
 		return fmt.Errorf("updating group member role: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("group %q is not a member of space %q", groupID, spaceID)
 	}
 	return nil
 }
 
 // RemoveGroupMember removes a group from a space.
 func (r *SpaceRepo) RemoveGroupMember(ctx context.Context, spaceID, groupID string) error {
-	_, err := r.pool.Exec(ctx,
+	tag, err := r.pool.Exec(ctx,
 		`DELETE FROM space_members WHERE space_id = $1 AND group_id = $2`,
 		spaceID, groupID)
 	if err != nil {
 		return fmt.Errorf("removing group from space %q: %w", spaceID, err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("group %q is not a member of space %q", groupID, spaceID)
 	}
 	return nil
 }

@@ -219,8 +219,18 @@ func (s *GroupService) RemoveGroupMember(ctx context.Context, groupID, memberUse
 	return nil
 }
 
-// GetGroupMembers returns all members of a group.
-func (s *GroupService) GetGroupMembers(ctx context.Context, groupID string) ([]models.GroupMemberWithUser, error) {
+// GetGroupMembers returns all members of a group. Requires workspace owner/admin.
+func (s *GroupService) GetGroupMembers(ctx context.Context, groupID, actorID string) ([]models.GroupMemberWithUser, error) {
+	g, err := s.groupRepo.GetByID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrGroupNotFound) {
+			return nil, ErrGroupNotFound
+		}
+		return nil, fmt.Errorf("getting group: %w", err)
+	}
+	if err := s.requireWorkspaceOwnerOrAdmin(ctx, g.WorkspaceID, actorID); err != nil {
+		return nil, err
+	}
 	return s.groupRepo.GetMembersWithUsers(ctx, groupID)
 }
 

@@ -60,12 +60,18 @@ export const WorkspaceSettings = ({ urlWorkspaceName }: WorkspaceSettingsProps) 
     }
   }, [workspace, workspace?.id]);
 
-  // Auto-slugify name into slug
+  // Auto-slugify name into slug when slug hasn't been manually edited
+  const [userEditedSlug, setUserEditedSlug] = useState(false);
   useEffect(() => {
-    if (name.trim()) {
+    if (name.trim() && !userEditedSlug) {
       setSlug(slugify(name));
     }
-  }, [name]);
+  }, [name, userEditedSlug]);
+
+  // Reset userEditedSlug when switching workspaces
+  useEffect(() => {
+    setUserEditedSlug(false);
+  }, [workspace?.id]);
 
   // Update URL and document title when workspace changes
   useEffect(() => {
@@ -136,7 +142,10 @@ export const WorkspaceSettings = ({ urlWorkspaceName }: WorkspaceSettingsProps) 
                 hasChanges={hasSlugChanges}
                 icon={avatarUrl}
                 name={name}
-                onSlugChange={setSlug}
+                onSlugChange={(newSlug: string) => {
+                  setSlug(newSlug);
+                  setUserEditedSlug(true);
+                }}
                 slug={slug}
                 workspaceId={workspace.id}
               />

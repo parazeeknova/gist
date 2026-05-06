@@ -157,8 +157,17 @@ func (h *Handlers) GetGroupMembers(c *gin.Context) {
 	}
 
 	id := c.Param("id")
-	members, err := h.groupService.GetGroupMembers(c.Request.Context(), id)
+	actorID := middleware.GetCurrentUserID(c)
+	members, err := h.groupService.GetGroupMembers(c.Request.Context(), id, actorID)
 	if err != nil {
+		if errors.Is(err, services.ErrGroupPermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		if errors.Is(err, services.ErrGroupNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "group not found"})
+			return
+		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("list group members error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list group members"})
 		return
