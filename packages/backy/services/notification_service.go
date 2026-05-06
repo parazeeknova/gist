@@ -282,7 +282,7 @@ func (s *NotificationService) deliverPush(ctx context.Context, userID string, no
 			}
 		}
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 	}
 }

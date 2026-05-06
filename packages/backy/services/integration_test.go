@@ -60,7 +60,9 @@ func getTestDatabaseURL(t *testing.T, databaseURL string) string {
 	_, err = adminPool.Exec(ctx, fmt.Sprintf(`CREATE DATABASE "%s"`, testDBName))
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if !(errors.As(err, &pgErr) && pgErr.Code == "42P04") {
+		if errors.As(err, &pgErr) && pgErr.Code == "42P04" {
+			// already exists, skip
+		} else {
 			t.Fatalf("create test database: %v", err)
 		}
 	}
@@ -101,7 +103,7 @@ func setupTestDB(t *testing.T) *testDB {
 	db.groupRepo = repositories.NewGroupRepo()
 	db.workspaceSvc = NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
 	db.spaceSvc = NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
-	db.pageSvc = NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo)
+	db.pageSvc = NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
 	db.groupSvc = NewGroupService(db.groupRepo, db.workspaceRepo)
 
 	truncateTables(t, ctx)

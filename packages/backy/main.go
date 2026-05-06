@@ -104,7 +104,7 @@ func main() {
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
 		groupRepo := repositories.NewGroupRepo()
-		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo)
+		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
 		spaceService := services.NewSpaceService(spaceRepo, pageRepo, groupRepo)
 		workspaceService = services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
 		groupService := services.NewGroupService(groupRepo, workspaceRepo)

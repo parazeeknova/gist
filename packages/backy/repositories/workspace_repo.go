@@ -27,6 +27,11 @@ func NewWorkspaceRepo() *WorkspaceRepo {
 	return &WorkspaceRepo{pool: database.GetPool()}
 }
 
+// Pool returns the underlying connection pool for creating transactions.
+func (r *WorkspaceRepo) Pool() *pgxpool.Pool {
+	return r.pool
+}
+
 // GetByID fetches a workspace by its primary key with member count.
 func (r *WorkspaceRepo) GetByID(ctx context.Context, id string) (models.Workspace, error) {
 	query := `

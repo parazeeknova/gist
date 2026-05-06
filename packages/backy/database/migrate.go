@@ -18,7 +18,19 @@ var embeddedMigrations embed.FS
 
 // MigrateUp runs all pending SQL migration files from the embedded migrations directory.
 // Applied migrations are tracked in a schema_migrations table so each migration runs only once.
+// Uses a PostgreSQL transaction-level advisory lock to prevent concurrent instances from racing.
 func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
+	// Take a transaction-level advisory lock so only one instance migrates at a time.
+	lockTx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin lock tx: %w", err)
+	}
+	defer func() { _ = lockTx.Rollback(ctx) }()
+
+	if _, err := lockTx.Exec(ctx, "SELECT pg_advisory_xact_lock(8675309)"); err != nil {
+		return fmt.Errorf("acquire advisory lock: %w", err)
+	}
+
 	if err := ensureMigrationsTable(ctx, pool); err != nil {
 		return fmt.Errorf("ensure migrations table: %w", err)
 	}
@@ -42,7 +54,12 @@ func MigrateUp(ctx context.Context, pool *pgxpool.Pool) error {
 
 	if len(pending) == 0 {
 		logger.Log.Info().Msg("migrations: no pending migrations")
-		return nil
+		return lockTx.Commit(ctx)
+	}
+
+	// Release the advisory lock; each migration runs in its own transaction below.
+	if err := lockTx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit lock tx: %w", err)
 	}
 
 	for _, m := range pending {

@@ -288,18 +288,35 @@ func (s *WorkspaceService) RequireOwnerOrAdmin(ctx context.Context, workspaceID,
 	return ErrWorkspacePermissionDenied
 }
 
-// AddWorkspaceMember adds a user to a workspace and the default group.
-func (s *WorkspaceService) AddWorkspaceMember(ctx context.Context, workspaceID, userID, role string) error {
-	if err := s.workspaceRepo.AddMember(ctx, workspaceID, userID, role); err != nil {
-		return fmt.Errorf("adding workspace member: %w", err)
-	}
+// AddWorkspaceMember adds a user to a workspace and the default group within a transaction.
+func (s *WorkspaceService) AddWorkspaceMember(ctx context.Context, workspaceID, userID, role, actorID string) error {
 	if s.groupRepo != nil {
+		// Look up default group outside tx (read-only).
 		defaultGroupID, err := s.groupRepo.GetDefaultGroupID(ctx, workspaceID)
 		if err != nil {
 			return fmt.Errorf("finding default group: %w", err)
 		}
-		if err := s.groupRepo.AddUser(ctx, defaultGroupID, userID); err != nil {
+
+		// Use a transaction for both mutations.
+		tx, err := s.workspaceRepo.Pool().Begin(ctx)
+		if err != nil {
+			return fmt.Errorf("begin tx: %w", err)
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+
+		if err := s.workspaceRepo.AddMemberTx(ctx, tx, workspaceID, userID, role); err != nil {
+			return fmt.Errorf("adding workspace member: %w", err)
+		}
+		if err := s.groupRepo.AddUserTx(ctx, tx, defaultGroupID, userID); err != nil {
 			return fmt.Errorf("adding to default group: %w", err)
+		}
+
+		if err := tx.Commit(ctx); err != nil {
+			return fmt.Errorf("commit tx: %w", err)
+		}
+	} else {
+		if err := s.workspaceRepo.AddMember(ctx, workspaceID, userID, role); err != nil {
+			return fmt.Errorf("adding workspace member: %w", err)
 		}
 	}
 
@@ -311,7 +328,7 @@ func (s *WorkspaceService) AddWorkspaceMember(ctx context.Context, workspaceID, 
 	s.notifier.Notify(ctx, NotificationEvent{
 		Type:         EventWorkspaceMemberAdded,
 		WorkspaceID:  workspaceID,
-		ActorID:      userID,
+		ActorID:      actorID,
 		RecipientIDs: []string{userID},
 		Metadata:     map[string]string{"name": wsName},
 	})

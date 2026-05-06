@@ -22,15 +22,17 @@ type PageService struct {
 	pageRepo        *repositories.PageRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
 	spaceRepo       *repositories.SpaceRepo
+	groupRepo       *repositories.GroupRepo
 	notifier        Notifier
 }
 
 // NewPageService creates a new page service
-func NewPageService(pageRepo *repositories.PageRepo, pageHistoryRepo *repositories.PageHistoryRepo, spaceRepo *repositories.SpaceRepo) *PageService {
+func NewPageService(pageRepo *repositories.PageRepo, pageHistoryRepo *repositories.PageHistoryRepo, spaceRepo *repositories.SpaceRepo, groupRepo *repositories.GroupRepo) *PageService {
 	return &PageService{
 		pageRepo:        pageRepo,
 		pageHistoryRepo: pageHistoryRepo,
 		spaceRepo:       spaceRepo,
+		groupRepo:       groupRepo,
 		notifier:        NoopNotifier(),
 	}
 }
@@ -563,19 +565,24 @@ func (s *PageService) GetPageByID(ctx context.Context, id string) (models.Page, 
 
 // requireWrite checks if a user can write (create/update/delete/move) pages in a space.
 func (s *PageService) requireWrite(ctx context.Context, spaceID, userID string) error {
-	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
-	if err != nil {
-		return fmt.Errorf("checking space role: %w", err)
-	}
-	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter {
-		return nil
-	}
-	// Fallback: creator of the space always has write access
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err != nil {
-		return fmt.Errorf("checking space creator: %w", err)
+		return fmt.Errorf("checking space: %w", err)
 	}
 	if space.CreatedBy == userID {
+		return nil
+	}
+
+	var groupIDs []string
+	if s.groupRepo != nil {
+		groupIDs, _ = s.groupRepo.ListUserGroupIDsInWorkspace(ctx, userID, space.WorkspaceID)
+	}
+
+	role, err := s.spaceRepo.GetEffectiveRole(ctx, spaceID, userID, groupIDs)
+	if err != nil {
+		return fmt.Errorf("checking effective role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter {
 		return nil
 	}
 	return ErrPagePermissionDenied
@@ -583,19 +590,24 @@ func (s *PageService) requireWrite(ctx context.Context, spaceID, userID string) 
 
 // RequireRead checks if a user can read pages in a space.
 func (s *PageService) RequireRead(ctx context.Context, spaceID, userID string) error {
-	role, err := s.spaceRepo.GetMemberRole(ctx, spaceID, userID)
-	if err != nil {
-		return fmt.Errorf("checking space role: %w", err)
-	}
-	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter || role == models.SpaceRoleReader {
-		return nil
-	}
-	// Fallback: creator of the space always has read access
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err != nil {
-		return fmt.Errorf("checking space creator: %w", err)
+		return fmt.Errorf("checking space: %w", err)
 	}
 	if space.CreatedBy == userID {
+		return nil
+	}
+
+	var groupIDs []string
+	if s.groupRepo != nil {
+		groupIDs, _ = s.groupRepo.ListUserGroupIDsInWorkspace(ctx, userID, space.WorkspaceID)
+	}
+
+	role, err := s.spaceRepo.GetEffectiveRole(ctx, spaceID, userID, groupIDs)
+	if err != nil {
+		return fmt.Errorf("checking effective role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter || role == models.SpaceRoleReader {
 		return nil
 	}
 	return ErrPagePermissionDenied

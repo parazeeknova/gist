@@ -297,7 +297,7 @@ func (r *SpaceRepo) GetEffectiveRole(ctx context.Context, spaceID, userID string
 	if len(groupIDs) > 0 {
 		query := `
 			SELECT role FROM space_members
-			WHERE space_id = $1 AND group_id = ANY($2)
+			WHERE space_id = $1 AND group_id = ANY($2::uuid[])
 			ORDER BY CASE role
 				WHEN 'admin' THEN 1
 				WHEN 'writer' THEN 2

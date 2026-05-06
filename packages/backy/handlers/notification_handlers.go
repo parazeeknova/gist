@@ -155,7 +155,7 @@ func (h *NotificationHandlers) Stream(c *gin.Context) {
 			if !ok {
 				return false
 			}
-			fmt.Fprintf(w, "data: %s\n\n", msg)
+			_, _ = fmt.Fprintf(w, "data: %s\n\n", msg)
 			c.Writer.Flush()
 			return true
 		case <-ctx.Done():

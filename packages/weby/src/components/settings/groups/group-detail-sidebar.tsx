@@ -258,7 +258,6 @@ export const GroupDetailSidebar = ({ group, isOpen, onClose }: GroupDetailSideba
       <div
         className={`relative w-full max-w-sm h-full overflow-y-auto border-l ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border-dark/20">
           <span className={`text-[11px] lowercase ${t("text-text-dark/40", "text-text-light/40")}`}>
             group details

@@ -141,13 +141,15 @@ func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 // ListAllForUser returns all non-deleted pages in spaces the user is a member of.
 func (r *PageRepo) ListAllForUser(ctx context.Context, userID string) ([]models.Page, error) {
 	query := `
-		SELECT p.id, p.slug_id, p.title, p.icon, p.cover_photo, p.content_json, p.ydoc,
-		       p.text_content, p.position, p.is_published, p.parent_page_id, p.space_id, p.creator_id,
-		       p.last_updated_by_id, p.created_at, p.updated_at
+		SELECT DISTINCT ON (p.id)
+			p.id, p.slug_id, p.title, p.icon, p.cover_photo, p.content_json, p.ydoc,
+			p.text_content, p.position, p.is_published, p.parent_page_id, p.space_id, p.creator_id,
+			p.last_updated_by_id, p.created_at, p.updated_at
 		FROM pages p
 		JOIN space_members sm ON sm.space_id = p.space_id
-		WHERE p.deleted_at IS NULL AND sm.user_id = $1
-		ORDER BY p.created_at DESC`
+		LEFT JOIN group_users gu ON gu.group_id = sm.group_id
+		WHERE p.deleted_at IS NULL AND (sm.user_id = $1 OR gu.user_id = $1)
+		ORDER BY p.id, p.created_at DESC`
 
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {
