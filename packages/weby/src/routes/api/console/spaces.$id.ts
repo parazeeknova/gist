@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { deleteSpace } from "../../../server/backy";
+import { deleteSpace, updateSpace } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/spaces/$id")({
   server: {
@@ -11,6 +11,15 @@ export const Route = createFileRoute("/api/console/spaces/$id")({
         }
         const result = await deleteSpace(params.id, cookieHeader);
         return Response.json(result);
+      },
+      PUT: async ({ params, request }) => {
+        const cookieHeader = request.headers.get("cookie");
+        if (!cookieHeader) {
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const body = await request.json();
+        const space = await updateSpace(params.id, body, cookieHeader);
+        return Response.json(space);
       },
     },
   },

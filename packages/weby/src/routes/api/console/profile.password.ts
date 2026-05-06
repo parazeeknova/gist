@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { changePassword, BackyError } from "../../../server/backy";
+import { changePassword, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/profile/password")({
   server: {

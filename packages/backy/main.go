@@ -94,26 +94,63 @@ func main() {
 	}
 
 	var h *handlers.Handlers
+	var notificationService *services.NotificationService
+	var hub *services.NotificationHub
+	var workspaceService *services.WorkspaceService
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
 		pageHistoryRepo := repositories.NewPageHistoryRepo(pool)
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
-		pageService := services.NewPageService(pageRepo, pageHistoryRepo)
-		spaceService := services.NewSpaceService(spaceRepo, pageRepo)
-		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo)
-		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService)
+		groupRepo := repositories.NewGroupRepo()
+		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
+		spaceService := services.NewSpaceService(spaceRepo, pageRepo, groupRepo)
+		workspaceService = services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
+		groupService := services.NewGroupService(groupRepo, workspaceRepo)
+
+		// Notification service
+		notifRepo := repositories.NewNotificationRepo()
+		pushSubRepo := repositories.NewPushSubscriptionRepo()
+		notificationService = services.NewNotificationService(notifRepo, pushSubRepo, repositories.NewUserRepo())
+
+		// SSE hub for real-time notification streaming
+		hub = services.NewNotificationHub()
+		notificationService.SetHub(hub)
+
+		// Wire notification service into domain services
+		workspaceService.SetNotifier(notificationService)
+		spaceService.SetNotifier(notificationService)
+		groupService.SetNotifier(notificationService)
+		pageService.SetNotifier(notificationService)
+
+		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService, groupService)
+		h.SetNotifier(notificationService)
 	} else {
 		h = handlers.New(cfg)
 	}
 
 	// Create auth service and handlers
 	authService := services.NewAuthService()
+	if workspaceService != nil {
+		authService.SetWorkspaceService(workspaceService)
+	}
 	mfaService := services.NewMFAService(authService)
 	authHandlers := handlers.NewAuthHandlers(authService, mfaService)
 	profileHandlers := handlers.NewProfileHandlers(authService)
 	mfaHandlers := handlers.NewMFAHandlers(mfaService)
+
+	if notificationService != nil {
+		profileHandlers.SetNotifier(notificationService)
+		mfaHandlers.SetNotifier(notificationService)
+	}
+
+	var notifHandlers *handlers.NotificationHandlers
+	var pushHandlers *handlers.PushSubscriptionHandlers
+	if notificationService != nil {
+		notifHandlers = handlers.NewNotificationHandlers(notificationService, hub)
+		pushHandlers = handlers.NewPushSubscriptionHandlers(notificationService)
+	}
 
 	r := gin.New()
 
@@ -226,6 +263,22 @@ func main() {
 			console.POST("/spaces", h.CreateSpace)
 			console.PUT("/spaces/:id", h.UpdateSpace)
 			console.DELETE("/spaces/:id", h.DeleteSpace)
+			console.GET("/spaces/:id/members", h.GetSpaceMembers)
+			console.POST("/spaces/:id/members/:userId", h.AddSpaceMember)
+			console.PUT("/spaces/:id/members/:userId", h.UpdateSpaceMemberRole)
+			console.DELETE("/spaces/:id/members/:userId", h.RemoveSpaceMember)
+			console.POST("/spaces/:id/groups/:groupId", h.AddSpaceGroup)
+			console.PUT("/spaces/:id/groups/:groupId", h.UpdateSpaceGroupRole)
+			console.DELETE("/spaces/:id/groups/:groupId", h.RemoveSpaceGroup)
+
+			// Groups
+			console.GET("/workspaces/:workspaceId/groups", h.GetGroups)
+			console.POST("/workspaces/:workspaceId/groups", h.CreateGroup)
+			console.PUT("/groups/:id", h.UpdateGroup)
+			console.DELETE("/groups/:id", h.DeleteGroup)
+			console.GET("/groups/:id/members", h.GetGroupMembers)
+			console.POST("/groups/:id/members", h.AddGroupMember)
+			console.DELETE("/groups/:id/members/:userId", h.RemoveGroupMember)
 
 			// Page CRUD
 			console.GET("/pages", h.GetConsolePages)
@@ -248,6 +301,16 @@ func main() {
 			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
 			console.POST("/pages/:id/restore", h.RestoreConsolePage)
 
+			// Notifications
+			if notifHandlers != nil {
+				notifHandlers.RegisterRoutes(console)
+			}
+
+			// Push subscriptions
+			if pushHandlers != nil {
+				pushHandlers.RegisterRoutes(console)
+			}
+
 			// Debug (owner-only, gated by env)
 			if os.Getenv("ENABLE_DEBUG_ROUTES") == "true" {
 				debug := console.Group("/debug")
@@ -258,6 +321,16 @@ func main() {
 					debug.DELETE("/tables/:tableName", h.DeleteDebugTableData)
 					debug.POST("/tables/:tableName/rows", h.DeleteDebugTableRows)
 				}
+			}
+
+			// Users (admin+ only)
+			admin := console.Group("/users")
+			admin.Use(middleware.AdminRequired())
+			{
+				admin.GET("", h.GetUsers)
+				admin.PUT("/:id/role", h.UpdateUserRole)
+				admin.PUT("/:id/active", h.UpdateUserActive)
+				admin.DELETE("/:id", h.DeleteUser)
 			}
 		}
 	}

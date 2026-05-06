@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createSpace, getSpaces } from "../../../server/backy";
+import { createSpace, getSpaces } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/spaces")({
   server: {
@@ -9,7 +9,9 @@ export const Route = createFileRoute("/api/console/spaces")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const spaces = await getSpaces(cookieHeader);
+        const url = new URL(request.url);
+        const workspaceId = url.searchParams.get("workspaceId");
+        const spaces = await getSpaces(workspaceId, cookieHeader);
         return Response.json(spaces ?? []);
       },
       POST: async ({ request }) => {

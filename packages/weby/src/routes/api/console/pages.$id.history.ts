@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getPageHistory } from "../../../server/backy";
+import { getPageHistory } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/pages/$id/history")({
   server: {

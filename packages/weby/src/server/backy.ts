@@ -5,15 +5,21 @@ import type {
   BootstrapState,
   ConsolePage,
   ConsolePageDetail,
+  ConsoleUser,
   CreatePageInput,
   ExperienceItem,
+  Group,
+  GroupMember,
   MovePageInput,
+  NotificationItem,
   PageHistoryItem,
   PageTreeItem,
   Profile,
   Project,
+  PushSubscriptionPayload,
   RestorePageInput,
   Space,
+  SpaceMemberWithUser,
   Stats,
   UpdatePageInput,
   Workspace,
@@ -139,6 +145,41 @@ export const postBackyWithCookies = (
   });
 };
 
+export const putBackyWithCookies = (
+  endpoint: string,
+  body: unknown,
+  cookieHeader?: string | null,
+): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  return fetch(url, {
+    body: JSON.stringify(body),
+    headers,
+    method: "PUT",
+  });
+};
+
+export const deleteBackyWithCookies = (
+  endpoint: string,
+  cookieHeader?: string | null,
+): Promise<Response> => {
+  const url = buildBackyUrl(endpoint);
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (cookieHeader) {
+    headers.Cookie = cookieHeader;
+  }
+  return fetch(url, {
+    headers,
+    method: "DELETE",
+  });
+};
+
 export const getConsolePages = (cookieHeader?: string | null) =>
   fetchBacky<ConsolePage[]>("console/pages", {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
@@ -242,13 +283,17 @@ export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: 
   });
 
 // Space functions
-export const getSpaces = (cookieHeader?: string | null) =>
-  fetchBacky<Space[]>("console/spaces", {
+export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | null) => {
+  const url = workspaceId
+    ? `console/spaces?workspaceId=${encodeURIComponent(workspaceId)}`
+    : "console/spaces";
+  return fetchBacky<Space[]>(url, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
+};
 
 export const createSpace = (
-  input: { name: string; slug: string; icon?: string },
+  input: { name: string; slug: string; icon?: string; description?: string },
   cookieHeader?: string | null,
 ) =>
   fetchBacky<Space>("console/spaces", {
@@ -260,8 +305,63 @@ export const createSpace = (
     method: "POST",
   });
 
+export const updateSpace = (
+  id: string,
+  input: { name: string; slug: string; icon?: string; description?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Space>(`console/spaces/${id}`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
 export const deleteSpace = (id: string, cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>(`console/spaces/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const getSpaceMembers = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<SpaceMemberWithUser[]>(`console/spaces/${id}/members`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const addSpaceMember = (
+  spaceId: string,
+  userId: string,
+  role: string,
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<{ status: string }>(`console/spaces/${spaceId}/members/${userId}`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const updateSpaceMemberRole = (
+  spaceId: string,
+  userId: string,
+  role: string,
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<{ status: string }>(`console/spaces/${spaceId}/members/${userId}`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const removeSpaceMember = (spaceId: string, userId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/spaces/${spaceId}/members/${userId}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "DELETE",
   });
@@ -380,4 +480,158 @@ export const revokeSession = (cookieHeader?: string | null) =>
   fetchBacky<{ status: string }>("console/profile/session/revoke", {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "POST",
+  });
+
+// User management functions
+export const getUsers = (cookieHeader?: string | null) =>
+  fetchBacky<ConsoleUser[]>("console/users", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const updateUserRole = (id: string, role: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/users/${id}/role`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const updateUserActive = (id: string, isActive: boolean, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/users/${id}/active`, {
+    body: JSON.stringify({ is_active: isActive }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const deleteUser = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/users/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+// Group functions
+export const getGroups = (workspaceId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ groups: Group[] }>(`console/workspaces/${workspaceId}/groups`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const createGroup = (
+  workspaceId: string,
+  input: { name: string; description?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Group>(`console/workspaces/${workspaceId}/groups`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const updateGroup = (
+  id: string,
+  input: { name?: string; description?: string },
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<Group>(`console/groups/${id}`, {
+    body: JSON.stringify(input),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PUT",
+  });
+
+export const deleteGroup = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/groups/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const getGroupMembers = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<GroupMember[]>(`console/groups/${id}/members`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const addGroupMember = (id: string, userId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/groups/${id}/members`, {
+    body: JSON.stringify({ userId }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const removeGroupMember = (groupId: string, userId: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/groups/${groupId}/members/${userId}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+// Notification functions
+export const getNotifications = (cookieHeader?: string | null) =>
+  fetchBacky<NotificationItem[]>("console/notifications", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getUnreadNotificationCount = (cookieHeader?: string | null) =>
+  fetchBacky<{ count: number }>("console/notifications/unread-count", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const markNotificationRead = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/notifications/${id}/read`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "PUT",
+  });
+
+export const markAllNotificationsRead = (cookieHeader?: string | null) =>
+  fetchBacky<{ status: string; count: number }>("console/notifications/read-all", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "PUT",
+  });
+
+export const dismissNotification = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/notifications/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const dismissAllNotifications = (cookieHeader?: string | null) =>
+  fetchBacky<{ count: number }>("console/notifications/dismiss-all", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+// Push subscription functions
+export const getVapidPublicKey = (cookieHeader?: string | null) =>
+  fetchBacky<{ publicKey: string }>("console/push/public-key", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const subscribePush = (payload: PushSubscriptionPayload, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>("console/push/subscribe", {
+    body: JSON.stringify(payload),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
+export const unsubscribePush = (endpoint: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>("console/push/unsubscribe", {
+    body: JSON.stringify({ endpoint }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "DELETE",
   });

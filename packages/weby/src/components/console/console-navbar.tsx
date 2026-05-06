@@ -8,8 +8,8 @@ import { useAuth, useAuthActions } from "#/hooks/use-auth";
 import { useTheme } from "#/hooks/use-theme";
 import { useWorkspaces } from "#/hooks/use-console-mutations";
 import { useConsoleContext } from "./console-context";
+import { NotificationBell } from "./notification-bell";
 import {
-  BellIcon,
   GearSixIcon,
   ListIcon,
   MagnifyingGlassIcon,
@@ -135,7 +135,10 @@ const ProfileDropdown = ({
             </button>
             <button
               className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-              onClick={() => setDropdownOpen(false)}
+              onClick={() => {
+                setDropdownOpen(false);
+                void navigate({ to: "/settings/members" });
+              }}
               type="button"
             >
               <UsersIcon size={12} />
@@ -150,12 +153,12 @@ const ProfileDropdown = ({
                 {user?.avatar_url ? (
                   <img
                     alt=""
-                    className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                    className="w-6 h-6 rounded-full object-cover shrink-0"
                     src={user.avatar_url}
                   />
                 ) : (
                   <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium flex-shrink-0 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
                   >
                     {userInitials}
                   </span>
@@ -208,7 +211,10 @@ const ProfileDropdown = ({
             </button>
             <button
               className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-              onClick={() => setDropdownOpen(false)}
+              onClick={() => {
+                setDropdownOpen(false);
+                void navigate({ to: "/settings/account/preferences" });
+              }}
               type="button"
             >
               <SlidersHorizontalIcon size={12} />
@@ -246,13 +252,9 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   const selectedWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
   const workspaceName = selectedWorkspace?.name ?? user?.username ?? "...";
   const workspaceInitials = getInitials(workspaceName);
-  const [notiOpen, setNotiOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useDebouncedState("", {
-    wait: 300,
-  });
-  const notiRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const [searchQuery, setSearchQuery] = useDebouncedState("", { wait: 150 });
 
   const { data: stats } = useQuery<Stats>({
     queryFn: async ({ signal }) => {
@@ -267,26 +269,21 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   });
 
   useEffect(() => {
-    if (!notiOpen && !mobileMenuOpen) {
+    if (!mobileMenuOpen) {
       return;
     }
     const handleClick = (e: MouseEvent) => {
-      if (notiRef.current && !notiRef.current.contains(e.target as Node)) {
-        setNotiOpen(false);
-      }
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
         setMobileMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [notiOpen, mobileMenuOpen]);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     let el: HTMLDivElement | null = null;
-    if (notiOpen) {
-      el = notiRef.current;
-    } else if (mobileMenuOpen) {
+    if (mobileMenuOpen) {
       el = mobileMenuRef.current;
     }
     if (!el) {
@@ -300,7 +297,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         { duration: 0.15, ease: "power2.out", opacity: 1, scale: 1, y: 0 },
       );
     }
-  }, [notiOpen, mobileMenuOpen]);
+  }, [mobileMenuOpen]);
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const currentPath = useRouterState({ select: (s) => s.location.pathname });
@@ -382,43 +379,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           {isDarkMode ? "light" : "dark"}
         </button>
 
-        {/* Notification dropdown */}
-        <div className="relative" ref={notiRef}>
-          <button
-            className={`flex items-center gap-1 lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setNotiOpen((o) => !o)}
-            type="button"
-          >
-            <BellIcon size={12} />
-          </button>
-
-          {notiOpen && (
-            <div
-              className={`absolute right-0 top-full z-50 mt-1 w-52 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
-            >
-              <div className="py-1">
-                <div
-                  className={`flex items-center justify-between border-b px-3 pb-1.5 pt-1 ${t("border-border-dark", "border-border-light")}`}
-                >
-                  <span className={`text-[12px] ${t("text-text-dark/70", "text-text-light/70")}`}>
-                    notifications
-                  </span>
-                  <button
-                    className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
-                    type="button"
-                  >
-                    clear all
-                  </button>
-                </div>
-                <p
-                  className={`px-3 py-2 text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
-                >
-                  no notifications yet !
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+        <NotificationBell isDarkMode={isDarkMode} />
 
         <ProfileDropdown
           isDarkMode={isDarkMode}

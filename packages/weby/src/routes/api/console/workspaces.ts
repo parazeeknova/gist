@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getWorkspaces, createWorkspace } from "../../../server/backy";
+import { getWorkspaces, createWorkspace } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/workspaces")({
   server: {

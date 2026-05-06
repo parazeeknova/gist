@@ -30,6 +30,7 @@ type UserResponse struct {
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	AvatarURL string    `json:"avatar_url"`
+	Role      string    `json:"role"`
 	IsOwner   bool      `json:"is_owner"`
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at"`

@@ -64,7 +64,20 @@ export interface AuthUser {
   email: string;
   name: string;
   avatar_url: string;
+  role: string;
   isOwner: boolean;
+}
+
+export interface ConsoleUser {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  avatar_url: string;
+  role: string;
+  is_active: boolean;
+  last_seen: string;
+  createdAt: string;
 }
 
 export interface BootstrapState {
@@ -158,9 +171,63 @@ export interface Space {
   name: string;
   slug: string;
   icon: string;
+  description: string;
   workspaceId: string;
+  createdBy?: string;
+  visibility: string;
+  defaultRole: string;
+  settings: string;
+  memberCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SpaceMemberWithUser {
+  id: string;
+  user_id: string;
+  space_id: string;
+  role: string;
+  joined_at: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+}
+
+export interface SpaceMemberMixed {
+  memberType: "user" | "group";
+  id: string;
+  userId?: string;
+  groupId?: string;
+  spaceId: string;
+  role: string;
+  joinedAt: string;
+  name: string;
+  email?: string;
+  avatarUrl?: string;
+  description?: string;
+  memberCount?: number;
+  isDefault?: boolean;
+}
+
+export interface Group {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMember {
+  id: string;
+  user_id: string;
+  group_id: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+  added_at: string;
 }
 
 export interface Workspace {
@@ -168,6 +235,35 @@ export interface Workspace {
   name: string;
   slug: string;
   icon: string;
+  description: string;
+  settings: string;
+  defaultSpaceId?: string;
+  enforceMfa: boolean;
+  memberCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  workspaceId?: string;
+  recipientUserId: string;
+  actorUserId?: string;
+  type: string;
+  title: string;
+  body: string;
+  entityType: string;
+  entityId: string;
+  metadata: string;
+  readAt: string | null;
+  createdAt: string;
+  actorName?: string;
+  actorAvatarUrl?: string;
+}
+
+export interface PushSubscriptionPayload {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent?: string;
 }

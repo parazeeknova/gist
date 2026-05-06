@@ -15,11 +15,17 @@ import (
 // MFAHandlers holds HTTP handlers for MFA endpoints.
 type MFAHandlers struct {
 	mfaService *services.MFAService
+	notifier   services.Notifier
 }
 
 // NewMFAHandlers creates a new MFAHandlers.
 func NewMFAHandlers(mfaService *services.MFAService) *MFAHandlers {
-	return &MFAHandlers{mfaService: mfaService}
+	return &MFAHandlers{mfaService: mfaService, notifier: services.NoopNotifier()}
+}
+
+// SetNotifier sets the notification service on the MFA handlers.
+func (h *MFAHandlers) SetNotifier(n services.Notifier) {
+	h.notifier = n
 }
 
 // RegisterRoutes registers all MFA routes on the given router group.
@@ -112,6 +118,13 @@ func (h *MFAHandlers) Enable(c *gin.Context) {
 		return
 	}
 
+	h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
+		Type:         services.EventProfileMFAEnabled,
+		WorkspaceID:  "",
+		ActorID:      userID,
+		RecipientIDs: []string{userID},
+	})
+
 	c.JSON(http.StatusOK, auth.MFABackupCodesResponse{Codes: result.Codes})
 }
 
@@ -142,6 +155,13 @@ func (h *MFAHandlers) Disable(c *gin.Context) {
 		}
 		return
 	}
+
+	h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
+		Type:         services.EventProfileMFADisabled,
+		WorkspaceID:  "",
+		ActorID:      userID,
+		RecipientIDs: []string{userID},
+	})
 
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

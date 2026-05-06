@@ -1,12 +1,16 @@
 import type {
   ConsolePage,
   ConsolePageDetail,
+  ConsoleUser,
   CreatePageInput,
+  Group,
+  GroupMember,
   MovePageInput,
   PageHistoryItem,
   PageTreeItem,
   RestorePageInput,
   Space,
+  SpaceMemberMixed,
   UpdatePageInput,
   Workspace,
 } from "#/types";
@@ -205,7 +209,13 @@ export const useSpaces = (workspaceId: string) =>
 export const useCreateSpace = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name: string; slug: string; icon?: string }) =>
+    mutationFn: (input: {
+      name: string;
+      slug: string;
+      icon?: string;
+      description?: string;
+      workspaceId: string;
+    }) =>
       fetchProtected<Space>("/api/console/spaces", {
         body: JSON.stringify(input),
         headers: { "Content-Type": "application/json" },
@@ -213,6 +223,28 @@ export const useCreateSpace = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useUpdateSpace = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      input,
+    }: {
+      id: string;
+      input: { name: string; slug: string; icon?: string; description?: string };
+    }) =>
+      fetchProtected<Space>(`/api/console/spaces/${id}`, {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["space", variables.id] });
     },
   });
 };
@@ -227,6 +259,105 @@ export const useDeleteSpace = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+    },
+  });
+};
+
+export const useSpaceMembers = (spaceId: string) =>
+  useQuery<SpaceMemberMixed[]>({
+    enabled: spaceId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<SpaceMemberMixed[]>(`/api/console/spaces/${spaceId}/members`, { signal }),
+    queryKey: ["spaceMembers", spaceId],
+    staleTime: 30 * 1000,
+  });
+
+export const useUpdateSpaceMemberRole = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ spaceId, userId, role }: { spaceId: string; userId: string; role: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+    },
+  });
+};
+
+export const useRemoveSpaceMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ spaceId, userId }: { spaceId: string; userId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useAddSpaceMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ role, spaceId, userId }: { role: string; spaceId: string; userId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useAddSpaceGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, role, spaceId }: { groupId: string; role: string; spaceId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
+export const useUpdateSpaceGroupRole = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, role, spaceId }: { groupId: string; role: string; spaceId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+    },
+  });
+};
+
+export const useRemoveSpaceGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, spaceId }: { groupId: string; spaceId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
     },
   });
 };
@@ -269,6 +400,57 @@ export const useDeleteWorkspace = () => {
   });
 };
 
+// Users
+export const useUsers = () =>
+  useQuery<ConsoleUser[]>({
+    queryFn: ({ signal }) => fetchProtected<ConsoleUser[]>("/api/console/users", { signal }),
+    queryKey: ["users"],
+    staleTime: 30 * 1000,
+  });
+
+export const useUpdateUserRole = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/users/${id}/role`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useUpdateUserActive = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      fetchProtected<{ status: string }>(`/api/console/users/${id}/active`, {
+        body: JSON.stringify({ is_active: isActive }),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
+export const useDeleteUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchProtected<{ status: string }>(`/api/console/users/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+};
+
 // Debug
 export interface DebugTableInfo {
   name: string;
@@ -279,6 +461,97 @@ export interface DebugTableData {
   columns: { name: string; type: string }[];
   rows: Record<string, unknown>[];
 }
+
+// Groups
+export const useGroupMembers = (groupId: string) =>
+  useQuery<{ members: GroupMember[] }>({
+    enabled: groupId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<{ members: GroupMember[] }>(`/api/console/groups/${groupId}/members`, {
+        signal,
+      }),
+    queryKey: ["groupMembers", groupId],
+    staleTime: 30 * 1000,
+  });
+
+export const useAddGroupMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/groups/${groupId}/members`, {
+        body: JSON.stringify({ userId }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["groupMembers", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+};
+
+export const useRemoveGroupMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/groups/${groupId}/members/${userId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["groupMembers", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+};
+
+export const useCreateGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      input,
+    }: {
+      workspaceId: string;
+      input: { name: string; description?: string };
+    }) =>
+      fetchProtected<Group>(`/api/console/workspaces/${workspaceId}/groups`, {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+};
+
+export const useUpdateGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: { name?: string; description?: string } }) =>
+      fetchProtected<Group>(`/api/console/groups/${id}`, {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "PUT",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+};
+
+export const useDeleteGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetchProtected<{ status: string }>(`/api/console/groups/${id}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+    },
+  });
+};
 
 export const useDebugTables = () =>
   useQuery<DebugTableInfo[]>({

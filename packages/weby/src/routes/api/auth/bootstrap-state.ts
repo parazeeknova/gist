@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getBootstrapState, BackyError } from "../../../server/backy";
+import { getBootstrapState, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/auth/bootstrap-state")({
   server: {

@@ -19,11 +19,12 @@ type AccessTokenClaims struct {
 	UserID    string `json:"uid"`
 	Username  string `json:"uname"`
 	SessionID string `json:"sid"`
+	Role      string `json:"role"`
 	IsOwner   bool   `json:"owner"`
 }
 
 // GenerateAccessToken creates a short-lived JWT access token bound to a session.
-func GenerateAccessToken(userID uuid.UUID, username, sessionID string, isOwner bool) (string, error) {
+func GenerateAccessToken(userID uuid.UUID, username, sessionID, role string) (string, error) {
 	secret := getAccessTokenSecret()
 	issuer := getJWTIssuer()
 	audience := getJWTAudience()
@@ -43,7 +44,8 @@ func GenerateAccessToken(userID uuid.UUID, username, sessionID string, isOwner b
 		UserID:    userID.String(),
 		Username:  username,
 		SessionID: sessionID,
-		IsOwner:   isOwner,
+		Role:      role,
+		IsOwner:   role == "owner",
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

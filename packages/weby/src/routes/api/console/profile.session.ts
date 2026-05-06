@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getSessionInfo, BackyError } from "../../../server/backy";
+import { getSessionInfo, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/profile/session")({
   server: {

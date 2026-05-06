@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getPageTree } from "../../../server/backy";
+import { getPageTree } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/pages/tree")({
   server: {

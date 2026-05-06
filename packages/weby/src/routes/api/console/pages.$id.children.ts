@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getPageChildren } from "../../../server/backy";
+import { getPageChildren } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/pages/$id/children")({
   server: {

@@ -30,6 +30,8 @@ type Handlers struct {
 	pageService      *services.PageService
 	spaceService     *services.SpaceService
 	workspaceService *services.WorkspaceService
+	groupService     *services.GroupService
+	notifier         services.Notifier
 }
 
 // Config holds application configuration
@@ -44,15 +46,22 @@ func New(cfg Config) *Handlers {
 		githubService: services.NewGitHubService(10 * time.Minute),
 		statsCache:    cache.NewStatsCache(10 * time.Minute),
 		config:        cfg,
+		notifier:      services.NoopNotifier(),
 	}
 }
 
+// SetNotifier sets the notification service on the handlers.
+func (h *Handlers) SetNotifier(n services.Notifier) {
+	h.notifier = n
+}
+
 // NewWithDB creates a new handlers instance with database-backed services.
-func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService, workspaceService *services.WorkspaceService) *Handlers {
+func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService, workspaceService *services.WorkspaceService, groupService *services.GroupService) *Handlers {
 	h := New(cfg)
 	h.pageService = pageService
 	h.spaceService = spaceService
 	h.workspaceService = workspaceService
+	h.groupService = groupService
 	return h
 }
 
@@ -170,14 +179,15 @@ type ConsolePageSummary struct {
 	UpdatedAt   string `json:"updatedAt"`
 }
 
-// GetConsolePages returns all pages for the console (requires auth via middleware).
+// GetConsolePages returns pages for the console scoped to spaces the user belongs to.
 func (h *Handlers) GetConsolePages(c *gin.Context) {
 	if h.pageService == nil {
 		c.JSON(http.StatusOK, []ConsolePageSummary{})
 		return
 	}
 
-	pages, err := h.pageService.ListAllPages(c.Request.Context())
+	userID := middleware.GetCurrentUserID(c)
+	pages, err := h.pageService.ListPagesForUser(c.Request.Context(), userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("console pages error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load pages"})
@@ -208,6 +218,7 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
 	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
 	if err != nil {
@@ -217,6 +228,11 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("console page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 		return
 	}
 
@@ -277,6 +293,10 @@ func (h *Handlers) CreateConsolePage(c *gin.Context) {
 	}
 
 	if err := h.pageService.CreatePage(c.Request.Context(), page); err != nil {
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
 		logger.Log.Error().Err(err).Msg("create page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create page"})
 		return
@@ -336,6 +356,10 @@ func (h *Handlers) UpdateConsolePage(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("update page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update page"})
 		return
@@ -372,6 +396,10 @@ func (h *Handlers) DeleteConsolePage(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("delete page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete page"})
 		return
@@ -394,6 +422,10 @@ func (h *Handlers) PublishConsolePage(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, services.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("publish page error")
@@ -424,6 +456,10 @@ func (h *Handlers) UnpublishConsolePage(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("unpublish page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to unpublish page"})
 		return
@@ -451,6 +487,12 @@ func (h *Handlers) GetConsolePageTree(c *gin.Context) {
 		return
 	}
 
+	userID := middleware.GetCurrentUserID(c)
+	if err := h.pageService.RequireRead(c.Request.Context(), spaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
 	tree, err := h.pageService.ListTree(c.Request.Context(), spaceID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("page tree error")
@@ -473,6 +515,24 @@ func (h *Handlers) GetConsolePageChildren(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", id).Err(err).Msg("page children error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load children"})
+		return
+	}
+
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
 	children, err := h.pageService.ListChildPages(c.Request.Context(), id)
 	if err != nil {
 		logger.Log.Error().Str("id", id).Err(err).Msg("page children error")
@@ -515,6 +575,10 @@ func (h *Handlers) MoveConsolePage(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("move page error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to move page"})
 		return
@@ -538,15 +602,21 @@ func (h *Handlers) GetConsolePageHistory(c *gin.Context) {
 	}
 
 	id := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
-	// Verify the page exists first.
-	if _, err := h.pageService.GetPageByID(c.Request.Context(), id); err != nil {
+	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
+	if err != nil {
 		if errors.Is(err, services.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
 		logger.Log.Error().Str("id", id).Err(err).Msg("page history error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load history"})
+		return
+	}
+
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 		return
 	}
 
@@ -597,8 +667,26 @@ func (h *Handlers) GetConsolePageHistoryEntry(c *gin.Context) {
 		return
 	}
 
-	historyID := c.Param("historyId")
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
 
+	page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+	if err != nil {
+		if errors.Is(err, services.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("id", pageID).Err(err).Msg("history entry error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load history entry"})
+		return
+	}
+
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
+	historyID := c.Param("historyId")
 	entry, err := h.pageService.GetHistoryEntry(c.Request.Context(), historyID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrPageHistoryNotFound) || errors.Is(err, services.ErrHistoryNotFound) {
@@ -644,6 +732,10 @@ func (h *Handlers) RestoreConsolePage(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, services.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, services.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
 		if errors.Is(err, repositories.ErrPageHistoryNotFound) {

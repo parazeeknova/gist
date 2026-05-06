@@ -38,6 +38,8 @@ type AuthService struct {
 	sessionRepo   *repositories.SessionRepo
 	workspaceRepo *repositories.WorkspaceRepo
 	spaceRepo     *repositories.SpaceRepo
+	groupRepo     *repositories.GroupRepo
+	wsService     *WorkspaceService
 }
 
 // NewAuthService creates a new AuthService.
@@ -47,7 +49,13 @@ func NewAuthService() *AuthService {
 		sessionRepo:   repositories.NewSessionRepo(),
 		workspaceRepo: repositories.NewWorkspaceRepo(),
 		spaceRepo:     repositories.NewSpaceRepo(),
+		groupRepo:     repositories.NewGroupRepo(),
 	}
+}
+
+// SetWorkspaceService injects the workspace service for bootstrap use.
+func (s *AuthService) SetWorkspaceService(ws *WorkspaceService) {
+	s.wsService = ws
 }
 
 // UserRepo returns the underlying user repository (for middleware use).
@@ -124,7 +132,8 @@ func (s *AuthService) Login(ctx context.Context, usernameOrEmail, password, emai
 		Username:  dbUser.Username,
 		Email:     dbUser.Email,
 		Name:      dbUser.Name,
-		IsOwner:   dbUser.IsOwner,
+		Role:      dbUser.Role,
+		IsOwner:   dbUser.Role == "owner",
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,
 	}
@@ -152,7 +161,7 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		name = params.Name
 	}
 
-	userID, err := s.userRepo.CreateUser(ctx, username, email, name, passwordHash, true)
+	userID, err := s.userRepo.CreateUser(ctx, username, email, name, passwordHash, "owner")
 	if err != nil {
 		if errors.Is(err, repositories.ErrDuplicateUser) {
 			return nil, nil, ErrAlreadyBootstrapped
@@ -160,35 +169,19 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		return nil, nil, fmt.Errorf("create bootstrap user: %w", err)
 	}
 
-	// Create workspace if provided.
-	workspaceID := ""
+	// Create workspace with default group, space, and memberships atomically.
 	if params != nil && params.WorkspaceName != "" {
-		workspaceSlug := slugify(params.WorkspaceName)
-		w := models.Workspace{
-			ID:   uuid.New().String(),
-			Name: params.WorkspaceName,
-			Slug: workspaceSlug,
-			Icon: "",
+		if s.wsService != nil {
+			_, err := s.wsService.CreateWorkspace(ctx, params.WorkspaceName, slugify(params.WorkspaceName), "", userID)
+			if err != nil {
+				logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
+			}
 		}
-		if err := s.workspaceRepo.Insert(ctx, w); err != nil {
-			logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
-		} else {
-			workspaceID = w.ID
-		}
-	}
-
-	// Create space if workspace was created and space name is provided.
-	if workspaceID != "" && params != nil && params.SpaceName != "" {
-		spaceSlug := slugify(params.SpaceName)
-		sp := models.Space{
-			ID:          uuid.New().String(),
-			Name:        params.SpaceName,
-			Slug:        spaceSlug,
-			Icon:        "",
-			WorkspaceID: workspaceID,
-		}
-		if err := s.spaceRepo.Insert(ctx, sp); err != nil {
-			logger.Log.Error().Err(err).Msg("bootstrap: failed to create space")
+	} else if s.wsService != nil {
+		// No workspace name provided — create a default workspace
+		_, err := s.wsService.CreateWorkspace(ctx, "My Workspace", "my-workspace", "", userID)
+		if err != nil {
+			logger.Log.Error().Err(err).Msg("bootstrap: failed to create default workspace")
 		}
 	}
 
@@ -202,6 +195,7 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		Username:  username,
 		Email:     email,
 		Name:      name,
+		Role:      "owner",
 		IsOwner:   true,
 		IsActive:  true,
 		CreatedAt: time.Now(),
@@ -288,7 +282,7 @@ func (s *AuthService) Refresh(ctx context.Context, rawRefreshToken string) (*Tok
 		return nil, fmt.Errorf("parse user id: %w", err)
 	}
 
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, newSessionID, dbUser.IsOwner)
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, newSessionID, dbUser.Role)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}
@@ -360,10 +354,16 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 		Email:     dbUser.Email,
 		Name:      dbUser.Name,
 		AvatarURL: dbUser.AvatarURL,
-		IsOwner:   dbUser.IsOwner,
+		Role:      dbUser.Role,
+		IsOwner:   dbUser.Role == "owner",
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,
 	}, nil
+}
+
+// GetUserByID is a public convenience alias for GetMe.
+func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*auth.UserResponse, error) {
+	return s.GetMe(ctx, userID)
 }
 
 // ErrInvalidPassword is returned when the current password is incorrect.
@@ -423,7 +423,7 @@ func (s *AuthService) createSession(ctx context.Context, userID string, deviceNa
 		return nil, fmt.Errorf("create session with refresh token: %w", err)
 	}
 
-	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID, dbUser.IsOwner)
+	accessToken, err := auth.GenerateAccessToken(uid, dbUser.Username, sessionID, dbUser.Role)
 	if err != nil {
 		return nil, fmt.Errorf("generate access token: %w", err)
 	}

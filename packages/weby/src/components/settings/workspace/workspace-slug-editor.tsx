@@ -55,7 +55,7 @@ export const WorkspaceSlugEditor = ({
   };
 
   return (
-    <div className="mb-6">
+    <div className="py-3">
       <label
         className={`block text-[10px] uppercase tracking-wider mb-2 ${t("text-text-dark/30", "text-text-light/30")}`}
         htmlFor="workspace-slug"

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { postBackyWithCookies } from "../../../server/backy";
+import { postBackyWithCookies } from "#/server/backy";
 
 export const Route = createFileRoute("/api/auth/refresh")({
   server: {

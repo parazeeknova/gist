@@ -86,6 +86,28 @@ func OwnerRequired() gin.HandlerFunc {
 	}
 }
 
+// AdminRequired is middleware that requires the authenticated user to be an owner or admin.
+// Must be used after AuthRequired.
+func AdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims, ok := c.Get(ContextKeyClaims)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
+			return
+		}
+		ac, ok := claims.(*auth.AccessTokenClaims)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
+			return
+		}
+		if ac.Role == "owner" || ac.Role == "admin" {
+			c.Next()
+			return
+		}
+		c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
+	}
+}
+
 // GetCurrentUserID extracts the authenticated user ID from the gin context.
 func GetCurrentUserID(c *gin.Context) string {
 	userID, _ := c.Get(ContextKeyUserID)

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createConsolePage, getConsolePages } from "../../../server/backy";
+import { createConsolePage, getConsolePages } from "#/server/backy";
 import type { CreatePageInput } from "#/types";
 
 export const Route = createFileRoute("/api/console/pages")({

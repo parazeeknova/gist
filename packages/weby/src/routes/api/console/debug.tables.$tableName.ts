@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getDebugTableData, deleteDebugTableData } from "../../../server/backy";
+import { getDebugTableData, deleteDebugTableData } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/debug/tables/$tableName")({
   server: {

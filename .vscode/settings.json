@@ -58,5 +58,8 @@
   },
   "[go]": {
     "editor.defaultFormatter": "golang.go"
+  },
+  "[sql]": {
+    "editor.defaultFormatter": "inferrinizzard.prettier-sql-vscode"
   }
 }

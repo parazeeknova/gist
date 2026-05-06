@@ -31,7 +31,7 @@ func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, err
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
-		WHERE slug_id = $1 AND is_published = true`
+		WHERE slug_id = $1 AND is_published = true AND deleted_at IS NULL`
 
 	var p models.Page
 	var contentJSONBytes []byte
@@ -61,7 +61,7 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
-		WHERE is_published = true
+		WHERE is_published = true AND deleted_at IS NULL
 		ORDER BY created_at DESC`
 
 	rows, err := r.pool.Query(ctx, query)
@@ -96,13 +96,14 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 	return pages, nil
 }
 
-// ListAll returns all pages (both published and drafts), ordered by created_at desc.
+// ListAll returns all non-deleted pages (both published and drafts), ordered by created_at desc.
 func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
+		WHERE deleted_at IS NULL
 		ORDER BY created_at DESC`
 
 	rows, err := r.pool.Query(ctx, query)
@@ -137,6 +138,50 @@ func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 	return pages, nil
 }
 
+// ListAllForUser returns all non-deleted pages in spaces the user is a member of.
+func (r *PageRepo) ListAllForUser(ctx context.Context, userID string) ([]models.Page, error) {
+	query := `
+		SELECT DISTINCT ON (p.id)
+			p.id, p.slug_id, p.title, p.icon, p.cover_photo, p.content_json, p.ydoc,
+			p.text_content, p.position, p.is_published, p.parent_page_id, p.space_id, p.creator_id,
+			p.last_updated_by_id, p.created_at, p.updated_at
+		FROM pages p
+		JOIN space_members sm ON sm.space_id = p.space_id
+		LEFT JOIN group_users gu ON gu.group_id = sm.group_id
+		WHERE p.deleted_at IS NULL AND (sm.user_id = $1 OR gu.user_id = $1)
+		ORDER BY p.id, p.created_at DESC`
+
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("listing pages for user: %w", err)
+	}
+	defer rows.Close()
+
+	var pages []models.Page
+	for rows.Next() {
+		var p models.Page
+		var contentJSONBytes []byte
+
+		if err := rows.Scan(
+			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
+			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
+			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.CreatedAt, &p.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scanning page row: %w", err)
+		}
+
+		p.ContentJSON = json.RawMessage(contentJSONBytes)
+		pages = append(pages, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating page rows: %w", err)
+	}
+
+	return pages, nil
+}
+
 // GetByID fetches a page by its primary key ID (not slug).
 func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) {
 	query := `
@@ -144,7 +189,7 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 		       text_content, position, is_published, parent_page_id, space_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
-		WHERE id = $1`
+		WHERE id = $1 AND deleted_at IS NULL`
 
 	var p models.Page
 	var contentJSONBytes []byte
@@ -180,7 +225,8 @@ func (r *PageRepo) Insert(ctx context.Context, p models.Page) error {
 		                   last_updated_by_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`
 
-	_, err := r.pool.Exec(ctx, query,
+	_, err := r.pool.Exec(
+		ctx, query,
 		p.ID, p.SlugID, p.Title, p.Icon, p.CoverPhoto,
 		contentJSONBytes, p.YDoc, p.TextContent, p.Position, p.IsPublished,
 		p.ParentPageID, p.SpaceID, p.CreatorID, p.LastUpdatedByID,
@@ -207,7 +253,8 @@ func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 		    last_updated_by_id = $10, updated_at = $11
 		WHERE id = $12`
 
-	tag, err := r.pool.Exec(ctx, query,
+	tag, err := r.pool.Exec(
+		ctx, query,
 		p.Title, p.Icon, p.CoverPhoto, contentJSONBytes, p.YDoc,
 		p.TextContent, p.Position, p.IsPublished, p.ParentPageID,
 		p.LastUpdatedByID, p.UpdatedAt, p.ID,
@@ -222,11 +269,11 @@ func (r *PageRepo) Update(ctx context.Context, p models.Page) error {
 	return nil
 }
 
-// Delete removes a page by its ID.
-func (r *PageRepo) Delete(ctx context.Context, id string) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM pages WHERE id = $1`, id)
+// SoftDelete marks a page as deleted.
+func (r *PageRepo) SoftDelete(ctx context.Context, id, deletedByID string) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE pages SET deleted_at = now(), deleted_by_id = $1 WHERE id = $2 AND deleted_at IS NULL`, deletedByID, id)
 	if err != nil {
-		return fmt.Errorf("deleting page %q: %w", id, err)
+		return fmt.Errorf("soft-deleting page %q: %w", id, err)
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("%w: page %q", ErrPageNotFound, id)
@@ -239,9 +286,9 @@ func (r *PageRepo) ListRoots(ctx context.Context, spaceID string) ([]models.Page
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
 		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
-		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
+		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id AND c.deleted_at IS NULL) AS has_children
 		FROM pages p
-		WHERE p.parent_page_id IS NULL AND p.space_id = $1
+		WHERE p.parent_page_id IS NULL AND p.space_id = $1 AND p.deleted_at IS NULL
 		ORDER BY p.position COLLATE "C"`
 
 	rows, err := r.pool.Query(ctx, query, spaceID)
@@ -258,9 +305,9 @@ func (r *PageRepo) ListChildren(ctx context.Context, parentID string) ([]models.
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
 		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
-		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
+		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id AND c.deleted_at IS NULL) AS has_children
 		FROM pages p
-		WHERE p.parent_page_id = $1
+		WHERE p.parent_page_id = $1 AND p.deleted_at IS NULL
 		ORDER BY p.position COLLATE "C"`
 
 	rows, err := r.pool.Query(ctx, query, parentID)
@@ -277,11 +324,11 @@ func (r *PageRepo) ListTree(ctx context.Context, spaceID string) ([]models.PageT
 	query := `
 		SELECT p.id, p.slug_id, p.title, p.icon, p.position, p.is_published,
 		       p.parent_page_id, p.space_id, p.workspace_id, p.created_at, p.updated_at,
-		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id) AS has_children
+		       EXISTS(SELECT 1 FROM pages c WHERE c.parent_page_id = p.id AND c.deleted_at IS NULL) AS has_children
 		FROM pages p
-		WHERE p.space_id = $1
+		WHERE p.space_id = $1 AND p.deleted_at IS NULL
 		ORDER BY
-			CASE WHEN p.parent_page_id IS NULL THEN p.position ELSE (SELECT pp.position FROM pages pp WHERE pp.id = p.parent_page_id) END COLLATE "C",
+			CASE WHEN p.parent_page_id IS NULL THEN p.position ELSE (SELECT pp.position FROM pages pp WHERE pp.id = p.parent_page_id AND pp.deleted_at IS NULL) END COLLATE "C",
 			p.position COLLATE "C"`
 
 	rows, err := r.pool.Query(ctx, query, spaceID)
@@ -301,14 +348,14 @@ func (r *PageRepo) LastPosition(ctx context.Context, spaceID string, parentID *s
 	if parentID != nil {
 		query = `
 			SELECT position FROM pages
-			WHERE space_id = $1 AND parent_page_id = $2
+			WHERE space_id = $1 AND parent_page_id = $2 AND deleted_at IS NULL
 			ORDER BY position COLLATE "C" DESC
 			LIMIT 1`
 		args = append(args, spaceID, *parentID)
 	} else {
 		query = `
 			SELECT position FROM pages
-			WHERE space_id = $1 AND parent_page_id IS NULL
+			WHERE space_id = $1 AND parent_page_id IS NULL AND deleted_at IS NULL
 			ORDER BY position COLLATE "C" DESC
 			LIMIT 1`
 		args = append(args, spaceID)
@@ -326,10 +373,10 @@ func (r *PageRepo) LastPosition(ctx context.Context, spaceID string, parentID *s
 	return position, nil
 }
 
-// CountPagesInSpace returns the number of pages in a space.
+// CountPagesInSpace returns the number of non-deleted pages in a space.
 func (r *PageRepo) CountPagesInSpace(ctx context.Context, spaceID string) (int, error) {
 	var count int
-	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1`, spaceID).Scan(&count)
+	err := r.pool.QueryRow(ctx, `SELECT COUNT(*) FROM pages WHERE space_id = $1 AND deleted_at IS NULL`, spaceID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("counting pages in space %q: %w", spaceID, err)
 	}

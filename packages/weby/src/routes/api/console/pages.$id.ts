@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { deleteConsolePage, getConsolePage, updateConsolePage } from "../../../server/backy";
+import { deleteConsolePage, getConsolePage, updateConsolePage } from "#/server/backy";
 import type { UpdatePageInput } from "#/types";
 
 export const Route = createFileRoute("/api/console/pages/$id")({

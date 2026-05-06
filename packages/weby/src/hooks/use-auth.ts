@@ -25,6 +25,7 @@ export const useAuth = () => {
           (error.message.startsWith("HTTP 401") || error.message.startsWith("HTTP 403"))
         ) {
           queryClient.setQueryData(["auth"], null);
+          queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
           return null;
         }
         throw error;
@@ -89,6 +90,7 @@ export const useAuthActions = () => {
     }
     queryClient.setQueryData(["auth"], null);
     await queryClient.invalidateQueries({ queryKey: ["auth"] });
+    await queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
   };
 
   return { login, logout };

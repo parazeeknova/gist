@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { publishConsolePage } from "../../../server/backy";
+import { publishConsolePage } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/pages/$id/publish")({
   server: {

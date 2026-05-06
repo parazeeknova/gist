@@ -68,7 +68,8 @@ func (r *MFARepo) Upsert(ctx context.Context, userID, workspaceID, method, secre
 
 // UpdateSecret updates only the secret for a user.
 func (r *MFARepo) UpdateSecret(ctx context.Context, userID, secret string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE user_mfa SET secret = $1, updated_at = NOW() WHERE user_id = $2`,
 		secret, userID,
 	)
@@ -80,7 +81,8 @@ func (r *MFARepo) UpdateSecret(ctx context.Context, userID, secret string) error
 
 // Enable enables MFA for a user.
 func (r *MFARepo) Enable(ctx context.Context, userID string, backupCodeHashes []string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE user_mfa SET is_enabled = true, backup_code_hashes = $1, updated_at = NOW() WHERE user_id = $2`,
 		backupCodeHashes, userID,
 	)
@@ -92,7 +94,8 @@ func (r *MFARepo) Enable(ctx context.Context, userID string, backupCodeHashes []
 
 // Disable disables MFA for a user and clears the secret.
 func (r *MFARepo) Disable(ctx context.Context, userID string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE user_mfa SET is_enabled = false, secret = '', backup_code_hashes = '{}', updated_at = NOW() WHERE user_id = $1`,
 		userID,
 	)
@@ -104,7 +107,8 @@ func (r *MFARepo) Disable(ctx context.Context, userID string) error {
 
 // UpdateBackupCodes updates backup codes for a user.
 func (r *MFARepo) UpdateBackupCodes(ctx context.Context, userID string, backupCodeHashes []string) error {
-	_, err := r.pool.Exec(ctx,
+	_, err := r.pool.Exec(
+		ctx,
 		`UPDATE user_mfa SET backup_code_hashes = $1, updated_at = NOW() WHERE user_id = $2`,
 		backupCodeHashes, userID,
 	)

@@ -43,7 +43,7 @@ export const PasswordChanger = () => {
   }, [currentPassword, newPassword, changePassword]);
 
   return (
-    <div className="mb-6">
+    <div className="py-3">
       <div className="flex items-center justify-between mb-2">
         <span
           className={`text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}

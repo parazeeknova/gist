@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getUserProfile, updateProfile, BackyError } from "../../../server/backy";
+import { getUserProfile, updateProfile, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/profile")({
   server: {

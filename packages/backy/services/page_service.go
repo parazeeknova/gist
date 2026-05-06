@@ -21,14 +21,25 @@ import (
 type PageService struct {
 	pageRepo        *repositories.PageRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
+	spaceRepo       *repositories.SpaceRepo
+	groupRepo       *repositories.GroupRepo
+	notifier        Notifier
 }
 
 // NewPageService creates a new page service
-func NewPageService(pageRepo *repositories.PageRepo, pageHistoryRepo *repositories.PageHistoryRepo) *PageService {
+func NewPageService(pageRepo *repositories.PageRepo, pageHistoryRepo *repositories.PageHistoryRepo, spaceRepo *repositories.SpaceRepo, groupRepo *repositories.GroupRepo) *PageService {
 	return &PageService{
 		pageRepo:        pageRepo,
 		pageHistoryRepo: pageHistoryRepo,
+		spaceRepo:       spaceRepo,
+		groupRepo:       groupRepo,
+		notifier:        NoopNotifier(),
 	}
+}
+
+// SetNotifier sets the notification service on the page service.
+func (s *PageService) SetNotifier(n Notifier) {
+	s.notifier = n
 }
 
 // UpdatePageInput holds the fields that can be updated on a page.
@@ -84,6 +95,17 @@ func (s *PageService) GetBlogManifest(ctx context.Context) ([]models.BlogManifes
 
 // CreatePage inserts a page and creates an initial history entry inside a single transaction.
 func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
+	if err := s.requireWrite(ctx, page.SpaceID, page.CreatorID); err != nil {
+		return err
+	}
+
+	// Look up workspace_id from space.
+	space, err := s.spaceRepo.GetByID(ctx, page.SpaceID)
+	if err != nil {
+		return fmt.Errorf("getting space for page: %w", err)
+	}
+	page.WorkspaceID = space.WorkspaceID
+
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -104,14 +126,15 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 		page.Position = fractional.NextPosition(lastPos)
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`INSERT INTO pages (id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		                   text_content, position, is_published, parent_page_id, space_id, creator_id,
+		                   text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		                   last_updated_by_id, created_at, updated_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
 		page.ID, page.SlugID, page.Title, page.Icon, page.CoverPhoto,
 		contentJSONBytes, page.YDoc, page.TextContent, page.Position, page.IsPublished,
-		page.ParentPageID, page.SpaceID, page.CreatorID, page.LastUpdatedByID,
+		page.ParentPageID, page.SpaceID, page.WorkspaceID, page.CreatorID, page.LastUpdatedByID,
 		page.CreatedAt, page.UpdatedAt,
 	)
 	if err != nil {
@@ -125,6 +148,17 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
+
+	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventPageCreated,
+		WorkspaceID:  page.WorkspaceID,
+		ActorID:      page.CreatorID,
+		RecipientIDs: recipients,
+		EntityType:   "page",
+		EntityID:     page.ID,
+		Metadata:     map[string]string{"name": page.Title},
+	})
 
 	return nil
 }
@@ -141,7 +175,8 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 	// Fetch current page within transaction so we can merge fields.
 	var current models.Page
 	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
+	err = tx.QueryRow(
+		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
@@ -159,6 +194,11 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
 	}
 	current.ContentJSON = json.RawMessage(contentJSONBytes)
+
+	// Check permission.
+	if err := s.requireWrite(ctx, current.SpaceID, userID); err != nil {
+		return models.Page{}, err
+	}
 
 	// Apply partial updates.
 	if input.Title != nil {
@@ -185,7 +225,8 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		newContentJSONBytes = []byte("{}")
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages
 		 SET title = $1, icon = $2, cover_photo = $3, content_json = $4,
 		     text_content = $5, position = $6, is_published = $7, parent_page_id = $8,
@@ -208,11 +249,37 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
 	}
 
+	ws, _ := s.spaceRepo.GetByID(ctx, current.SpaceID)
+	if ws.WorkspaceID != "" {
+		recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, ws.WorkspaceID)
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventPageUpdated,
+			WorkspaceID:  ws.WorkspaceID,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			EntityType:   "page",
+			EntityID:     current.ID,
+			Metadata:     map[string]string{"name": current.Title},
+		})
+	}
+
 	return current, nil
 }
 
-// DeletePage deletes a page and all its descendants, recording history for each.
+// DeletePage soft-deletes a page and all its descendants, recording history for each.
 func (s *PageService) DeletePage(ctx context.Context, pageID string, userID string) error {
+	page, err := s.pageRepo.GetByID(ctx, pageID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return ErrPageNotFound
+		}
+		return fmt.Errorf("fetching page %q: %w", pageID, err)
+	}
+
+	if err := s.requireWrite(ctx, page.SpaceID, userID); err != nil {
+		return err
+	}
+
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -220,8 +287,8 @@ func (s *PageService) DeletePage(ctx context.Context, pageID string, userID stri
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	// Delete all descendants.
-	err = s.deletePageAndDescendantsTx(ctx, tx, pageID, userID)
+	// Soft-delete all descendants.
+	err = s.softDeletePageAndDescendantsTx(ctx, tx, pageID, userID)
 	if err != nil {
 		return err
 	}
@@ -245,6 +312,18 @@ func (s *PageService) UnpublishPage(ctx context.Context, pageID string, userID s
 
 // setPublished toggles is_published and records history in a transaction.
 func (s *PageService) setPublished(ctx context.Context, pageID string, userID string, published bool) (models.Page, error) {
+	page, err := s.pageRepo.GetByID(ctx, pageID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
+	}
+
+	if err := s.requireWrite(ctx, page.SpaceID, userID); err != nil {
+		return models.Page{}, err
+	}
+
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -252,32 +331,12 @@ func (s *PageService) setPublished(ctx context.Context, pageID string, userID st
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	var page models.Page
-	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
-		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
-		        last_updated_by_id, created_at, updated_at
-		 FROM pages WHERE id = $1`, pageID,
-	).Scan(
-		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
-		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
-		&page.CreatedAt, &page.UpdatedAt,
-	)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return models.Page{}, ErrPageNotFound
-		}
-		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
-	}
-	page.ContentJSON = json.RawMessage(contentJSONBytes)
-
 	page.IsPublished = published
 	page.UpdatedAt = time.Now().UTC()
 	page.LastUpdatedByID = &userID
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages SET is_published = $1, updated_at = $2, last_updated_by_id = $3 WHERE id = $4`,
 		page.IsPublished, page.UpdatedAt, page.LastUpdatedByID, page.ID,
 	)
@@ -317,6 +376,18 @@ func (s *PageService) ListTree(ctx context.Context, spaceID string) ([]models.Pa
 
 // MovePage repositions a page within the tree (changes parent and/or position).
 func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *string, newPosition *string, userID string) (models.Page, error) {
+	page, err := s.pageRepo.GetByID(ctx, pageID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
+	}
+
+	if err := s.requireWrite(ctx, page.SpaceID, userID); err != nil {
+		return models.Page{}, err
+	}
+
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -324,24 +395,17 @@ func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	var page models.Page
 	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
-		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
-		        last_updated_by_id, created_at, updated_at
+	err = tx.QueryRow(
+		ctx,
+		`SELECT content_json
 		 FROM pages WHERE id = $1`, pageID,
-	).Scan(
-		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
-		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
-		&page.CreatedAt, &page.UpdatedAt,
-	)
+	).Scan(&contentJSONBytes)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.Page{}, ErrPageNotFound
 		}
-		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
+		return models.Page{}, fmt.Errorf("fetching page content %q: %w", pageID, err)
 	}
 	page.ContentJSON = json.RawMessage(contentJSONBytes)
 
@@ -362,7 +426,8 @@ func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *
 	page.UpdatedAt = time.Now().UTC()
 	page.LastUpdatedByID = &userID
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages SET parent_page_id = $1, position = $2, updated_at = $3, last_updated_by_id = $4 WHERE id = $5`,
 		page.ParentPageID, page.Position, page.UpdatedAt, page.LastUpdatedByID, page.ID,
 	)
@@ -393,6 +458,18 @@ func (s *PageService) GetHistoryEntry(ctx context.Context, historyID string) (mo
 
 // RestorePage restores a page's content from a history entry and records the restoration.
 func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID string, userID string) (models.Page, error) {
+	page, err := s.pageRepo.GetByID(ctx, pageID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
+	}
+
+	if err := s.requireWrite(ctx, page.SpaceID, userID); err != nil {
+		return models.Page{}, err
+	}
+
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -409,27 +486,6 @@ func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID 
 		return models.Page{}, fmt.Errorf("history entry %q does not belong to page %q", historyID, pageID)
 	}
 
-	// Fetch current page.
-	var page models.Page
-	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
-		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
-		        last_updated_by_id, created_at, updated_at
-		 FROM pages WHERE id = $1`, pageID,
-	).Scan(
-		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
-		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
-		&page.CreatedAt, &page.UpdatedAt,
-	)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return models.Page{}, ErrPageNotFound
-		}
-		return models.Page{}, fmt.Errorf("fetching page %q: %w", pageID, err)
-	}
-
 	// Restore content from history.
 	page.Title = history.Title
 	page.ContentJSON = history.ContentJSON
@@ -442,7 +498,8 @@ func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID 
 		newContentJSONBytes = []byte("{}")
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = tx.Exec(
+		ctx,
 		`UPDATE pages SET title = $1, content_json = $2, text_content = $3,
 		     updated_at = $4, last_updated_by_id = $5 WHERE id = $6`,
 		page.Title, newContentJSONBytes, page.TextContent,
@@ -473,11 +530,23 @@ var ErrPageNotFound = errors.New("page not found")
 // ErrHistoryNotFound is returned when a history entry is not found.
 var ErrHistoryNotFound = errors.New("history entry not found")
 
+// ErrPagePermissionDenied is returned when a user lacks permission for a page action.
+var ErrPagePermissionDenied = errors.New("permission denied for this page")
+
 // ListAllPages returns all pages (published and drafts) from the database.
 func (s *PageService) ListAllPages(ctx context.Context) ([]models.Page, error) {
 	pages, err := s.pageRepo.ListAll(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("listing all pages: %w", err)
+	}
+	return pages, nil
+}
+
+// ListPagesForUser returns all pages in spaces the user is a member of.
+func (s *PageService) ListPagesForUser(ctx context.Context, userID string) ([]models.Page, error) {
+	pages, err := s.pageRepo.ListAllForUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("listing pages for user: %w", err)
 	}
 	return pages, nil
 }
@@ -494,6 +563,56 @@ func (s *PageService) GetPageByID(ctx context.Context, id string) (models.Page, 
 	return page, nil
 }
 
+// requireWrite checks if a user can write (create/update/delete/move) pages in a space.
+func (s *PageService) requireWrite(ctx context.Context, spaceID, userID string) error {
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("checking space: %w", err)
+	}
+	if space.CreatedBy == userID {
+		return nil
+	}
+
+	var groupIDs []string
+	if s.groupRepo != nil {
+		groupIDs, _ = s.groupRepo.ListUserGroupIDsInWorkspace(ctx, userID, space.WorkspaceID)
+	}
+
+	role, err := s.spaceRepo.GetEffectiveRole(ctx, spaceID, userID, groupIDs)
+	if err != nil {
+		return fmt.Errorf("checking effective role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter {
+		return nil
+	}
+	return ErrPagePermissionDenied
+}
+
+// RequireRead checks if a user can read pages in a space.
+func (s *PageService) RequireRead(ctx context.Context, spaceID, userID string) error {
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err != nil {
+		return fmt.Errorf("checking space: %w", err)
+	}
+	if space.CreatedBy == userID {
+		return nil
+	}
+
+	var groupIDs []string
+	if s.groupRepo != nil {
+		groupIDs, _ = s.groupRepo.ListUserGroupIDsInWorkspace(ctx, userID, space.WorkspaceID)
+	}
+
+	role, err := s.spaceRepo.GetEffectiveRole(ctx, spaceID, userID, groupIDs)
+	if err != nil {
+		return fmt.Errorf("checking effective role: %w", err)
+	}
+	if role == models.SpaceRoleAdmin || role == models.SpaceRoleWriter || role == models.SpaceRoleReader {
+		return nil
+	}
+	return ErrPagePermissionDenied
+}
+
 // insertHistoryTx inserts a page_history row within an existing transaction.
 func (s *PageService) insertHistoryTx(ctx context.Context, tx pgx.Tx, page models.Page, operation string, userID string) error {
 	historyID := uuid.New().String()
@@ -502,7 +621,8 @@ func (s *PageService) insertHistoryTx(ctx context.Context, tx pgx.Tx, page model
 		historyContentJSON = []byte("{}")
 	}
 
-	_, err := tx.Exec(ctx,
+	_, err := tx.Exec(
+		ctx,
 		`INSERT INTO page_history (id, page_id, title, content_json, ydoc,
 		                          text_content, operation, created_by_id, created_at)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
@@ -516,10 +636,10 @@ func (s *PageService) insertHistoryTx(ctx context.Context, tx pgx.Tx, page model
 	return nil
 }
 
-// deletePageAndDescendantsTx recursively deletes a page and its descendants within a transaction.
-func (s *PageService) deletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx, pageID string, userID string) error {
+// softDeletePageAndDescendantsTx recursively soft-deletes a page and its descendants within a transaction.
+func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx, pageID string, userID string) error {
 	// Find all children.
-	rows, err := tx.Query(ctx, `SELECT id FROM pages WHERE parent_page_id = $1`, pageID)
+	rows, err := tx.Query(ctx, `SELECT id FROM pages WHERE parent_page_id = $1 AND deleted_at IS NULL`, pageID)
 	if err != nil {
 		return fmt.Errorf("finding children of page %q: %w", pageID, err)
 	}
@@ -537,17 +657,18 @@ func (s *PageService) deletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx,
 		return fmt.Errorf("iterating children: %w", err)
 	}
 
-	// Recursively delete children first.
+	// Recursively soft-delete children first.
 	for _, childID := range childIDs {
-		if err := s.deletePageAndDescendantsTx(ctx, tx, childID, userID); err != nil {
+		if err := s.softDeletePageAndDescendantsTx(ctx, tx, childID, userID); err != nil {
 			return err
 		}
 	}
 
-	// Record history before deleting.
+	// Record history before soft-deleting.
 	var page models.Page
 	var contentJSONBytes []byte
-	err = tx.QueryRow(ctx,
+	err = tx.QueryRow(
+		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		        text_content, position, is_published, parent_page_id, space_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
@@ -567,16 +688,10 @@ func (s *PageService) deletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx,
 		return err
 	}
 
-	// Delete page_history entries (CASCADE would handle this, but explicit is safer).
-	_, err = tx.Exec(ctx, `DELETE FROM page_history WHERE page_id = $1`, pageID)
+	// Soft-delete the page.
+	_, err = tx.Exec(ctx, `UPDATE pages SET deleted_at = now(), deleted_by_id = $1 WHERE id = $2`, userID, pageID)
 	if err != nil {
-		return fmt.Errorf("deleting history for page %q: %w", pageID, err)
-	}
-
-	// Delete the page.
-	_, err = tx.Exec(ctx, `DELETE FROM pages WHERE id = $1`, pageID)
-	if err != nil {
-		return fmt.Errorf("deleting page %q: %w", pageID, err)
+		return fmt.Errorf("soft-deleting page %q: %w", pageID, err)
 	}
 
 	return nil

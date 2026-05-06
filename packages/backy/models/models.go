@@ -101,10 +101,14 @@ type Page struct {
 	TextContent     string          `json:"text_content"`
 	Position        string          `json:"position"`
 	IsPublished     bool            `json:"is_published"`
+	IsLocked        bool            `json:"is_locked"`
 	ParentPageID    *string         `json:"parent_page_id,omitempty"`
 	SpaceID         string          `json:"space_id"`
+	WorkspaceID     string          `json:"workspace_id"`
 	CreatorID       string          `json:"creator_id"`
 	LastUpdatedByID *string         `json:"last_updated_by_id,omitempty"`
+	DeletedAt       *time.Time      `json:"deleted_at,omitempty"`
+	DeletedByID     *string         `json:"deleted_by_id,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
 }
@@ -125,26 +129,123 @@ type PageTreeItem struct {
 	UpdatedAt    string  `json:"updatedAt"`
 }
 
+// SpaceRole constants for space membership.
+const (
+	SpaceRoleAdmin  = "admin"
+	SpaceRoleWriter = "writer"
+	SpaceRoleReader = "reader"
+)
+
+// Group represents a workspace-scoped permission bundle.
+type Group struct {
+	ID          string `json:"id"`
+	WorkspaceID string `json:"workspaceId"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	IsDefault   bool   `json:"isDefault"`
+	CreatorID   string `json:"creatorId,omitempty"`
+	MemberCount int    `json:"memberCount"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+// GroupUser represents a user's membership in a group.
+type GroupUser struct {
+	ID      string `json:"id"`
+	GroupID string `json:"group_id"`
+	UserID  string `json:"user_id"`
+	AddedAt string `json:"added_at"`
+}
+
+// GroupMemberWithUser represents a group membership enriched with user details.
+type GroupMemberWithUser struct {
+	ID        string `json:"id"`
+	UserID    string `json:"user_id"`
+	GroupID   string `json:"group_id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+	AddedAt   string `json:"added_at"`
+}
+
 // Space represents a space grouping pages together.
 type Space struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Icon        string `json:"icon"`
+	Description string `json:"description"`
 	WorkspaceID string `json:"workspaceId"`
+	CreatedBy   string `json:"createdBy,omitempty"`
+	Visibility  string `json:"visibility"`
+	DefaultRole string `json:"defaultRole"`
+	Settings    string `json:"settings"`
+	MemberCount int    `json:"memberCount"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
 }
 
+// SpaceMember represents a membership in a space (user or group).
+type SpaceMember struct {
+	ID       string `json:"id"`
+	UserID   string `json:"user_id,omitempty"`
+	GroupID  string `json:"group_id,omitempty"`
+	SpaceID  string `json:"space_id"`
+	Role     string `json:"role"`
+	JoinedAt string `json:"joined_at"`
+}
+
+// SpaceMemberWithUser represents a space membership enriched with user details.
+type SpaceMemberWithUser struct {
+	ID        string `json:"id"`
+	UserID    string `json:"user_id"`
+	SpaceID   string `json:"space_id"`
+	Role      string `json:"role"`
+	JoinedAt  string `json:"joined_at"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+// SpaceMemberMixed represents a space membership that may be a user or a group.
+type SpaceMemberMixed struct {
+	MemberType  string  `json:"memberType"`
+	ID          string  `json:"id"`
+	UserID      *string `json:"userId,omitempty"`
+	GroupID     *string `json:"groupId,omitempty"`
+	SpaceID     string  `json:"spaceId"`
+	Role        string  `json:"role"`
+	JoinedAt    string  `json:"joinedAt"`
+	Name        string  `json:"name"`
+	Email       *string `json:"email,omitempty"`
+	AvatarURL   *string `json:"avatarUrl,omitempty"`
+	Description *string `json:"description,omitempty"`
+	MemberCount int     `json:"memberCount,omitempty"`
+	IsDefault   *bool   `json:"isDefault,omitempty"`
+}
+
 // Workspace represents a top-level grouping of spaces.
 type Workspace struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Slug       string `json:"slug"`
-	Icon       string `json:"icon"`
-	EnforceMFA bool   `json:"enforce_mfa"`
-	CreatedAt  string `json:"createdAt"`
-	UpdatedAt  string `json:"updatedAt"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Slug           string `json:"slug"`
+	Icon           string `json:"icon"`
+	Description    string `json:"description"`
+	Settings       string `json:"settings"`
+	DefaultSpaceID string `json:"defaultSpaceId,omitempty"`
+	EnforceMFA     bool   `json:"enforce_mfa"`
+	MemberCount    int    `json:"memberCount"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
+}
+
+// WorkspaceMember represents a user's membership in a workspace.
+type WorkspaceMember struct {
+	ID          string `json:"id"`
+	UserID      string `json:"user_id"`
+	WorkspaceID string `json:"workspace_id"`
+	Role        string `json:"role"`
+	JoinedAt    string `json:"joined_at"`
 }
 
 // UserMFA represents a user's MFA configuration.
@@ -193,10 +294,23 @@ type AuthUser struct {
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	AvatarURL string `json:"avatar_url"`
-	IsOwner   bool   `json:"is_owner"`
+	Role      string `json:"role"`
 	IsActive  bool   `json:"is_active"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+}
+
+// ConsoleUser is a sanitized user object for console member management.
+type ConsoleUser struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
+	Role      string `json:"role"`
+	IsActive  bool   `json:"is_active"`
+	LastSeen  string `json:"last_seen"`
+	CreatedAt string `json:"created_at"`
 }
 
 // AuthSession is a database row from the sessions table.
@@ -218,4 +332,50 @@ type AuthRefreshToken struct {
 	CreatedAt string `json:"created_at"`
 	RotatedAt string `json:"rotated_at,omitempty"`
 	RevokedAt string `json:"revoked_at,omitempty"`
+}
+
+// Notification represents a persistent in-app notification row.
+type Notification struct {
+	ID              string     `json:"id"`
+	WorkspaceID     *string    `json:"workspaceId,omitempty"`
+	RecipientUserID string     `json:"recipientUserId"`
+	ActorUserID     *string    `json:"actorUserId,omitempty"`
+	Type            string     `json:"type"`
+	Title           string     `json:"title"`
+	Body            string     `json:"body"`
+	EntityType      string     `json:"entityType"`
+	EntityID        string     `json:"entityId"`
+	Metadata        string     `json:"metadata"`
+	ReadAt          *time.Time `json:"readAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+}
+
+// NotificationWithActor is a notification enriched with actor user details for display.
+type NotificationWithActor struct {
+	ID              string     `json:"id"`
+	WorkspaceID     *string    `json:"workspaceId,omitempty"`
+	RecipientUserID string     `json:"recipientUserId"`
+	ActorUserID     *string    `json:"actorUserId,omitempty"`
+	Type            string     `json:"type"`
+	Title           string     `json:"title"`
+	Body            string     `json:"body"`
+	EntityType      string     `json:"entityType"`
+	EntityID        string     `json:"entityId"`
+	Metadata        string     `json:"metadata"`
+	ReadAt          *time.Time `json:"readAt,omitempty"`
+	CreatedAt       time.Time  `json:"createdAt"`
+	ActorName       string     `json:"actorName,omitempty"`
+	ActorAvatarURL  string     `json:"actorAvatarUrl,omitempty"`
+}
+
+// PushSubscription represents a browser push notification subscription.
+type PushSubscription struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Endpoint  string    `json:"endpoint"`
+	P256DH    string    `json:"p256dh"`
+	Auth      string    `json:"auth"`
+	UserAgent string    `json:"userAgent"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
