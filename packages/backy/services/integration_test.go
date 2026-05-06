@@ -76,7 +76,7 @@ func setupTestDB(t *testing.T) *testDB {
 
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
-		databaseURL = "postgres://verso:verso_secure_password@localhost:5432/verso?sslmode=disable"
+		t.Skip("DATABASE_URL not set, skipping integration tests")
 	}
 
 	ctx := context.Background()

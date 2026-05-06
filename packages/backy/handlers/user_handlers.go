@@ -100,21 +100,21 @@ func (h *Handlers) UpdateUserActive(c *gin.Context) {
 	}
 
 	var req struct {
-		IsActive bool `json:"is_active"`
+		IsActive *bool `json:"is_active"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
+		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "field is_active is required"})
 		return
 	}
 
 	repo := repositories.NewUserRepo()
-	if err := repo.UpdateUserActive(c.Request.Context(), targetID, req.IsActive); err != nil {
+	if err := repo.UpdateUserActive(c.Request.Context(), targetID, *req.IsActive); err != nil {
 		logger.Log.Error().Err(err).Str("user_id", targetID).Msg("update user active error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to update status"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, gin.H{"status": "ok", "is_active": *req.IsActive})
 }
 
 // DeleteUser handles DELETE /api/console/users/:id.
