@@ -42,7 +42,7 @@ func (r *NotificationRepo) Insert(ctx context.Context, n models.Notification) er
 // ListByRecipient returns recent notifications for a user, newest first.
 func (r *NotificationRepo) ListByRecipient(ctx context.Context, userID string, limit int) ([]models.NotificationWithActor, error) {
 	query := `
-		SELECT n.id, n.workspace_id, n.recipient_user_id, n.actor_user_id, n.type,
+		SELECT n.id, COALESCE(n.workspace_id::text, ''), n.recipient_user_id, n.actor_user_id, n.type,
 		       n.title, n.body, n.entity_type, n.entity_id, COALESCE(n.metadata::text, '{}'),
 		       n.read_at, n.created_at,
 		       COALESCE(u.name, ''), COALESCE(u.avatar_url, '')
@@ -60,10 +60,14 @@ func (r *NotificationRepo) ListByRecipient(ctx context.Context, userID string, l
 	var results []models.NotificationWithActor
 	for rows.Next() {
 		var n models.NotificationWithActor
-		if err := rows.Scan(&n.ID, &n.WorkspaceID, &n.RecipientUserID, &n.ActorUserID, &n.Type,
+		var wsID string
+		if err := rows.Scan(&n.ID, &wsID, &n.RecipientUserID, &n.ActorUserID, &n.Type,
 			&n.Title, &n.Body, &n.EntityType, &n.EntityID, &n.Metadata,
 			&n.ReadAt, &n.CreatedAt, &n.ActorName, &n.ActorAvatarURL); err != nil {
 			return nil, fmt.Errorf("scanning notification: %w", err)
+		}
+		if wsID != "" {
+			n.WorkspaceID = &wsID
 		}
 		results = append(results, n)
 	}
@@ -79,7 +83,7 @@ func (r *NotificationRepo) ListByRecipient(ctx context.Context, userID string, l
 // ListUnreadByRecipient returns unread, non-deleted notifications for a user.
 func (r *NotificationRepo) ListUnreadByRecipient(ctx context.Context, userID string, limit int) ([]models.NotificationWithActor, error) {
 	query := `
-		SELECT n.id, n.workspace_id, n.recipient_user_id, n.actor_user_id, n.type,
+		SELECT n.id, COALESCE(n.workspace_id::text, ''), n.recipient_user_id, n.actor_user_id, n.type,
 		       n.title, n.body, n.entity_type, n.entity_id, COALESCE(n.metadata::text, '{}'),
 		       n.read_at, n.created_at,
 		       COALESCE(u.name, ''), COALESCE(u.avatar_url, '')
@@ -97,10 +101,14 @@ func (r *NotificationRepo) ListUnreadByRecipient(ctx context.Context, userID str
 	var results []models.NotificationWithActor
 	for rows.Next() {
 		var n models.NotificationWithActor
-		if err := rows.Scan(&n.ID, &n.WorkspaceID, &n.RecipientUserID, &n.ActorUserID, &n.Type,
+		var wsID string
+		if err := rows.Scan(&n.ID, &wsID, &n.RecipientUserID, &n.ActorUserID, &n.Type,
 			&n.Title, &n.Body, &n.EntityType, &n.EntityID, &n.Metadata,
 			&n.ReadAt, &n.CreatedAt, &n.ActorName, &n.ActorAvatarURL); err != nil {
 			return nil, fmt.Errorf("scanning unread notification: %w", err)
+		}
+		if wsID != "" {
+			n.WorkspaceID = &wsID
 		}
 		results = append(results, n)
 	}
@@ -152,6 +160,35 @@ func (r *NotificationRepo) MarkAllRead(ctx context.Context, userID string) (int,
 	)
 	if err != nil {
 		return 0, fmt.Errorf("marking all notifications read: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
+}
+
+// SoftDelete marks a notification as deleted for a specific user.
+func (r *NotificationRepo) SoftDelete(ctx context.Context, id, userID string) error {
+	tag, err := r.pool.Exec(
+		ctx,
+		`UPDATE notifications SET deleted_at = $1 WHERE id = $2 AND recipient_user_id = $3 AND deleted_at IS NULL`,
+		time.Now().UTC(), id, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("soft-deleting notification: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return pgx.ErrNoRows
+	}
+	return nil
+}
+
+// SoftDeleteAll soft-deletes all notifications for a user.
+func (r *NotificationRepo) SoftDeleteAll(ctx context.Context, userID string) (int, error) {
+	tag, err := r.pool.Exec(
+		ctx,
+		"UPDATE notifications SET deleted_at = $1 WHERE recipient_user_id = $2 AND deleted_at IS NULL",
+		time.Now().UTC(), userID,
+	)
+	if err != nil {
+		return 0, fmt.Errorf("soft-deleting all notifications: %w", err)
 	}
 	return int(tag.RowsAffected()), nil
 }

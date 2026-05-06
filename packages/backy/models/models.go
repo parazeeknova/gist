@@ -209,19 +209,19 @@ type SpaceMemberWithUser struct {
 
 // SpaceMemberMixed represents a space membership that may be a user or a group.
 type SpaceMemberMixed struct {
-	MemberType  string `json:"memberType"`
-	ID          string `json:"id"`
-	UserID      string `json:"userId,omitempty"`
-	GroupID     string `json:"groupId,omitempty"`
-	SpaceID     string `json:"spaceId"`
-	Role        string `json:"role"`
-	JoinedAt    string `json:"joinedAt"`
-	Name        string `json:"name"`
-	Email       string `json:"email,omitempty"`
-	AvatarURL   string `json:"avatarUrl,omitempty"`
-	Description string `json:"description,omitempty"`
-	MemberCount int    `json:"memberCount,omitempty"`
-	IsDefault   bool   `json:"isDefault,omitempty"`
+	MemberType  string  `json:"memberType"`
+	ID          string  `json:"id"`
+	UserID      *string `json:"userId,omitempty"`
+	GroupID     *string `json:"groupId,omitempty"`
+	SpaceID     string  `json:"spaceId"`
+	Role        string  `json:"role"`
+	JoinedAt    string  `json:"joinedAt"`
+	Name        string  `json:"name"`
+	Email       *string `json:"email,omitempty"`
+	AvatarURL   *string `json:"avatarUrl,omitempty"`
+	Description *string `json:"description,omitempty"`
+	MemberCount int     `json:"memberCount,omitempty"`
+	IsDefault   *bool   `json:"isDefault,omitempty"`
 }
 
 // Workspace represents a top-level grouping of spaces.
@@ -337,7 +337,7 @@ type AuthRefreshToken struct {
 // Notification represents a persistent in-app notification row.
 type Notification struct {
 	ID              string     `json:"id"`
-	WorkspaceID     string     `json:"workspaceId"`
+	WorkspaceID     *string    `json:"workspaceId,omitempty"`
 	RecipientUserID string     `json:"recipientUserId"`
 	ActorUserID     *string    `json:"actorUserId,omitempty"`
 	Type            string     `json:"type"`
@@ -353,7 +353,7 @@ type Notification struct {
 // NotificationWithActor is a notification enriched with actor user details for display.
 type NotificationWithActor struct {
 	ID              string     `json:"id"`
-	WorkspaceID     string     `json:"workspaceId"`
+	WorkspaceID     *string    `json:"workspaceId,omitempty"`
 	RecipientUserID string     `json:"recipientUserId"`
 	ActorUserID     *string    `json:"actorUserId,omitempty"`
 	Type            string     `json:"type"`

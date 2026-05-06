@@ -19,14 +19,22 @@ import (
 type NotificationService struct {
 	notifRepo   *repositories.NotificationRepo
 	pushSubRepo *repositories.PushSubscriptionRepo
+	userRepo    *repositories.UserRepo
+	hub         *NotificationHub
 }
 
 // NewNotificationService creates a new notification service.
-func NewNotificationService(notifRepo *repositories.NotificationRepo, pushSubRepo *repositories.PushSubscriptionRepo) *NotificationService {
+func NewNotificationService(notifRepo *repositories.NotificationRepo, pushSubRepo *repositories.PushSubscriptionRepo, userRepo *repositories.UserRepo) *NotificationService {
 	return &NotificationService{
 		notifRepo:   notifRepo,
 		pushSubRepo: pushSubRepo,
+		userRepo:    userRepo,
 	}
+}
+
+// SetHub sets the notification hub for SSE streaming.
+func (s *NotificationService) SetHub(hub *NotificationHub) {
+	s.hub = hub
 }
 
 // Notify implements the Notifier interface. Creates persistent notification rows
@@ -47,7 +55,6 @@ func (s *NotificationService) Notify(ctx context.Context, event NotificationEven
 
 		n := models.Notification{
 			ID:              uuid.New().String(),
-			WorkspaceID:     event.WorkspaceID,
 			RecipientUserID: recipientID,
 			ActorUserID:     &event.ActorID,
 			Type:            string(event.Type),
@@ -58,6 +65,9 @@ func (s *NotificationService) Notify(ctx context.Context, event NotificationEven
 			Metadata:        metadataJSON,
 			CreatedAt:       time.Now().UTC(),
 		}
+		if event.WorkspaceID != "" {
+			n.WorkspaceID = &event.WorkspaceID
+		}
 
 		if err := s.notifRepo.Insert(ctx, n); err != nil {
 			logger.Log.Error().Err(err).
@@ -65,6 +75,34 @@ func (s *NotificationService) Notify(ctx context.Context, event NotificationEven
 				Str("type", string(event.Type)).
 				Msg("failed to create notification")
 			continue
+		}
+
+		// Broadcast via SSE hub so connected clients get real-time delivery.
+		if s.hub != nil {
+			actorName := ""
+			actorAvatar := ""
+			if event.ActorID != "" {
+				if actor, err := s.userRepo.FindMetaByID(ctx, event.ActorID); err == nil && actor != nil {
+					actorName = actor.Name
+					actorAvatar = actor.AvatarURL
+				}
+			}
+			s.hub.Publish(recipientID, models.NotificationWithActor{
+				ID:              n.ID,
+				WorkspaceID:     n.WorkspaceID,
+				RecipientUserID: n.RecipientUserID,
+				ActorUserID:     n.ActorUserID,
+				Type:            n.Type,
+				Title:           n.Title,
+				Body:            n.Body,
+				EntityType:      n.EntityType,
+				EntityID:        n.EntityID,
+				Metadata:        n.Metadata,
+				ReadAt:          nil,
+				CreatedAt:       n.CreatedAt,
+				ActorName:       actorName,
+				ActorAvatarURL:  actorAvatar,
+			})
 		}
 
 		go s.deliverPush(bgCtx, recipientID, n)
@@ -91,6 +129,16 @@ func (s *NotificationService) MarkAllRead(ctx context.Context, userID string) (i
 	return s.notifRepo.MarkAllRead(ctx, userID)
 }
 
+// Dismiss soft-deletes a single notification.
+func (s *NotificationService) Dismiss(ctx context.Context, id, userID string) error {
+	return s.notifRepo.SoftDelete(ctx, id, userID)
+}
+
+// DismissAll soft-deletes all notifications for a user.
+func (s *NotificationService) DismissAll(ctx context.Context, userID string) (int, error) {
+	return s.notifRepo.SoftDeleteAll(ctx, userID)
+}
+
 // UpsertPushSubscription saves or updates a browser push subscription.
 func (s *NotificationService) UpsertPushSubscription(ctx context.Context, sub models.PushSubscription) error {
 	return s.pushSubRepo.Upsert(ctx, sub)
@@ -112,12 +160,21 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 	case EventWorkspaceRenamed:
 		name := s.metadataStr(event.Metadata, "name", "the workspace")
 		return "Workspace renamed", fmt.Sprintf("The workspace was renamed to %q.", name)
+	case EventWorkspaceDeleted:
+		name := s.metadataStr(event.Metadata, "name", "a workspace")
+		return "Workspace deleted", fmt.Sprintf("The workspace %q was deleted.", name)
+	case EventWorkspaceIconChanged:
+		name := s.metadataStr(event.Metadata, "name", "the workspace")
+		return "Workspace icon updated", fmt.Sprintf("The icon for %q was changed.", name)
 	case EventSpaceCreated:
 		name := s.metadataStr(event.Metadata, "name", "a space")
 		return "Space created", fmt.Sprintf("A new space %q was created.", name)
 	case EventSpaceRenamed:
 		name := s.metadataStr(event.Metadata, "name", "a space")
 		return "Space renamed", fmt.Sprintf("A space was renamed to %q.", name)
+	case EventSpaceIconChanged:
+		name := s.metadataStr(event.Metadata, "name", "a space")
+		return "Space icon updated", fmt.Sprintf("The icon for space %q was changed.", name)
 	case EventGroupMemberAdded:
 		group := s.metadataStr(event.Metadata, "groupName", "a group")
 		return "Added to group", fmt.Sprintf("You were added to the group %q.", group)
@@ -126,7 +183,8 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 		return "Removed from group", fmt.Sprintf("You were removed from the group %q.", group)
 	case EventRoleChanged:
 		role := s.metadataStr(event.Metadata, "role", "member")
-		return "Role changed", fmt.Sprintf("Your role was changed to %q.", role)
+		spaceName := s.metadataStr(event.Metadata, "spaceName", "a space")
+		return "Role changed", fmt.Sprintf("Your role in %q was changed to %q.", spaceName, role)
 	case EventPageUpdated:
 		name := s.metadataStr(event.Metadata, "name", "a page")
 		return "Page updated", fmt.Sprintf("The page %q was updated.", name)
@@ -139,8 +197,21 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 	case EventSpaceMemberAdded:
 		name := s.metadataStr(event.Metadata, "name", "a space")
 		return "Added to space", fmt.Sprintf("You were added to the space %q.", name)
+	case EventSpaceMemberRemoved:
+		name := s.metadataStr(event.Metadata, "name", "a space")
+		return "Removed from space", fmt.Sprintf("You were removed from the space %q.", name)
 	case EventProfileAvatarUpdated:
-		return "Avatar updated", "A user updated their profile avatar."
+		return "Avatar updated", "Your profile avatar was updated."
+	case EventProfileNameChanged:
+		// Actor receives their own notification, so "Your" is appropriate.
+		newName := s.metadataStr(event.Metadata, "newName", "a new name")
+		return "Name updated", fmt.Sprintf("Your display name was changed to %q.", newName)
+	case EventProfilePasswordChanged:
+		return "Password changed", "Your account password was changed."
+	case EventProfileMFAEnabled:
+		return "2FA enabled", "Two-factor authentication has been enabled on your account."
+	case EventProfileMFADisabled:
+		return "2FA disabled", "Two-factor authentication has been disabled on your account."
 	default:
 		return "Notification", "You have a new notification."
 	}

@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { BellIcon } from "@phosphor-icons/react";
+import { BellIcon, CircleIcon, XIcon } from "@phosphor-icons/react";
 import type { NotificationItem } from "#/types";
+import { useNotificationStream } from "#/hooks/use-notification-stream";
 import { fetchProtected } from "#/hooks/fetch-protected";
 
 const formatTime = (dateStr: string) => {
@@ -22,6 +23,8 @@ const formatTime = (dateStr: string) => {
   return date.toLocaleDateString();
 };
 
+const MAX_VISIBLE = 4;
+
 interface NotificationBellProps {
   isDarkMode: boolean;
 }
@@ -29,14 +32,17 @@ interface NotificationBellProps {
 export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [notiOpen, setNotiOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const notiRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
+  useNotificationStream();
 
   const { data: countData } = useQuery({
     queryFn: ({ signal }) =>
       fetchProtected<{ count: number }>("/api/console/notifications/unread-count", { signal }),
     queryKey: ["notifications", "unread-count"],
-    refetchInterval: 30_000,
+    refetchInterval: 10_000,
   });
 
   const { data: notifications } = useQuery({
@@ -56,10 +62,20 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
     },
   });
 
-  const readAllMutation = useMutation({
+  const dismissAllMutation = useMutation({
     mutationFn: () =>
-      fetchProtected<{ status: string }>("/api/console/notifications/read-all", {
-        method: "PUT",
+      fetchProtected<{ count: number }>("/api/console/notifications/dismiss-all", {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
+  const dismissMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetchProtected<{ status: string }>(`/api/console/notifications/${id}`, {
+        method: "DELETE",
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -73,6 +89,7 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
     const handleClick = (e: MouseEvent) => {
       if (notiRef.current && !notiRef.current.contains(e.target as Node)) {
         setNotiOpen(false);
+        setShowAll(false);
       }
     };
     document.addEventListener("mousedown", handleClick);
@@ -80,6 +97,8 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
   }, [notiOpen]);
 
   const unreadCount = countData?.count ?? 0;
+  const allNotifs = notifications ?? [];
+  const visible = showAll ? allNotifs : allNotifs.slice(0, MAX_VISIBLE);
 
   return (
     <div className="relative" ref={notiRef}>
@@ -98,64 +117,112 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
 
       {notiOpen && (
         <div
-          className={`absolute right-0 top-full z-50 mt-1 w-64 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+          className={`absolute right-0 top-full z-50 mt-1 w-72 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
         >
-          <div className="max-h-80 overflow-y-auto py-1">
+          <div className="py-1">
             <div
-              className={`flex items-center justify-between border-b px-3 pb-1.5 pt-1 ${t("border-border-dark", "border-border-light")}`}
+              className={`flex items-center justify-between border-b px-3 pb-1.5 pt-1.5 ${t("border-border-dark", "border-border-light")}`}
             >
-              <span className={`text-[12px] ${t("text-text-dark/70", "text-text-light/70")}`}>
+              <span
+                className={`text-[12px] lowercase ${t("text-text-dark/70", "text-text-light/70")}`}
+              >
                 notifications
               </span>
-              <button
-                className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
-                disabled={readAllMutation.isPending}
-                onClick={() => readAllMutation.mutate()}
-                type="button"
-              >
-                clear all
-              </button>
-            </div>
-            {notifications && notifications.length > 0 ? (
-              notifications.map((n: NotificationItem) => (
+              {unreadCount > 0 && (
                 <button
-                  className={`flex w-full gap-2 px-3 py-2 text-left text-[11px] leading-tight ${n.readAt ? t("text-text-dark/40", "text-text-light/40") : t("text-text-dark/70 hover:bg-white/5", "text-text-light/70 hover:bg-black/3")}`}
-                  key={n.id}
-                  onClick={() => {
-                    if (!n.readAt) {
-                      readMutation.mutate(n.id);
-                    }
-                  }}
+                  className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")} disabled:opacity-30`}
+                  disabled={dismissAllMutation.isPending}
+                  onClick={() => dismissAllMutation.mutate()}
                   type="button"
                 >
-                  <span className="mt-0.5 shrink-0">
-                    {!n.readAt && <span className="block h-1.5 w-1.5 rounded-full bg-blue-500" />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-1">
-                      <span className="truncate font-medium">{n.title}</span>
+                  clear all
+                </button>
+              )}
+            </div>
+            {visible.length > 0 ? (
+              <>
+                {visible.map((n: NotificationItem) => (
+                  <button
+                    className={`group flex w-full items-start gap-2.5 px-3 py-2 text-left text-[11px] leading-tight ${n.readAt ? t("text-text-dark/40", "text-text-light/40") : t("text-text-dark/70 hover:bg-white/5", "text-text-light/70 hover:bg-black/3")}`}
+                    key={n.id}
+                    onClick={() => {
+                      if (!n.readAt) {
+                        readMutation.mutate(n.id);
+                      }
+                    }}
+                    type="button"
+                  >
+                    {n.actorAvatarUrl ? (
+                      <img
+                        alt=""
+                        className="mt-0.5 h-4 w-4 shrink-0 overflow-hidden rounded-full object-cover"
+                        src={n.actorAvatarUrl}
+                      />
+                    ) : (
                       <span
-                        className={`shrink-0 text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}
+                        className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[8px] font-medium ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+                      >
+                        {(n.actorName ?? "?").slice(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="truncate font-medium">{n.title}</span>
+                        <div className="flex items-center gap-1">
+                          {!n.readAt && (
+                            <CircleIcon
+                              className={`shrink-0 ${t("text-text-dark/70", "text-text-light/70")}`}
+                              size={6}
+                              weight="fill"
+                            />
+                          )}
+                          <XIcon
+                            className={`hidden shrink-0 rounded p-px group-hover:block ${t("text-text-dark/20 hover:text-text-dark/60", "text-text-light/20 hover:text-text-light/60")}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              dismissMutation.mutate(n.id);
+                            }}
+                            size={12}
+                          />
+                        </div>
+                      </div>
+                      <span
+                        className={`mt-px block ${t("text-text-dark/50", "text-text-light/50")}`}
+                      >
+                        {n.body}
+                      </span>
+                      <span
+                        className={`mt-0.5 block text-[10px] ${t("text-text-dark/25", "text-text-light/25")}`}
                       >
                         {formatTime(n.createdAt)}
                       </span>
                     </div>
-                    <div className={`mt-0.5 ${t("text-text-dark/50", "text-text-light/50")}`}>
-                      {n.actorName ? (
-                        <span>
-                          <span className="font-medium">{n.actorName}</span>{" "}
-                        </span>
-                      ) : null}
-                      {n.body}
-                    </div>
-                  </div>
-                </button>
-              ))
+                  </button>
+                ))}
+                {allNotifs.length > MAX_VISIBLE && !showAll && (
+                  <button
+                    className={`w-full border-t px-3 py-1.5 text-center text-[10px] lowercase ${t("border-border-dark text-text-dark/30 hover:text-text-dark/60", "border-border-light text-text-light/30 hover:text-text-light/60")}`}
+                    onClick={() => setShowAll(true)}
+                    type="button"
+                  >
+                    show {allNotifs.length - MAX_VISIBLE} more
+                  </button>
+                )}
+                {showAll && allNotifs.length > MAX_VISIBLE && (
+                  <button
+                    className={`w-full border-t px-3 py-1.5 text-center text-[10px] lowercase ${t("border-border-dark text-text-dark/30 hover:text-text-dark/60", "border-border-light text-text-light/30 hover:text-text-light/60")}`}
+                    onClick={() => setShowAll(false)}
+                    type="button"
+                  >
+                    show less
+                  </button>
+                )}
+              </>
             ) : (
               <p
                 className={`px-3 py-2 text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
               >
-                {notifications ? "no notifications yet !" : "loading..."}
+                {allNotifs.length === 0 && notifications ? "no notifications yet" : "loading..."}
               </p>
             )}
           </div>

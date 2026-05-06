@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -13,11 +15,12 @@ import (
 // NotificationHandlers holds HTTP handlers for notification endpoints.
 type NotificationHandlers struct {
 	notificationService *services.NotificationService
+	hub                 *services.NotificationHub
 }
 
 // NewNotificationHandlers creates a new NotificationHandlers.
-func NewNotificationHandlers(notificationService *services.NotificationService) *NotificationHandlers {
-	return &NotificationHandlers{notificationService: notificationService}
+func NewNotificationHandlers(notificationService *services.NotificationService, hub *services.NotificationHub) *NotificationHandlers {
+	return &NotificationHandlers{notificationService: notificationService, hub: hub}
 }
 
 // RegisterRoutes registers all notification routes on the given router group.
@@ -26,8 +29,11 @@ func (h *NotificationHandlers) RegisterRoutes(rg *gin.RouterGroup) {
 	{
 		notifGroup.GET("", h.ListNotifications)
 		notifGroup.GET("/unread-count", h.UnreadCount)
+		notifGroup.GET("/stream", h.Stream)
 		notifGroup.PUT("/:id/read", h.MarkRead)
 		notifGroup.PUT("/read-all", h.MarkAllRead)
+		notifGroup.DELETE("/:id", h.DismissNotification)
+		notifGroup.DELETE("/dismiss-all", h.DismissAllNotifications)
 	}
 }
 
@@ -97,6 +103,79 @@ func (h *NotificationHandlers) MarkAllRead(c *gin.Context) {
 	if err != nil {
 		logger.Log.Error().Err(err).Str("user_id", userID).Msg("mark all read error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to mark notifications as read"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"count": count})
+}
+
+// DismissNotification soft-deletes a single notification.
+func (h *NotificationHandlers) DismissNotification(c *gin.Context) {
+	userID := middleware.GetCurrentUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	id := c.Param("id")
+	if err := h.notificationService.Dismiss(c.Request.Context(), id, userID); err != nil {
+		logger.Log.Error().Err(err).Str("id", id).Msg("dismiss notification error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to dismiss notification"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// Stream opens an SSE connection for real-time notification delivery.
+func (h *NotificationHandlers) Stream(c *gin.Context) {
+	userID := middleware.GetCurrentUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+	if h.hub == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "notifications stream not available"})
+		return
+	}
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+
+	ch := make(chan string, 32)
+	unsub := h.hub.Subscribe(userID, ch)
+	defer unsub()
+
+	ctx := c.Request.Context()
+	c.Stream(func(w io.Writer) bool {
+		select {
+		case msg, ok := <-ch:
+			if !ok {
+				return false
+			}
+			fmt.Fprintf(w, "data: %s\n\n", msg)
+			c.Writer.Flush()
+			return true
+		case <-ctx.Done():
+			return false
+		}
+	})
+}
+
+// DismissAllNotifications soft-deletes all notifications for the current user.
+func (h *NotificationHandlers) DismissAllNotifications(c *gin.Context) {
+	userID := middleware.GetCurrentUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "not authenticated"})
+		return
+	}
+
+	count, err := h.notificationService.DismissAll(c.Request.Context(), userID)
+	if err != nil {
+		logger.Log.Error().Err(err).Str("user_id", userID).Msg("dismiss all notifications error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to dismiss notifications"})
 		return
 	}
 

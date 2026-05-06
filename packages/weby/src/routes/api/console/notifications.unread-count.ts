@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getUnreadNotificationCount } from "#/server/backy";
+import { BackyError, getUnreadNotificationCount } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/notifications/unread-count")({
   server: {
@@ -7,10 +7,17 @@ export const Route = createFileRoute("/api/console/notifications/unread-count")(
       GET: async ({ request }) => {
         const cookieHeader = request.headers.get("cookie");
         if (!cookieHeader) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
+          return Response.json({ count: 0 });
         }
-        const data = await getUnreadNotificationCount(cookieHeader);
-        return Response.json(data);
+        try {
+          const data = await getUnreadNotificationCount(cookieHeader);
+          return Response.json(data);
+        } catch (error) {
+          if (error instanceof BackyError && error.status === 401) {
+            return Response.json({ count: 0 });
+          }
+          throw error;
+        }
       },
     },
   },

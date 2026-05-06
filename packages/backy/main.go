@@ -95,6 +95,8 @@ func main() {
 
 	var h *handlers.Handlers
 	var notificationService *services.NotificationService
+	var hub *services.NotificationHub
+	var workspaceService *services.WorkspaceService
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
@@ -104,13 +106,17 @@ func main() {
 		groupRepo := repositories.NewGroupRepo()
 		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo)
 		spaceService := services.NewSpaceService(spaceRepo, pageRepo, groupRepo)
-		workspaceService := services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
+		workspaceService = services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
 		groupService := services.NewGroupService(groupRepo, workspaceRepo)
 
 		// Notification service
 		notifRepo := repositories.NewNotificationRepo()
 		pushSubRepo := repositories.NewPushSubscriptionRepo()
-		notificationService = services.NewNotificationService(notifRepo, pushSubRepo)
+		notificationService = services.NewNotificationService(notifRepo, pushSubRepo, repositories.NewUserRepo())
+
+		// SSE hub for real-time notification streaming
+		hub = services.NewNotificationHub()
+		notificationService.SetHub(hub)
 
 		// Wire notification service into domain services
 		workspaceService.SetNotifier(notificationService)
@@ -126,15 +132,23 @@ func main() {
 
 	// Create auth service and handlers
 	authService := services.NewAuthService()
+	if workspaceService != nil {
+		authService.SetWorkspaceService(workspaceService)
+	}
 	mfaService := services.NewMFAService(authService)
 	authHandlers := handlers.NewAuthHandlers(authService, mfaService)
 	profileHandlers := handlers.NewProfileHandlers(authService)
 	mfaHandlers := handlers.NewMFAHandlers(mfaService)
 
+	if notificationService != nil {
+		profileHandlers.SetNotifier(notificationService)
+		mfaHandlers.SetNotifier(notificationService)
+	}
+
 	var notifHandlers *handlers.NotificationHandlers
 	var pushHandlers *handlers.PushSubscriptionHandlers
 	if notificationService != nil {
-		notifHandlers = handlers.NewNotificationHandlers(notificationService)
+		notifHandlers = handlers.NewNotificationHandlers(notificationService, hub)
 		pushHandlers = handlers.NewPushSubscriptionHandlers(notificationService)
 	}
 
@@ -250,6 +264,7 @@ func main() {
 			console.PUT("/spaces/:id", h.UpdateSpace)
 			console.DELETE("/spaces/:id", h.DeleteSpace)
 			console.GET("/spaces/:id/members", h.GetSpaceMembers)
+			console.POST("/spaces/:id/members/:userId", h.AddSpaceMember)
 			console.PUT("/spaces/:id/members/:userId", h.UpdateSpaceMemberRole)
 			console.DELETE("/spaces/:id/members/:userId", h.RemoveSpaceMember)
 			console.POST("/spaces/:id/groups/:groupId", h.AddSpaceGroup)

@@ -102,6 +102,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 
 	existing.Name = name
 	existing.Slug = slug
+	iconChanged := existing.Icon != icon
 	existing.Icon = icon
 	existing.Description = description
 	existing.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
@@ -111,15 +112,27 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 	}
 
 	recipients, _ := s.workspaceMemberIDsForSpace(ctx, existing.WorkspaceID)
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventSpaceRenamed,
-		WorkspaceID:  existing.WorkspaceID,
-		ActorID:      userID,
-		RecipientIDs: recipients,
-		EntityType:   "space",
-		EntityID:     id,
-		Metadata:     map[string]string{"name": name},
-	})
+	if iconChanged && name == existing.Name && slug == existing.Slug {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventSpaceIconChanged,
+			WorkspaceID:  existing.WorkspaceID,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			EntityType:   "space",
+			EntityID:     id,
+			Metadata:     map[string]string{"name": name},
+		})
+	} else {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventSpaceRenamed,
+			WorkspaceID:  existing.WorkspaceID,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			EntityType:   "space",
+			EntityID:     id,
+			Metadata:     map[string]string{"name": name},
+		})
+	}
 
 	return existing, nil
 }
@@ -262,10 +275,28 @@ func (s *SpaceService) GetSpaceMemberDetails(ctx context.Context, spaceID string
 
 // AddSpaceMember adds a user to a space with a role.
 func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role, actorID string) error {
+	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
+		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
+	}
 	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
-	return s.spaceRepo.AddMember(ctx, spaceID, userID, role)
+	if err := s.spaceRepo.AddMember(ctx, spaceID, userID, role); err != nil {
+		return err
+	}
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err == nil {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventSpaceMemberAdded,
+			WorkspaceID:  space.WorkspaceID,
+			ActorID:      actorID,
+			RecipientIDs: []string{userID},
+			EntityType:   "space",
+			EntityID:     spaceID,
+			Metadata:     map[string]string{"name": space.Name},
+		})
+	}
+	return nil
 }
 
 // UpdateSpaceMemberRole updates a user's role in a space.
@@ -276,7 +307,22 @@ func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userI
 	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
-	return s.spaceRepo.UpdateMemberRole(ctx, spaceID, userID, role)
+	if err := s.spaceRepo.UpdateMemberRole(ctx, spaceID, userID, role); err != nil {
+		return err
+	}
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err == nil {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventRoleChanged,
+			WorkspaceID:  space.WorkspaceID,
+			ActorID:      actorID,
+			RecipientIDs: []string{userID},
+			EntityType:   "space",
+			EntityID:     spaceID,
+			Metadata:     map[string]string{"role": role, "spaceName": space.Name},
+		})
+	}
+	return nil
 }
 
 // RemoveSpaceMember removes a user from a space.
@@ -284,7 +330,22 @@ func (s *SpaceService) RemoveSpaceMember(ctx context.Context, spaceID, userID, a
 	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
-	return s.spaceRepo.RemoveMember(ctx, spaceID, userID)
+	if err := s.spaceRepo.RemoveMember(ctx, spaceID, userID); err != nil {
+		return err
+	}
+	space, err := s.spaceRepo.GetByID(ctx, spaceID)
+	if err == nil {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventSpaceMemberRemoved,
+			WorkspaceID:  space.WorkspaceID,
+			ActorID:      actorID,
+			RecipientIDs: []string{userID},
+			EntityType:   "space",
+			EntityID:     spaceID,
+			Metadata:     map[string]string{"name": space.Name},
+		})
+	}
+	return nil
 }
 
 // GetSpaceMembersMixed returns all members of a space as a mixed collection of users and groups.

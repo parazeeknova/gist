@@ -234,6 +234,25 @@ func (r *UserRepo) UpdatePasswordHash(ctx context.Context, userID, passwordHash 
 	return nil
 }
 
+// UserMeta is a lightweight user lookup for name and avatar.
+type UserMeta struct {
+	Name      string
+	AvatarURL string
+}
+
+// FindMetaByID returns name and avatar URL for a user.
+func (r *UserRepo) FindMetaByID(ctx context.Context, userID string) (*UserMeta, error) {
+	var m UserMeta
+	err := r.pool.QueryRow(ctx, "SELECT COALESCE(name,''), COALESCE(avatar_url,'') FROM users WHERE id = $1", userID).Scan(&m.Name, &m.AvatarURL)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("find user meta: %w", err)
+	}
+	return &m, nil
+}
+
 // GetPasswordHash retrieves the stored password hash for a user.
 func (r *UserRepo) GetPasswordHash(ctx context.Context, userID string) (string, error) {
 	var hash string

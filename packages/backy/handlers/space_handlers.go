@@ -253,6 +253,36 @@ func (h *Handlers) RemoveSpaceMember(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "removed"})
 }
 
+// AddSpaceMember handles POST /api/console/spaces/:id/members/:userId.
+func (h *Handlers) AddSpaceMember(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	userID := c.Param("userId")
+	actorID := middleware.GetCurrentUserID(c)
+
+	var req UpdateSpaceMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.spaceService.AddSpaceMember(c.Request.Context(), spaceID, userID, req.Role, actorID); err != nil {
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("userId", userID).Err(err).Msg("add space member error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add member"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "added"})
+}
+
 // AddSpaceGroupRequest is the request body for adding a group to a space.
 type AddSpaceGroupRequest struct {
 	Role string `json:"role" binding:"required"`

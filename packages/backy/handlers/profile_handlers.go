@@ -14,11 +14,17 @@ import (
 // ProfileHandlers holds HTTP handlers for profile endpoints.
 type ProfileHandlers struct {
 	authService *services.AuthService
+	notifier    services.Notifier
 }
 
 // NewProfileHandlers creates a new ProfileHandlers.
 func NewProfileHandlers(authService *services.AuthService) *ProfileHandlers {
-	return &ProfileHandlers{authService: authService}
+	return &ProfileHandlers{authService: authService, notifier: services.NoopNotifier()}
+}
+
+// SetNotifier sets the notification service on the profile handlers.
+func (h *ProfileHandlers) SetNotifier(n services.Notifier) {
+	h.notifier = n
 }
 
 // RegisterRoutes registers all profile routes on the given router group.
@@ -79,12 +85,41 @@ func (h *ProfileHandlers) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	logger.Log.Debug().Str("user_id", userID).Str("name", req.Name).Bool("has_avatar", req.AvatarURL != "").Int("avatar_len", len(req.AvatarURL)).Msg("update profile requested")
+	// Fetch current profile to detect actual changes.
+	currentUser, getUserErr := h.authService.GetUserByID(c.Request.Context(), userID)
+	if getUserErr != nil {
+		logger.Log.Error().Str("user_id", userID).Err(getUserErr).Msg("update profile: get current user failed")
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to fetch profile"})
+		return
+	}
+	nameChanged := req.Name != "" && req.Name != currentUser.Name
+	avatarChanged := req.AvatarURL != "" && req.AvatarURL != currentUser.AvatarURL
+
+	logger.Log.Debug().Str("user_id", userID).Str("name", req.Name).Bool("name_changed", nameChanged).Bool("avatar_changed", avatarChanged).Msg("update profile requested")
 
 	if err := h.authService.UpdateProfile(c.Request.Context(), userID, req.Name, req.AvatarURL); err != nil {
 		logger.Log.Error().Str("user_id", userID).Err(err).Msg("update profile failed")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to update profile"})
 		return
+	}
+
+	// Notify self only for actual changes.
+	if avatarChanged {
+		h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
+			Type:         services.EventProfileAvatarUpdated,
+			WorkspaceID:  "",
+			ActorID:      userID,
+			RecipientIDs: []string{userID},
+		})
+	}
+	if nameChanged {
+		h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
+			Type:         services.EventProfileNameChanged,
+			WorkspaceID:  "",
+			ActorID:      userID,
+			RecipientIDs: []string{userID},
+			Metadata:     map[string]string{"newName": req.Name},
+		})
 	}
 
 	logger.Log.Info().Str("user_id", userID).Msg("profile updated successfully")
@@ -125,6 +160,13 @@ func (h *ProfileHandlers) ChangePassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to change password"})
 		return
 	}
+
+	h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
+		Type:         services.EventProfilePasswordChanged,
+		WorkspaceID:  "",
+		ActorID:      userID,
+		RecipientIDs: []string{userID},
+	})
 
 	logger.Log.Info().Str("user_id", userID).Msg("password changed successfully")
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})

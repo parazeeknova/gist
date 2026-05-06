@@ -399,16 +399,16 @@ func (r *SpaceRepo) GetMembersWithUsers(ctx context.Context, spaceID string) ([]
 // GetMembersMixed returns all members of a space as a mixed collection of users and groups.
 func (r *SpaceRepo) GetMembersMixed(ctx context.Context, spaceID string) ([]models.SpaceMemberMixed, error) {
 	query := `
-		SELECT 'user', sm.id, sm.user_id, NULL, sm.space_id, sm.role, sm.joined_at::text,
+		SELECT 'user', sm.id, sm.user_id, NULL::uuid, sm.space_id, sm.role, sm.joined_at::text,
 		       COALESCE(u.name, ''), COALESCE(u.email, ''), COALESCE(u.avatar_url, ''),
-		       NULL, NULL, NULL
+		       NULL::text, NULL::int, NULL::bool
 		FROM space_members sm
 		JOIN users u ON u.id = sm.user_id
 		WHERE sm.space_id = $1
 		UNION ALL
-		SELECT 'group', sm.id, NULL, sm.group_id, sm.space_id, sm.role, sm.joined_at::text,
-		       g.name, NULL, NULL,
-		       g.description, (SELECT COUNT(*) FROM group_users gu WHERE gu.group_id = g.id),
+		SELECT 'group', sm.id, NULL::uuid, sm.group_id, sm.space_id, sm.role, sm.joined_at::text,
+		       g.name, NULL::text, NULL::text,
+		       COALESCE(g.description, ''), (SELECT COUNT(*) FROM group_users gu WHERE gu.group_id = g.id),
 		       g.is_default
 		FROM space_members sm
 		JOIN groups g ON g.id = sm.group_id

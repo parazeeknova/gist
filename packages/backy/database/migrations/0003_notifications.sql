@@ -1,7 +1,7 @@
 -- Notifications: persistent in-app notification rows
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     recipient_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     type TEXT NOT NULL,

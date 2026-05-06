@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getNotifications } from "#/server/backy";
+import { BackyError, getNotifications } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/notifications")({
   server: {
@@ -7,10 +7,17 @@ export const Route = createFileRoute("/api/console/notifications")({
       GET: async ({ request }) => {
         const cookieHeader = request.headers.get("cookie");
         if (!cookieHeader) {
-          return Response.json({ error: "Unauthorized" }, { status: 401 });
+          return Response.json([]);
         }
-        const notifs = await getNotifications(cookieHeader);
-        return Response.json(notifs);
+        try {
+          const notifs = await getNotifications(cookieHeader);
+          return Response.json(notifs);
+        } catch (error) {
+          if (error instanceof BackyError && error.status === 401) {
+            return Response.json([]);
+          }
+          throw error;
+        }
       },
     },
   },

@@ -138,6 +138,7 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 
 	existing.Name = name
 	existing.Slug = slug
+	iconChanged := existing.Icon != icon
 	existing.Icon = icon
 
 	if err := s.workspaceRepo.Update(ctx, existing); err != nil {
@@ -145,13 +146,23 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 	}
 
 	recipients, _ := s.workspaceMemberIDs(ctx, id)
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventWorkspaceRenamed,
-		WorkspaceID:  id,
-		ActorID:      userID,
-		RecipientIDs: recipients,
-		Metadata:     map[string]string{"name": name},
-	})
+	if iconChanged && name == existing.Name {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventWorkspaceIconChanged,
+			WorkspaceID:  id,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			Metadata:     map[string]string{"name": name},
+		})
+	} else {
+		s.notifier.Notify(ctx, NotificationEvent{
+			Type:         EventWorkspaceRenamed,
+			WorkspaceID:  id,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			Metadata:     map[string]string{"name": name},
+		})
+	}
 
 	return existing, nil
 }
@@ -182,12 +193,27 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id, userID strin
 		return ErrWorkspaceNotEmpty
 	}
 
+	ws, _ := s.workspaceRepo.GetByID(ctx, id)
+	recipients, _ := s.workspaceMemberIDs(ctx, id)
+
 	if err := s.workspaceRepo.SoftDelete(ctx, id); err != nil {
 		if errors.Is(err, repositories.ErrWorkspaceNotFound) {
 			return ErrWorkspaceNotFound
 		}
 		return fmt.Errorf("deleting workspace: %w", err)
 	}
+
+	wsName := id
+	if ws.Name != "" {
+		wsName = ws.Name
+	}
+	s.notifier.Notify(ctx, NotificationEvent{
+		Type:         EventWorkspaceDeleted,
+		WorkspaceID:  id,
+		ActorID:      userID,
+		RecipientIDs: recipients,
+		Metadata:     map[string]string{"name": wsName},
+	})
 
 	return nil
 }

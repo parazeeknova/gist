@@ -330,6 +330,21 @@ export const getSpaceMembers = (id: string, cookieHeader?: string | null) =>
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
+export const addSpaceMember = (
+  spaceId: string,
+  userId: string,
+  role: string,
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<{ status: string }>(`console/spaces/${spaceId}/members/${userId}`, {
+    body: JSON.stringify({ role }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+  });
+
 export const updateSpaceMemberRole = (
   spaceId: string,
   userId: string,
@@ -581,6 +596,18 @@ export const markAllNotificationsRead = (cookieHeader?: string | null) =>
   fetchBacky<{ status: string; count: number }>("console/notifications/read-all", {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "PUT",
+  });
+
+export const dismissNotification = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>(`console/notifications/${id}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
+  });
+
+export const dismissAllNotifications = (cookieHeader?: string | null) =>
+  fetchBacky<{ count: number }>("console/notifications/dismiss-all", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "DELETE",
   });
 
 // Push subscription functions

@@ -246,7 +246,7 @@ export interface Workspace {
 
 export interface NotificationItem {
   id: string;
-  workspaceId: string;
+  workspaceId?: string;
   recipientUserId: string;
   actorUserId?: string;
   type: string;

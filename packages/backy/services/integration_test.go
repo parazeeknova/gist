@@ -902,3 +902,231 @@ func TestGroupService_CrossWorkspaceIsolation(t *testing.T) {
 		t.Fatalf("expected ErrGroupPermissionDenied, got %v", err)
 	}
 }
+
+// ============================================================================
+// Bootstrap tests
+// ============================================================================
+
+func TestAuthService_Bootstrap_CreatesUserWorkspaceGroupAndSpace(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	authSvc := NewAuthService()
+	authSvc.SetWorkspaceService(db.workspaceSvc)
+
+	// Bootstrap — emulates the first-user registration flow.
+	params := &BootstrapParams{
+		Name:          "First Owner",
+		WorkspaceName: "My Workspace",
+		SpaceName:     "notes",
+	}
+	userResp, pair, err := authSvc.Login(ctx, "owner", "securepass", "owner@example.com", params, "test-device")
+	if err != nil {
+		t.Fatalf("bootstrap login: %v", err)
+	}
+	if userResp == nil {
+		t.Fatal("expected user response")
+	}
+	if userResp.Role != "owner" {
+		t.Fatalf("expected owner role, got %s", userResp.Role)
+	}
+	if pair == nil {
+		t.Fatal("expected token pair")
+	}
+
+	userID := userResp.ID.String()
+
+	// Verify user was created.
+	dbUser, err := authSvc.UserRepo().FindUserByUsernameOrEmail(ctx, "owner")
+	if err != nil {
+		t.Fatalf("find user: %v", err)
+	}
+	if dbUser == nil || dbUser.ID != userID {
+		t.Fatal("user not found in database")
+	}
+
+	// Verify workspace exists and user is owner.
+	workspaces, err := db.workspaceSvc.ListWorkspaces(ctx, userID)
+	if err != nil {
+		t.Fatalf("list workspaces: %v", err)
+	}
+	if len(workspaces) != 1 {
+		t.Fatalf("expected 1 workspace, got %d", len(workspaces))
+	}
+	w := workspaces[0]
+	role, err := db.workspaceRepo.GetMemberRole(ctx, w.ID, userID)
+	if err != nil {
+		t.Fatalf("get member role: %v", err)
+	}
+	if role != "owner" {
+		t.Fatalf("expected owner role, got %s", role)
+	}
+
+	// Verify default "Everyone" group exists.
+	groups, err := db.groupSvc.ListGroups(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("list groups: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(groups))
+	}
+	if groups[0].Name != "Everyone" || !groups[0].IsDefault {
+		t.Fatal("expected default Everyone group")
+	}
+
+	// Verify owner is in the Everyone group.
+	members, err := db.groupSvc.GetGroupMembers(ctx, groups[0].ID)
+	if err != nil {
+		t.Fatalf("get group members: %v", err)
+	}
+	found := false
+	for _, m := range members {
+		if m.UserID == userID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("owner not in Everyone group")
+	}
+
+	// Verify default space exists.
+	spaces, err := db.spaceRepo.ListAll(ctx, w.ID)
+	if err != nil {
+		t.Fatalf("list spaces: %v", err)
+	}
+	if len(spaces) != 1 {
+		t.Fatalf("expected 1 space, got %d", len(spaces))
+	}
+	space := spaces[0]
+	if space.Name != "notes" {
+		t.Fatalf("expected 'notes' space, got %s", space.Name)
+	}
+
+	// Verify user has access to default space (either directly or through group).
+	isMember, err := db.spaceRepo.IsMember(ctx, space.ID, userID)
+	if err != nil {
+		t.Fatalf("check space membership: %v", err)
+	}
+	if !isMember {
+		t.Fatal("bootstrap user should have access to default space")
+	}
+	spaceRole, err := db.spaceRepo.GetMemberRole(ctx, space.ID, userID)
+	if err != nil {
+		t.Logf("user may only have access through group: %v", err)
+	} else {
+		if spaceRole != "admin" && spaceRole != "writer" {
+			t.Fatalf("expected admin or writer role, got %s", spaceRole)
+		}
+	}
+
+	// Verify second bootstrap attempt returns nil user (login with wrong creds)
+	// when system is already bootstrapped.
+	ur, _, err := authSvc.Login(ctx, "hacker", "hackpass", "hacker@evil.com", &BootstrapParams{
+		Name:          "Hacker",
+		WorkspaceName: "Evil Corp",
+		SpaceName:     "evil",
+	}, "test-device")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if ur != nil {
+		t.Fatal("expected nil user response for non-existent user in bootstrapped system")
+	}
+}
+
+func TestAuthService_Bootstrap_WithoutWorkspaceName_CreatesDefault(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	authSvc := NewAuthService()
+	authSvc.SetWorkspaceService(db.workspaceSvc)
+
+	// Bootstrap without workspace params — should still create a default workspace.
+	userResp, _, err := authSvc.Login(ctx, "owner2", "securepass", "owner2@example.com", nil, "test-device")
+	if err != nil {
+		t.Fatalf("bootstrap login without params: %v", err)
+	}
+	userID := userResp.ID.String()
+
+	workspaces, err := db.workspaceSvc.ListWorkspaces(ctx, userID)
+	if err != nil {
+		t.Fatalf("list workspaces: %v", err)
+	}
+	if len(workspaces) != 1 {
+		t.Fatalf("expected 1 workspace, got %d", len(workspaces))
+	}
+	if workspaces[0].Name != "My Workspace" {
+		t.Fatalf("expected default workspace name, got %s", workspaces[0].Name)
+	}
+
+	// Verify group still exists.
+	groups, err := db.groupSvc.ListGroups(ctx, workspaces[0].ID)
+	if err != nil {
+		t.Fatalf("list groups: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(groups))
+	}
+}
+
+func TestAuthService_LoginAfterBootstrap_NormalFlow(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	authSvc := NewAuthService()
+	authSvc.SetWorkspaceService(db.workspaceSvc)
+
+	// Bootstrap first.
+	userResp, _, err := authSvc.Login(ctx, "owner", "securepass", "owner@example.com", &BootstrapParams{
+		Name:          "Owner",
+		WorkspaceName: "WS",
+		SpaceName:     "notes",
+	}, "test-device")
+	if err != nil {
+		t.Fatalf("bootstrap: %v", err)
+	}
+	userID := userResp.ID.String()
+
+	// Normal login with correct credentials.
+	userResp2, pair2, err := authSvc.Login(ctx, "owner", "securepass", "", nil, "test-device")
+	if err != nil {
+		t.Fatalf("normal login: %v", err)
+	}
+	if userResp2.ID.String() != userID {
+		t.Fatal("wrong user")
+	}
+	if pair2 == nil || pair2.AccessToken == "" {
+		t.Fatal("missing tokens")
+	}
+
+	// Wrong password.
+	userResp3, _, err := authSvc.Login(ctx, "owner", "wrongpass", "", nil, "test-device")
+	if err != nil {
+		t.Fatalf("login with wrong password should not error: %v", err)
+	}
+	if userResp3 != nil {
+		t.Fatal("expected nil user for wrong password")
+	}
+
+	// Wrong username.
+	userResp4, _, err := authSvc.Login(ctx, "nonexistent", "securepass", "", nil, "test-device")
+	if err != nil {
+		t.Fatalf("login with wrong username should not error: %v", err)
+	}
+	if userResp4 != nil {
+		t.Fatal("expected nil user for wrong username")
+	}
+
+	// Inactive user.
+	dbUser, _ := authSvc.UserRepo().FindUserByUsernameOrEmail(ctx, "owner")
+	if dbUser != nil {
+		dbUser.IsActive = false
+		pool := database.GetPool()
+		_, _ = pool.Exec(ctx, "UPDATE users SET is_active = false WHERE id = $1", dbUser.ID)
+	}
+	_, _, err = authSvc.Login(ctx, "owner", "securepass", "", nil, "test-device")
+	if !errors.Is(err, ErrUserInactive) {
+		t.Fatalf("expected ErrUserInactive, got %v", err)
+	}
+}

@@ -52,7 +52,10 @@ import { Route as ApiConsoleProfilePasswordRouteImport } from './routes/api/cons
 import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
 import { Route as ApiConsoleNotificationsUnreadCountRouteImport } from './routes/api/console/notifications.unread-count'
+import { Route as ApiConsoleNotificationsStreamRouteImport } from './routes/api/console/notifications.stream'
 import { Route as ApiConsoleNotificationsReadAllRouteImport } from './routes/api/console/notifications.read-all'
+import { Route as ApiConsoleNotificationsDismissAllRouteImport } from './routes/api/console/notifications.dismiss-all'
+import { Route as ApiConsoleNotificationsIdRouteImport } from './routes/api/console/notifications.$id'
 import { Route as ApiConsoleMfaStatusRouteImport } from './routes/api/console/mfa/status'
 import { Route as ApiConsoleMfaSetupRouteImport } from './routes/api/console/mfa/setup'
 import { Route as ApiConsoleMfaEnableRouteImport } from './routes/api/console/mfa/enable'
@@ -301,10 +304,28 @@ const ApiConsoleNotificationsUnreadCountRoute =
     path: '/unread-count',
     getParentRoute: () => ApiConsoleNotificationsRoute,
   } as any)
+const ApiConsoleNotificationsStreamRoute =
+  ApiConsoleNotificationsStreamRouteImport.update({
+    id: '/stream',
+    path: '/stream',
+    getParentRoute: () => ApiConsoleNotificationsRoute,
+  } as any)
 const ApiConsoleNotificationsReadAllRoute =
   ApiConsoleNotificationsReadAllRouteImport.update({
     id: '/read-all',
     path: '/read-all',
+    getParentRoute: () => ApiConsoleNotificationsRoute,
+  } as any)
+const ApiConsoleNotificationsDismissAllRoute =
+  ApiConsoleNotificationsDismissAllRouteImport.update({
+    id: '/dismiss-all',
+    path: '/dismiss-all',
+    getParentRoute: () => ApiConsoleNotificationsRoute,
+  } as any)
+const ApiConsoleNotificationsIdRoute =
+  ApiConsoleNotificationsIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
     getParentRoute: () => ApiConsoleNotificationsRoute,
   } as any)
 const ApiConsoleMfaStatusRoute = ApiConsoleMfaStatusRouteImport.update({
@@ -413,9 +434,9 @@ const ApiConsolePagesIdChildrenRoute =
   } as any)
 const ApiConsoleNotificationsIdReadRoute =
   ApiConsoleNotificationsIdReadRouteImport.update({
-    id: '/$id/read',
-    path: '/$id/read',
-    getParentRoute: () => ApiConsoleNotificationsRoute,
+    id: '/read',
+    path: '/read',
+    getParentRoute: () => ApiConsoleNotificationsIdRoute,
   } as any)
 const ApiConsoleGroupsIdMembersRoute =
   ApiConsoleGroupsIdMembersRouteImport.update({
@@ -501,7 +522,10 @@ export interface FileRoutesByFullPath {
   '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
   '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
   '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
+  '/api/console/notifications/$id': typeof ApiConsoleNotificationsIdRouteWithChildren
+  '/api/console/notifications/dismiss-all': typeof ApiConsoleNotificationsDismissAllRoute
   '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
+  '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
@@ -573,7 +597,10 @@ export interface FileRoutesByTo {
   '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
   '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
   '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
+  '/api/console/notifications/$id': typeof ApiConsoleNotificationsIdRouteWithChildren
+  '/api/console/notifications/dismiss-all': typeof ApiConsoleNotificationsDismissAllRoute
   '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
+  '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
@@ -647,7 +674,10 @@ export interface FileRoutesById {
   '/api/console/mfa/enable': typeof ApiConsoleMfaEnableRoute
   '/api/console/mfa/setup': typeof ApiConsoleMfaSetupRoute
   '/api/console/mfa/status': typeof ApiConsoleMfaStatusRoute
+  '/api/console/notifications/$id': typeof ApiConsoleNotificationsIdRouteWithChildren
+  '/api/console/notifications/dismiss-all': typeof ApiConsoleNotificationsDismissAllRoute
   '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
+  '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
@@ -722,7 +752,10 @@ export interface FileRouteTypes {
     | '/api/console/mfa/enable'
     | '/api/console/mfa/setup'
     | '/api/console/mfa/status'
+    | '/api/console/notifications/$id'
+    | '/api/console/notifications/dismiss-all'
     | '/api/console/notifications/read-all'
+    | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
@@ -794,7 +827,10 @@ export interface FileRouteTypes {
     | '/api/console/mfa/enable'
     | '/api/console/mfa/setup'
     | '/api/console/mfa/status'
+    | '/api/console/notifications/$id'
+    | '/api/console/notifications/dismiss-all'
     | '/api/console/notifications/read-all'
+    | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
@@ -867,7 +903,10 @@ export interface FileRouteTypes {
     | '/api/console/mfa/enable'
     | '/api/console/mfa/setup'
     | '/api/console/mfa/status'
+    | '/api/console/notifications/$id'
+    | '/api/console/notifications/dismiss-all'
     | '/api/console/notifications/read-all'
+    | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/tree'
@@ -1240,11 +1279,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleNotificationsUnreadCountRouteImport
       parentRoute: typeof ApiConsoleNotificationsRoute
     }
+    '/api/console/notifications/stream': {
+      id: '/api/console/notifications/stream'
+      path: '/stream'
+      fullPath: '/api/console/notifications/stream'
+      preLoaderRoute: typeof ApiConsoleNotificationsStreamRouteImport
+      parentRoute: typeof ApiConsoleNotificationsRoute
+    }
     '/api/console/notifications/read-all': {
       id: '/api/console/notifications/read-all'
       path: '/read-all'
       fullPath: '/api/console/notifications/read-all'
       preLoaderRoute: typeof ApiConsoleNotificationsReadAllRouteImport
+      parentRoute: typeof ApiConsoleNotificationsRoute
+    }
+    '/api/console/notifications/dismiss-all': {
+      id: '/api/console/notifications/dismiss-all'
+      path: '/dismiss-all'
+      fullPath: '/api/console/notifications/dismiss-all'
+      preLoaderRoute: typeof ApiConsoleNotificationsDismissAllRouteImport
+      parentRoute: typeof ApiConsoleNotificationsRoute
+    }
+    '/api/console/notifications/$id': {
+      id: '/api/console/notifications/$id'
+      path: '/$id'
+      fullPath: '/api/console/notifications/$id'
+      preLoaderRoute: typeof ApiConsoleNotificationsIdRouteImport
       parentRoute: typeof ApiConsoleNotificationsRoute
     }
     '/api/console/mfa/status': {
@@ -1382,10 +1442,10 @@ declare module '@tanstack/react-router' {
     }
     '/api/console/notifications/$id/read': {
       id: '/api/console/notifications/$id/read'
-      path: '/$id/read'
+      path: '/read'
       fullPath: '/api/console/notifications/$id/read'
       preLoaderRoute: typeof ApiConsoleNotificationsIdReadRouteImport
-      parentRoute: typeof ApiConsoleNotificationsRoute
+      parentRoute: typeof ApiConsoleNotificationsIdRoute
     }
     '/api/console/groups/$id/members': {
       id: '/api/console/groups/$id/members'
@@ -1485,18 +1545,37 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
   ApiBlogsRouteChildren,
 )
 
-interface ApiConsoleNotificationsRouteChildren {
-  ApiConsoleNotificationsReadAllRoute: typeof ApiConsoleNotificationsReadAllRoute
-  ApiConsoleNotificationsUnreadCountRoute: typeof ApiConsoleNotificationsUnreadCountRoute
+interface ApiConsoleNotificationsIdRouteChildren {
   ApiConsoleNotificationsIdReadRoute: typeof ApiConsoleNotificationsIdReadRoute
+}
+
+const ApiConsoleNotificationsIdRouteChildren: ApiConsoleNotificationsIdRouteChildren =
+  {
+    ApiConsoleNotificationsIdReadRoute: ApiConsoleNotificationsIdReadRoute,
+  }
+
+const ApiConsoleNotificationsIdRouteWithChildren =
+  ApiConsoleNotificationsIdRoute._addFileChildren(
+    ApiConsoleNotificationsIdRouteChildren,
+  )
+
+interface ApiConsoleNotificationsRouteChildren {
+  ApiConsoleNotificationsIdRoute: typeof ApiConsoleNotificationsIdRouteWithChildren
+  ApiConsoleNotificationsDismissAllRoute: typeof ApiConsoleNotificationsDismissAllRoute
+  ApiConsoleNotificationsReadAllRoute: typeof ApiConsoleNotificationsReadAllRoute
+  ApiConsoleNotificationsStreamRoute: typeof ApiConsoleNotificationsStreamRoute
+  ApiConsoleNotificationsUnreadCountRoute: typeof ApiConsoleNotificationsUnreadCountRoute
 }
 
 const ApiConsoleNotificationsRouteChildren: ApiConsoleNotificationsRouteChildren =
   {
+    ApiConsoleNotificationsIdRoute: ApiConsoleNotificationsIdRouteWithChildren,
+    ApiConsoleNotificationsDismissAllRoute:
+      ApiConsoleNotificationsDismissAllRoute,
     ApiConsoleNotificationsReadAllRoute: ApiConsoleNotificationsReadAllRoute,
+    ApiConsoleNotificationsStreamRoute: ApiConsoleNotificationsStreamRoute,
     ApiConsoleNotificationsUnreadCountRoute:
       ApiConsoleNotificationsUnreadCountRoute,
-    ApiConsoleNotificationsIdReadRoute: ApiConsoleNotificationsIdReadRoute,
   }
 
 const ApiConsoleNotificationsRouteWithChildren =

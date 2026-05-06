@@ -72,3 +72,94 @@ WHERE
 CREATE UNIQUE INDEX IF NOT EXISTS idx_space_members_group_unique ON space_members (space_id, group_id)
 WHERE
     group_id IS NOT NULL;
+
+-- ============================================================================
+-- Backfill: create default "Everyone" group for existing workspaces
+-- ============================================================================
+DO $$
+DECLARE
+    ws RECORD;
+    owner_user_id UUID;
+    new_group_id UUID;
+    default_space_uuid UUID;
+    workspace_has_default_group BOOLEAN;
+BEGIN
+    FOR ws IN
+        SELECT w.id, w.default_space_id
+        FROM workspaces w
+        WHERE w.deleted_at IS NULL
+    LOOP
+        SELECT EXISTS (
+            SELECT 1 FROM groups g
+            WHERE g.workspace_id = ws.id
+              AND g.is_default = true
+              AND g.deleted_at IS NULL
+        ) INTO workspace_has_default_group;
+
+        IF workspace_has_default_group THEN
+            CONTINUE;
+        END IF;
+
+        SELECT wm.user_id INTO owner_user_id
+        FROM workspace_members wm
+        WHERE wm.workspace_id = ws.id
+          AND wm.role = 'owner'
+        LIMIT 1;
+
+        IF owner_user_id IS NULL THEN
+            SELECT wm.user_id INTO owner_user_id
+            FROM workspace_members wm
+            WHERE wm.workspace_id = ws.id
+            LIMIT 1;
+
+            IF owner_user_id IS NULL THEN
+                CONTINUE;
+            END IF;
+        END IF;
+
+        INSERT INTO groups (
+            id, workspace_id, name, description, is_default, creator_id, created_at, updated_at
+        ) VALUES (
+            gen_random_uuid(),
+            ws.id,
+            'Everyone',
+            'All workspace members',
+            true,
+            owner_user_id,
+            NOW(),
+            NOW()
+        )
+        RETURNING id INTO new_group_id;
+
+        IF new_group_id IS NULL THEN
+            CONTINUE;
+        END IF;
+
+        INSERT INTO group_users (group_id, user_id, added_at)
+        SELECT new_group_id, wm.user_id, NOW()
+        FROM workspace_members wm
+        WHERE wm.workspace_id = ws.id
+          AND NOT EXISTS (
+              SELECT 1 FROM group_users gu
+              WHERE gu.group_id = new_group_id AND gu.user_id = wm.user_id
+          );
+
+        default_space_uuid := ws.default_space_id;
+
+        IF default_space_uuid IS NOT NULL THEN
+            IF EXISTS (
+                SELECT 1 FROM spaces s
+                WHERE s.id = default_space_uuid AND s.deleted_at IS NULL
+            ) THEN
+                IF NOT EXISTS (
+                    SELECT 1 FROM space_members sm
+                    WHERE sm.space_id = default_space_uuid
+                      AND sm.group_id = new_group_id
+                ) THEN
+                    INSERT INTO space_members (space_id, group_id, role, joined_at)
+                    VALUES (default_space_uuid, new_group_id, 'writer', NOW());
+                END IF;
+            END IF;
+        END IF;
+    END LOOP;
+END $$;

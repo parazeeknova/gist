@@ -301,6 +301,22 @@ export const useRemoveSpaceMember = () => {
   });
 };
 
+export const useAddSpaceMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ role, spaceId, userId }: { role: string; spaceId: string; userId: string }) =>
+      fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/members/${userId}`, {
+        body: JSON.stringify({ role }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+    },
+  });
+};
+
 export const useAddSpaceGroup = () => {
   const queryClient = useQueryClient();
   return useMutation({

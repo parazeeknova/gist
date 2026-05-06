@@ -38,6 +38,8 @@ type AuthService struct {
 	sessionRepo   *repositories.SessionRepo
 	workspaceRepo *repositories.WorkspaceRepo
 	spaceRepo     *repositories.SpaceRepo
+	groupRepo     *repositories.GroupRepo
+	wsService     *WorkspaceService
 }
 
 // NewAuthService creates a new AuthService.
@@ -47,7 +49,13 @@ func NewAuthService() *AuthService {
 		sessionRepo:   repositories.NewSessionRepo(),
 		workspaceRepo: repositories.NewWorkspaceRepo(),
 		spaceRepo:     repositories.NewSpaceRepo(),
+		groupRepo:     repositories.NewGroupRepo(),
 	}
+}
+
+// SetWorkspaceService injects the workspace service for bootstrap use.
+func (s *AuthService) SetWorkspaceService(ws *WorkspaceService) {
+	s.wsService = ws
 }
 
 // UserRepo returns the underlying user repository (for middleware use).
@@ -161,50 +169,19 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		return nil, nil, fmt.Errorf("create bootstrap user: %w", err)
 	}
 
-	// Create workspace if provided.
-	workspaceID := ""
+	// Create workspace with default group, space, and memberships atomically.
 	if params != nil && params.WorkspaceName != "" {
-		workspaceSlug := slugify(params.WorkspaceName)
-		w := models.Workspace{
-			ID:       uuid.New().String(),
-			Name:     params.WorkspaceName,
-			Slug:     workspaceSlug,
-			Icon:     "",
-			Settings: "{}",
-		}
-		if err := s.workspaceRepo.Insert(ctx, w); err != nil {
-			logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
-		} else {
-			workspaceID = w.ID
-			if err := s.workspaceRepo.AddMember(ctx, w.ID, userID, "owner"); err != nil {
-				logger.Log.Error().Err(err).Msg("bootstrap: failed to add owner to workspace")
+		if s.wsService != nil {
+			_, err := s.wsService.CreateWorkspace(ctx, params.WorkspaceName, slugify(params.WorkspaceName), "", userID)
+			if err != nil {
+				logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
 			}
 		}
-	}
-
-	// Create space if workspace was created and space name is provided.
-	if workspaceID != "" && params != nil && params.SpaceName != "" {
-		spaceSlug := slugify(params.SpaceName)
-		sp := models.Space{
-			ID:          uuid.New().String(),
-			Name:        params.SpaceName,
-			Slug:        spaceSlug,
-			Icon:        "",
-			WorkspaceID: workspaceID,
-			CreatedBy:   userID,
-			Visibility:  "private",
-			DefaultRole: models.SpaceRoleReader,
-			Settings:    "{}",
-		}
-		if err := s.spaceRepo.Insert(ctx, sp); err != nil {
-			logger.Log.Error().Err(err).Msg("bootstrap: failed to create space")
-		} else {
-			if err := s.spaceRepo.AddMember(ctx, sp.ID, userID, models.SpaceRoleAdmin); err != nil {
-				logger.Log.Error().Err(err).Msg("bootstrap: failed to add admin to space")
-			}
-			if err := s.workspaceRepo.SetDefaultSpaceID(ctx, workspaceID, sp.ID); err != nil {
-				logger.Log.Error().Err(err).Msg("bootstrap: failed to set default space id")
-			}
+	} else if s.wsService != nil {
+		// No workspace name provided — create a default workspace
+		_, err := s.wsService.CreateWorkspace(ctx, "My Workspace", "my-workspace", "", userID)
+		if err != nil {
+			logger.Log.Error().Err(err).Msg("bootstrap: failed to create default workspace")
 		}
 	}
 
@@ -382,6 +359,11 @@ func (s *AuthService) GetMe(ctx context.Context, userID string) (*auth.UserRespo
 		IsActive:  dbUser.IsActive,
 		CreatedAt: createdAt,
 	}, nil
+}
+
+// GetUserByID is a public convenience alias for GetMe.
+func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*auth.UserResponse, error) {
+	return s.GetMe(ctx, userID)
 }
 
 // ErrInvalidPassword is returned when the current password is incorrect.
