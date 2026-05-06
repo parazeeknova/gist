@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useDebouncedState } from "@tanstack/react-pacer";
 import { useEffect, useRef, useState } from "react";
 import type { Stats } from "#/types";
@@ -11,7 +11,6 @@ import { useConsoleContext } from "./console-context";
 import { NotificationBell } from "./notification-bell";
 import {
   GearSixIcon,
-  ListIcon,
   MagnifyingGlassIcon,
   SidebarIcon,
   SidebarSimpleIcon,
@@ -33,13 +32,6 @@ const getInitials = (text: string) =>
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-const NAV_ROUTES = [
-  { href: "/home", label: "home" },
-  { href: "/#projects", label: "public" },
-  { href: "/#blogs", label: "blogs" },
-  { href: "/#about", label: "about" },
-] as const;
 
 interface ProfileDropdownProps {
   isDarkMode: boolean;
@@ -252,8 +244,6 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   const selectedWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
   const workspaceName = selectedWorkspace?.name ?? user?.username ?? "...";
   const workspaceInitials = getInitials(workspaceName);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useDebouncedState("", { wait: 150 });
 
   const { data: stats } = useQuery<Stats>({
@@ -268,51 +258,13 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
     staleTime: 5 * 60 * 1000,
   });
 
-  useEffect(() => {
-    if (!mobileMenuOpen) {
-      return;
-    }
-    const handleClick = (e: MouseEvent) => {
-      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target as Node)) {
-        setMobileMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
-    let el: HTMLDivElement | null = null;
-    if (mobileMenuOpen) {
-      el = mobileMenuRef.current;
-    }
-    if (!el) {
-      return;
-    }
-    const inner = el.querySelector(":scope > div");
-    if (inner) {
-      gsap.fromTo(
-        inner,
-        { opacity: 0, scale: 0.98, y: -4 },
-        { duration: 0.15, ease: "power2.out", opacity: 1, scale: 1, y: 0 },
-      );
-    }
-  }, [mobileMenuOpen]);
-
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
-  const currentPath = useRouterState({ select: (s) => s.location.pathname });
-
-  const navLinkClass = (href: string) =>
-    `lowercase ${currentPath === href ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`;
-
-  const mobileLinkClass = (href: string) =>
-    `block px-3 py-1.5 text-left text-[12px] lowercase ${currentPath === href ? t("text-text-dark border-b-transparent", "text-text-light border-b-transparent") : ""} ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`;
 
   return (
     <nav
       className={`sticky top-0 z-50 flex h-10 items-center gap-3 border-b px-3 text-[13px] transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")} ${isDarkMode ? "bg-text-light" : "bg-[#e5e5e5]"}`}
     >
-      {/* Left: sidebar toggle + brand + desktop nav links */}
+      {/* Left: sidebar toggle + brand */}
       <div className="flex items-center gap-2 md:gap-3">
         <button
           className={`flex items-center lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
@@ -328,23 +280,6 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           <img alt="verso" className="h-3.5 w-3.5" src="/verso.svg" />
           verso
         </a>
-        {NAV_ROUTES.map((route, i) => [
-          i > 0 ? (
-            <span
-              className={`hidden md:inline ${t("text-text-dark/20", "text-text-light/20")}`}
-              key={`sep-${route.href}`}
-            >
-              /
-            </span>
-          ) : null,
-          <a
-            className={`hidden md:inline ${navLinkClass(route.href)}`}
-            href={route.href}
-            key={route.href}
-          >
-            {route.label}
-          </a>,
-        ])}
       </div>
 
       {/* Middle: search */}
@@ -367,7 +302,7 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         />
       </div>
 
-      {/* Right: notification + profile dropdown + mobile hamburger */}
+      {/* Right: notification + profile dropdown */}
       <div className="flex items-center gap-3">
         {/* Theme toggle — desktop only */}
         <button
@@ -391,36 +326,6 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           workspaceInitials={workspaceInitials}
           workspaceName={workspaceName}
         />
-
-        {/* Mobile hamburger menu */}
-        <div className="relative md:hidden" ref={mobileMenuRef}>
-          <button
-            className={`flex items-center ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setMobileMenuOpen((o) => !o)}
-            type="button"
-          >
-            <ListIcon size={14} />
-          </button>
-
-          {mobileMenuOpen && (
-            <div
-              className={`absolute right-0 top-full z-50 mt-1 w-28 border shadow-xl ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
-            >
-              <div className="py-1">
-                {NAV_ROUTES.map((route) => (
-                  <a
-                    className={mobileLinkClass(route.href)}
-                    href={route.href}
-                    key={route.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {route.label}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </nav>
   );

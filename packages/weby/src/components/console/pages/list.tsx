@@ -218,28 +218,6 @@ export const PageList = ({
     <div className="flex-1 flex flex-col min-h-0">
       {selectedSpaceId ? (
         <>
-          <div className="mb-2 flex items-center justify-between">
-            <span className={`text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}>
-              {treeItems?.length ?? 0} pages
-            </span>
-            <button
-              className={`flex items-center gap-1 text-[11px] rounded px-1.5 py-0.5 transition-colors ${t(
-                "text-text-dark/50 hover:text-text-dark hover:bg-white/10",
-                "text-text-light/50 hover:text-text-light hover:bg-black/10",
-              )}`}
-              onClick={() => {
-                setCreateParentId(undefined);
-                setNewSlugId("");
-                setNewTitle("");
-                setShowCreateForm(true);
-              }}
-              type="button"
-            >
-              <PlusIcon size={10} />
-              new
-            </button>
-          </div>
-
           {deleteQueue.state.size > 0 && (
             <p className={`text-[10px] mb-1 ${t("text-text-dark/40", "text-text-light/40")}`}>
               {deleteQueue.state.size} delete{deleteQueue.state.size === 1 ? "" : "s"} queued

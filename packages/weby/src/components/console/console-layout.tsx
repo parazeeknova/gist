@@ -1,4 +1,19 @@
-import { DatabaseIcon, GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
+import {
+  ChatCenteredTextIcon,
+  ClockCounterClockwiseIcon,
+  CommandIcon,
+  ControlIcon,
+  DatabaseIcon,
+  FileTextIcon,
+  GearSixIcon,
+  GlobeSimpleIcon,
+  HouseSimpleIcon,
+  PlusIcon,
+  QuestionIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { detectPlatform } from "@tanstack/hotkeys";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useThrottledCallback } from "@tanstack/react-pacer";
 import { gsap } from "gsap";
@@ -9,10 +24,19 @@ import { useWorkspaces } from "../../hooks/use-console-mutations";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
-import { PageList } from "./pages/list";
+import { FileTreeSidebar } from "./file-tree-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
 
 const SIDEBAR_WIDTH = 280;
+
+const platform = detectPlatform();
+const ModIcon = platform === "mac" ? CommandIcon : ControlIcon;
+
+const NAV_ROUTES = [
+  { href: "/home", icon: HouseSimpleIcon, label: "home", shortcut: "1" },
+  { href: "/projects", icon: GlobeSimpleIcon, label: "public", shortcut: "2" },
+  { href: "/blogs", icon: ChatCenteredTextIcon, label: "blogs", shortcut: "3" },
+] as const;
 
 const getStoredWorkspaceId = (): string => {
   if (typeof window === "undefined") {
@@ -52,7 +76,6 @@ export const ConsoleLayout = () => {
     }
     return window.innerWidth >= 768;
   });
-  const [activeTab, setActiveTab] = useState<"spaces" | "favorites" | "profile">("spaces");
   const sidebarRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
   const { data: user } = useAuth();
@@ -109,6 +132,16 @@ export const ConsoleLayout = () => {
       }
     }
   }, [isSpecialRoute]);
+
+  useHotkey("Mod+1", () => {
+    window.location.href = "/home";
+  });
+  useHotkey("Mod+2", () => {
+    window.location.href = "/#projects";
+  });
+  useHotkey("Mod+3", () => {
+    window.location.href = "/#blogs";
+  });
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
@@ -202,42 +235,81 @@ export const ConsoleLayout = () => {
     );
   } else {
     sidebarContent = (
-      <div className="min-h-0 w-62 flex-1 flex flex-col overflow-y-auto">
-        <div
-          className={`mb-3 flex items-center justify-center gap-2 border-b pb-2 text-[11px] lowercase ${t("border-border-dark", "border-border-light")}`}
-        >
+      <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">
+        <nav className="mb-3 space-y-0.5">
+          {NAV_ROUTES.map((route) => (
+            <a
+              className={`flex items-center gap-2 px-1 py-1 text-[11px] lowercase ${
+                routerState.location.pathname === route.href
+                  ? t("bg-white/10 text-text-dark", "bg-black/10 text-text-light")
+                  : t(
+                      "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80 rounded",
+                      "text-text-light/50 hover:bg-black/3 hover:text-text-light/80 rounded",
+                    )
+              }`}
+              href={route.href}
+              key={route.href}
+            >
+              <route.icon size={12} />
+              <span className="flex-1">{route.label}</span>
+              <kbd
+                className={`ml-auto text-[9px] font-mono px-1 py-0.5 border ${t(
+                  "border-border-dark text-text-dark/25 bg-white/3",
+                  "border-border-light text-text-light/25 bg-black/3",
+                )}`}
+              >
+                <ModIcon className="inline-block align-middle" size={12} />{" "}
+                <span className="text-md font-bold">{route.shortcut}</span>
+              </kbd>
+            </a>
+          ))}
+        </nav>
+        <nav className="mb-4 space-y-0.5">
           <button
-            className={`${activeTab === "spaces" ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setActiveTab("spaces")}
+            className={`flex w-full items-center gap-2 px-1 py-1 text-[11px] lowercase rounded ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
             type="button"
           >
-            spaces
+            <PlusIcon size={12} />
+            new note
           </button>
-          <span className={t("text-text-dark/20", "text-text-light/20")}>|</span>
           <button
-            className={`${activeTab === "favorites" ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setActiveTab("favorites")}
+            className={`flex w-full items-center gap-2 px-1 py-1 text-[11px] lowercase rounded ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
             type="button"
           >
-            favorites
+            <ClockCounterClockwiseIcon size={12} />
+            recents
+            <span
+              className={`ml-auto text-[9px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
+            >
+              0
+            </span>
           </button>
-          <span className={t("text-text-dark/20", "text-text-light/20")}>|</span>
           <button
-            className={`${activeTab === "profile" ? t("text-text-dark border-b", "text-text-light border-b") : ""} ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
-            onClick={() => setActiveTab("profile")}
+            className={`flex w-full items-center gap-2 px-1 py-1 text-[11px] lowercase rounded ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
             type="button"
           >
-            profile
+            <FileTextIcon size={12} />
+            drafts
+            <span
+              className={`ml-auto text-[9px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
+            >
+              0
+            </span>
           </button>
-        </div>
-        <PageList
-          onSelectPage={(id) => setSelectedPageId(id)}
-          onSelectSpace={setSelectedSpaceId}
-          onSelectWorkspace={setSelectedWorkspaceId}
-          selectedPageId={selectedPageId}
-          selectedSpaceId={selectedSpaceId}
-          selectedWorkspaceId={selectedWorkspaceId}
-        />
+          <button
+            className={`flex w-full items-center gap-2 px-1 py-1 text-[11px] lowercase rounded ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+            type="button"
+          >
+            <TrashIcon size={12} />
+            deleted
+            <span
+              className={`ml-auto text-[9px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
+            >
+              0
+            </span>
+          </button>
+        </nav>
+        <FileTreeSidebar />
       </div>
     );
   }
@@ -268,15 +340,8 @@ export const ConsoleLayout = () => {
             </div>
 
             <div
-              className={`mt-2 w-62 space-y-2 border-t pt-2 ${t("border-border-dark", "border-border-light")}`}
+              className={`mt-2 w-70 space-y-2 border-t pt-2 px-4 ${t("border-border-dark", "border-border-light")}`}
             >
-              <button
-                className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-                type="button"
-              >
-                <QuestionIcon size={12} />
-                help
-              </button>
               <button
                 className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${isSettingsRoute ? t("text-text-dark", "text-text-light") : t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
                 onClick={() => navigate({ to: "/settings/account/profile" })}
@@ -286,12 +351,19 @@ export const ConsoleLayout = () => {
                 <span className={isSettingsRoute ? "border-b" : ""}>settings</span>
               </button>
               <button
+                className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+                type="button"
+              >
+                <QuestionIcon size={12} />
+                help & feedback
+              </button>
+              <button
                 className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${isDebugRoute ? t("text-text-dark", "text-text-light") : t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
                 onClick={() => navigate({ search: { table: undefined }, to: "/home/debug" })}
                 type="button"
               >
                 <DatabaseIcon size={12} />
-                <span className={isDebugRoute ? "border-b" : ""}>debug database</span>
+                <span className={isDebugRoute ? "border-b" : ""}>debug & database</span>
               </button>
               <p className={`px-1 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
                 powered by{" "}
