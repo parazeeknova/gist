@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CaretDownIcon } from "@phosphor-icons/react";
 import { useTheme } from "#/hooks/use-theme";
 import type { ThemePreference } from "#/hooks/use-theme";
 import { usePushSubscription } from "#/hooks/use-push-subscription";
@@ -33,8 +34,7 @@ const Dropdown = <T extends string>({
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const closeMenu = useCallback(() => setOpen(false), []);
@@ -44,7 +44,7 @@ const Dropdown = <T extends string>({
     }
     const handlePointerDown = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (btnRef.current?.contains(target) || menuRef.current?.contains(target)) {
+      if (wrapperRef.current?.contains(target) || menuRef.current?.contains(target)) {
         return;
       }
       closeMenu();
@@ -63,35 +63,26 @@ const Dropdown = <T extends string>({
     if (disabled) {
       return;
     }
-    const nextOpen = !open;
-    if (nextOpen && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setPos({ left: rect.left, top: rect.bottom + 4 });
-    }
-    setOpen(nextOpen);
+    setOpen((prev) => !prev);
   };
 
   const selectedLabel = options.find((o) => o.value === value)?.label ?? value;
 
   return (
-    <>
+    <div ref={wrapperRef} className="relative inline-flex">
       <button
-        ref={btnRef}
         className={`text-[11px] lowercase inline-flex items-center gap-1 ${disabled ? "cursor-not-allowed opacity-30" : "cursor-pointer"} ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
         disabled={disabled}
         onClick={handleToggle}
         type="button"
       >
         {selectedLabel}
-        <span className={`text-[10px] transition-transform ${open ? "rotate-180" : ""}`}>
-          &#9662;
-        </span>
+        <CaretDownIcon className={`size-2.5 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div
           ref={menuRef}
-          className={`fixed border text-[11px] lowercase overflow-hidden z-9999 shadow-lg w-40 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
-          style={{ left: pos.left, top: pos.top }}
+          className={`absolute right-0 top-full mt-1 border text-[11px] lowercase overflow-hidden z-9999 shadow-lg w-40 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
         >
           {options.map((opt) => (
             <button
@@ -112,7 +103,7 @@ const Dropdown = <T extends string>({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 };
 

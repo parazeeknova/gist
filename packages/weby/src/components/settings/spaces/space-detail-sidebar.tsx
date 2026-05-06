@@ -1,5 +1,12 @@
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MagnifyingGlassIcon, TrashIcon, UsersThreeIcon, XIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+  UsersThreeIcon,
+  XIcon,
+} from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "#/hooks/use-theme";
 import { useAuth } from "#/hooks/use-auth";
@@ -71,7 +78,177 @@ interface MemberListItemProps {
   onRemoveGroup: (groupId: string) => void;
   onUpdateMemberRole: (userId: string, role: string) => void;
   onRemoveMember: (userId: string) => void;
+  groupRoleStates: Record<string, string>;
+  memberRoleStates: Record<string, string>;
+  onGroupRoleStateChange: (groupId: string, role: string) => void;
+  onMemberRoleStateChange: (userId: string, role: string) => void;
+  overriddenBy?: { directRole: string; directLabel: string } | null;
 }
+
+// Shared role options with descriptions
+const roleOptions = [
+  { desc: "manage members, settings, and all content", label: "full access", value: "admin" },
+  {
+    desc: "create and edit content, but cannot change settings",
+    label: "can edit",
+    value: "writer",
+  },
+  { desc: "read-only access to content", label: "can view", value: "reader" },
+];
+
+const GroupMemberRow = ({
+  member,
+  isDarkMode,
+  updatingMember,
+  groupRoleStates,
+  onGroupRoleStateChange,
+  onUpdateGroupRole,
+  onRemoveGroup,
+  overriddenBy,
+}: {
+  member: SpaceMemberMixed;
+  isDarkMode: boolean;
+  updatingMember: string | null;
+  groupRoleStates: Record<string, string>;
+  onGroupRoleStateChange: (groupId: string, role: string) => void;
+  onUpdateGroupRole: (groupId: string, role: string) => void;
+  onRemoveGroup: (groupId: string) => void;
+  overriddenBy?: { directRole: string; directLabel: string } | null;
+}) => {
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const currentRole = groupRoleStates[member.groupId ?? ""] ?? member.role;
+
+  const currentLabel = memberRoleLabel(currentRole);
+
+  const isOverridden = overriddenBy && overriddenBy.directRole !== currentRole;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    };
+    const handleScrollOrResize = () => setOpen(false);
+    document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [open]);
+
+  const handleToggle = () => {
+    const nextOpen = !open;
+    if (nextOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ left: rect.right - 224, top: rect.bottom + 4 });
+    }
+    setOpen(nextOpen);
+  };
+
+  const isUpdating = updatingMember === member.groupId;
+
+  const menu = (
+    <div
+      ref={menuRef}
+      className={`absolute border text-[11px] lowercase overflow-hidden z-9999 shadow-lg w-56 ${t("border-border-dark bg-bg-dark", "border-border-light bg-bg-light")}`}
+      style={{ left: pos.left, top: pos.top }}
+    >
+      {roleOptions.map((r) => (
+        <button
+          key={r.value}
+          className={`block w-full px-3 py-2 text-left cursor-pointer ${r.value === currentRole ? t("bg-white/5 text-text-dark/90", "bg-black/5 text-text-light/90") : t("hover:bg-white/5 hover:text-text-dark/80", "hover:bg-black/5 hover:text-text-light/80")}`}
+          onClick={() => {
+            onGroupRoleStateChange(member.groupId ?? "", r.value);
+            onUpdateGroupRole(member.groupId ?? "", r.value);
+            setOpen(false);
+          }}
+          type="button"
+        >
+          <span
+            className={`block ${r.value === currentRole ? t("text-text-dark", "text-text-light") : t("text-text-dark/70", "text-text-light/70")}`}
+          >
+            {r.label}
+          </span>
+          <span
+            className={`block text-[10px] mt-0.5 ${t("text-text-dark/30", "text-text-light/30")}`}
+          >
+            {r.desc}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isOverridden ? "bg-white/15" : "bg-white/10"}`}
+      >
+        <UsersThreeIcon
+          className={
+            isOverridden
+              ? t("text-text-dark/30", "text-text-light/30")
+              : t("text-text-dark/60", "text-text-light/60")
+          }
+          size={10}
+        />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p
+          className={`text-[11px] truncate ${isOverridden ? t("text-text-dark/20", "text-text-light/20") : ""}`}
+        >
+          {member.name}
+        </p>
+        {member.description && (
+          <p
+            className={`text-[10px] truncate ${isOverridden ? t("text-text-dark/10", "text-text-light/10") : t("text-text-dark/30", "text-text-light/30")}`}
+          >
+            {member.description}
+          </p>
+        )}
+      </div>
+      <div className="group relative inline-flex">
+        <button
+          ref={btnRef}
+          className={`flex items-center gap-0.5 text-[11px] lowercase outline-none cursor-pointer ${isUpdating ? "opacity-50" : ""} ${isOverridden ? t("text-text-dark/15 line-through", "text-text-light/15 line-through") : t("text-text-dark/70 hover:text-text-dark/90", "text-text-light/70 hover:text-text-light/90")}`}
+          disabled={isUpdating}
+          onClick={handleToggle}
+          type="button"
+        >
+          {currentLabel}
+          <CaretDownIcon className="size-2.5" />
+        </button>
+        {isOverridden && overriddenBy && (
+          <span
+            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 text-[9px] lowercase whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none border ${t("bg-neutral-800 text-neutral-200 border-neutral-700", "bg-neutral-200 text-neutral-800 border-neutral-300")}`}
+          >
+            overridden by {overriddenBy.directLabel}
+          </span>
+        )}
+      </div>
+      {open && createPortal(menu, document.body)}
+      <button
+        className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-red-400", "text-text-light/30 hover:text-red-600")}`}
+        onClick={() => onRemoveGroup(member.groupId ?? "")}
+        type="button"
+      >
+        remove
+      </button>
+    </div>
+  );
+};
 
 const MemberListItem = ({
   member,
@@ -83,47 +260,36 @@ const MemberListItem = ({
   onRemoveGroup,
   onUpdateMemberRole,
   onRemoveMember,
+  groupRoleStates,
+  memberRoleStates,
+  onGroupRoleStateChange,
+  onMemberRoleStateChange,
+  overriddenBy,
 }: MemberListItemProps) => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   if (member.memberType === "group") {
     return (
-      <div key={member.groupId} className="flex items-center gap-2">
-        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-white/10">
-          <UsersThreeIcon className={t("text-text-dark/60", "text-text-light/60")} size={10} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11px] truncate">{member.name}</p>
-          {member.description && (
-            <p className={`text-[10px] truncate ${t("text-text-dark/30", "text-text-light/30")}`}>
-              {member.description}
-            </p>
-          )}
-        </div>
-        <select
-          className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.groupId ? "opacity-50" : ""}`}
-          disabled={updatingMember === member.groupId}
-          onChange={(e) => onUpdateGroupRole(member.groupId ?? "", e.target.value)}
-          value={member.role}
-        >
-          <option value="admin">full access</option>
-          <option value="writer">can edit</option>
-          <option value="reader">can view</option>
-        </select>
-        <button
-          className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-red-400", "text-text-light/30 hover:text-red-600")}`}
-          onClick={() => onRemoveGroup(member.groupId ?? "")}
-          type="button"
-        >
-          remove
-        </button>
-      </div>
+      <GroupMemberRow
+        key={member.groupId}
+        groupRoleStates={groupRoleStates}
+        isDarkMode={isDarkMode}
+        member={member}
+        updatingMember={updatingMember}
+        overriddenBy={overriddenBy}
+        onGroupRoleStateChange={onGroupRoleStateChange}
+        onRemoveGroup={onRemoveGroup}
+        onUpdateGroupRole={onUpdateGroupRole}
+      />
     );
   }
 
   const isSelf = member.userId === currentUserId;
   const isCreator = member.userId === spaceCreatorId;
   const disableControls = isSelf || isCreator;
+  const currentRole = disableControls
+    ? member.role
+    : (memberRoleStates[member.userId ?? ""] ?? member.role);
   return (
     <div key={member.userId} className="flex items-center gap-2">
       {member.avatarUrl ? (
@@ -158,12 +324,18 @@ const MemberListItem = ({
         <select
           className={`text-[10px] bg-transparent outline-none cursor-pointer ${t("text-text-dark/50", "text-text-light/50")} ${updatingMember === member.userId ? "opacity-50" : ""}`}
           disabled={updatingMember === member.userId}
-          onChange={(e) => onUpdateMemberRole(member.userId ?? "", e.target.value)}
-          value={member.role}
+          onChange={(e) => {
+            const newRole = e.target.value;
+            onMemberRoleStateChange(member.userId ?? "", newRole);
+            onUpdateMemberRole(member.userId ?? "", newRole);
+          }}
+          value={currentRole}
         >
-          <option value="admin">full access</option>
-          <option value="writer">can edit</option>
-          <option value="reader">can view</option>
+          {roleOptions.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label} — {r.desc}
+            </option>
+          ))}
         </select>
       )}
       {disableControls ? (
@@ -438,6 +610,8 @@ export const SpaceDetailSidebar = ({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [addMemberRole, setAddMemberRole] = useState("writer");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [groupRoleStates, setGroupRoleStates] = useState<Record<string, string>>({});
+  const [memberRoleStates, setMemberRoleStates] = useState<Record<string, string>>({});
 
   const hasChanges =
     name.trim() !== space.name.trim() ||
@@ -481,15 +655,41 @@ export const SpaceDetailSidebar = ({
     return all.filter((g) => !existingGroupIds.has(g.id));
   }, [groupsData, members]);
 
+  const directMemberIds = useMemo(
+    () => new Set((members ?? []).filter((m) => m.memberType === "user").map((m) => m.userId)),
+    [members],
+  );
+
   const availableUsers = useMemo(() => {
     if (!allUsers) {
       return [];
     }
-    const directMemberIds = new Set(
-      (members ?? []).filter((m) => m.memberType === "user").map((m) => m.userId),
-    );
     return allUsers.filter((u) => !directMemberIds.has(u.id));
-  }, [allUsers, members]);
+  }, [allUsers, directMemberIds]);
+
+  const isCurrentUserDirectMember = useMemo(
+    () => currentUser?.id && directMemberIds.has(currentUser.id),
+    [currentUser?.id, directMemberIds],
+  );
+
+  const hasGroupMemberOverlap = useMemo(
+    () => isCurrentUserDirectMember && (members ?? []).some((m) => m.memberType === "group"),
+    [isCurrentUserDirectMember, members],
+  );
+
+  const effectiveRoleExplanation = useMemo(() => {
+    if (!isCurrentUserDirectMember || !currentUser?.id) {
+      return null;
+    }
+    const directMember = (members ?? []).find(
+      (m) => m.memberType === "user" && m.userId === currentUser.id,
+    );
+    if (!directMember) {
+      return null;
+    }
+    const directLabel = memberRoleLabel(directMember.role);
+    return { directLabel, directRole: directMember.role };
+  }, [isCurrentUserDirectMember, currentUser?.id, members]);
 
   const handleSaveDetails = () => {
     updateSpace.mutate({
@@ -611,6 +811,180 @@ export const SpaceDetailSidebar = ({
           <div className="w-3 h-3 rounded-full bg-white/20 absolute left-0.5 top-0.5" />
         </div>
       </div>
+    </div>
+  );
+
+  const GroupsSection = () => (
+    <div className={`border p-3 ${t("border-border-dark", "border-border-light")}`}>
+      <div className="flex items-center justify-between mb-3">
+        <span
+          className={`text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
+        >
+          groups
+        </span>
+      </div>
+
+      {hasGroupMemberOverlap && effectiveRoleExplanation && (
+        <p
+          className={`text-[9px] lowercase mb-3 px-2 py-1.5 border ${t("text-text-dark/20 border-border-dark bg-white/2", "text-text-light/20 border-border-light bg-black/2")}`}
+        >
+          you are also a direct member with{" "}
+          <span className={t("text-text-dark/50", "text-text-light/50")}>
+            {effectiveRoleExplanation.directLabel}
+          </span>{" "}
+          — direct membership always takes priority over groups
+        </p>
+      )}
+
+      <div className="flex items-center gap-2 mb-3">
+        <GroupSelectDropdown
+          availableGroups={availableGroups}
+          isDarkMode={isDarkMode}
+          selectedGroupId={selectedGroupId}
+          onSelect={setSelectedGroupId}
+        />
+        <RoleSelectDropdown
+          isDarkMode={isDarkMode}
+          role={addGroupRole}
+          onChange={setAddGroupRole}
+        />
+        <button
+          className={`text-[10px] lowercase ${selectedGroupId ? t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90") : "opacity-30 cursor-not-allowed"}`}
+          disabled={!selectedGroupId || addSpaceGroup.isPending}
+          onClick={handleAddGroup}
+          type="button"
+        >
+          add
+        </button>
+      </div>
+
+      {membersPending ? (
+        <p className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
+          loading...
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {(members ?? [])
+            .filter((m) => m.memberType === "group")
+            .map((member: SpaceMemberMixed) => (
+              <MemberListItem
+                key={member.groupId}
+                currentUserId={currentUser?.id}
+                groupRoleStates={groupRoleStates}
+                isDarkMode={isDarkMode}
+                member={member}
+                memberRoleStates={memberRoleStates}
+                overriddenBy={effectiveRoleExplanation}
+                spaceCreatorId={space.createdBy}
+                updatingMember={updatingMember}
+                onGroupRoleStateChange={(id, role) =>
+                  setGroupRoleStates((p) => ({ ...p, [id]: role }))
+                }
+                onMemberRoleStateChange={(id, role) =>
+                  setMemberRoleStates((p) => ({ ...p, [id]: role }))
+                }
+                onRemoveGroup={handleRemoveGroup}
+                onRemoveMember={handleRemoveMember}
+                onUpdateGroupRole={handleGroupRoleChange}
+                onUpdateMemberRole={handleRoleChange}
+              />
+            ))}
+          {(members ?? []).filter((m) => m.memberType === "group").length === 0 && (
+            <p className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
+              no groups added yet
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const MembersSection = () => (
+    <div className={`border p-3 ${t("border-border-dark", "border-border-light")}`}>
+      <div className="flex items-center justify-between mb-3">
+        <span
+          className={`text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
+        >
+          members
+        </span>
+        <span className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
+          {filteredMembers.filter((m) => m.memberType === "user").length} member
+          {filteredMembers.filter((m) => m.memberType === "user").length === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 mb-3">
+        <MagnifyingGlassIcon className={t("text-text-dark/20", "text-text-light/20")} size={11} />
+        <input
+          className={`flex-1 bg-transparent py-1 text-[11px] lowercase outline-none border-b ${t("border-border-dark placeholder:text-text-dark/20 text-text-dark/60", "border-border-light placeholder:text-text-light/20 text-text-light/60")}`}
+          onChange={(e) => setMemberSearch(e.target.value)}
+          placeholder="search members"
+          type="text"
+          value={memberSearch}
+        />
+      </div>
+
+      {availableUsers.length > 0 && (
+        <div className="flex items-center gap-2 mb-2">
+          <UserSelectDropdown
+            availableUsers={availableUsers}
+            isDarkMode={isDarkMode}
+            selectedUserId={selectedUserId}
+            onSelect={setSelectedUserId}
+          />
+          <RoleSelectDropdown
+            isDarkMode={isDarkMode}
+            role={addMemberRole}
+            onChange={setAddMemberRole}
+          />
+          <button
+            className={`text-[10px] lowercase ${selectedUserId ? t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90") : "opacity-30 cursor-not-allowed"}`}
+            disabled={!selectedUserId || addSpaceMember.isPending}
+            onClick={handleAddMember}
+            type="button"
+          >
+            add
+          </button>
+        </div>
+      )}
+
+      {membersPending ? (
+        <p className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
+          loading members...
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {filteredMembers
+            .filter((m) => m.memberType === "user")
+            .map((member: SpaceMemberMixed) => (
+              <MemberListItem
+                key={member.userId}
+                currentUserId={currentUser?.id}
+                groupRoleStates={groupRoleStates}
+                isDarkMode={isDarkMode}
+                member={member}
+                memberRoleStates={memberRoleStates}
+                spaceCreatorId={space.createdBy}
+                updatingMember={updatingMember}
+                onGroupRoleStateChange={(id, role) =>
+                  setGroupRoleStates((p) => ({ ...p, [id]: role }))
+                }
+                onMemberRoleStateChange={(id, role) =>
+                  setMemberRoleStates((p) => ({ ...p, [id]: role }))
+                }
+                onRemoveGroup={handleRemoveGroup}
+                onRemoveMember={handleRemoveMember}
+                onUpdateGroupRole={handleGroupRoleChange}
+                onUpdateMemberRole={handleRoleChange}
+              />
+            ))}
+          {filteredMembers.filter((m) => m.memberType === "user").length === 0 && memberSearch && (
+            <p className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}>
+              no members match your search
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 
@@ -739,115 +1113,8 @@ export const SpaceDetailSidebar = ({
             </div>
           </div>
 
-          {/* Members section */}
-          <div className={`border p-3 ${t("border-border-dark", "border-border-light")}`}>
-            <div className="flex items-center justify-between mb-3">
-              <span
-                className={`text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
-              >
-                members
-              </span>
-              <span
-                className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}
-              >
-                {filteredMembers.length} member{filteredMembers.length === 1 ? "" : "s"}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 mb-3">
-              <MagnifyingGlassIcon
-                className={t("text-text-dark/20", "text-text-light/20")}
-                size={11}
-              />
-              <input
-                className={`flex-1 bg-transparent py-1 text-[11px] lowercase outline-none border-b ${t("border-border-dark placeholder:text-text-dark/20 text-text-dark/60", "border-border-light placeholder:text-text-light/20 text-text-light/60")}`}
-                onChange={(e) => setMemberSearch(e.target.value)}
-                placeholder="search members"
-                type="text"
-                value={memberSearch}
-              />
-            </div>
-
-            {availableUsers.length > 0 && (
-              <div className="flex items-center gap-2 mb-2">
-                <UserSelectDropdown
-                  availableUsers={availableUsers}
-                  isDarkMode={isDarkMode}
-                  selectedUserId={selectedUserId}
-                  onSelect={setSelectedUserId}
-                />
-                <RoleSelectDropdown
-                  isDarkMode={isDarkMode}
-                  role={addMemberRole}
-                  onChange={setAddMemberRole}
-                />
-                <button
-                  className={`text-[10px] lowercase ${selectedUserId ? t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90") : "opacity-30 cursor-not-allowed"}`}
-                  disabled={!selectedUserId || addSpaceMember.isPending}
-                  onClick={handleAddMember}
-                  type="button"
-                >
-                  add
-                </button>
-              </div>
-            )}
-
-            {availableGroups.length > 0 && (
-              <div className="flex items-center gap-2 mb-3">
-                <GroupSelectDropdown
-                  availableGroups={availableGroups}
-                  isDarkMode={isDarkMode}
-                  selectedGroupId={selectedGroupId}
-                  onSelect={setSelectedGroupId}
-                />
-                <RoleSelectDropdown
-                  isDarkMode={isDarkMode}
-                  role={addGroupRole}
-                  onChange={setAddGroupRole}
-                />
-                <button
-                  className={`text-[10px] lowercase ${selectedGroupId ? t("text-text-dark/60 hover:text-text-dark/90", "text-text-light/60 hover:text-text-light/90") : "opacity-30 cursor-not-allowed"}`}
-                  disabled={!selectedGroupId || addSpaceGroup.isPending}
-                  onClick={handleAddGroup}
-                  type="button"
-                >
-                  add
-                </button>
-              </div>
-            )}
-
-            {membersPending ? (
-              <p
-                className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}
-              >
-                loading members...
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {filteredMembers.map((member: SpaceMemberMixed) => (
-                  <MemberListItem
-                    key={member.memberType === "group" ? member.groupId : member.userId}
-                    currentUserId={currentUser?.id}
-                    isDarkMode={isDarkMode}
-                    member={member}
-                    spaceCreatorId={space.createdBy}
-                    updatingMember={updatingMember}
-                    onRemoveGroup={handleRemoveGroup}
-                    onRemoveMember={handleRemoveMember}
-                    onUpdateGroupRole={handleGroupRoleChange}
-                    onUpdateMemberRole={handleRoleChange}
-                  />
-                ))}
-                {filteredMembers.length === 0 && memberSearch && (
-                  <p
-                    className={`text-[10px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}
-                  >
-                    no members match your search
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+          <GroupsSection />
+          <MembersSection />
 
           {/* Security section */}
           <SecuritySection />
