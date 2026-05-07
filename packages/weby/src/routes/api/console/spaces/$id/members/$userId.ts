@@ -1,8 +1,7 @@
-/* eslint-disable unicorn/filename-case */
 import { createFileRoute } from "@tanstack/react-router";
 import { addSpaceMember, removeSpaceMember, updateSpaceMemberRole } from "#/server/backy";
 
-export const Route = createFileRoute("/api/console/spaces/$id/members/$user-id")({
+export const Route = createFileRoute("/api/console/spaces/$id/members/$userId")({
   server: {
     handlers: {
       DELETE: async ({ params, request }) => {
@@ -10,7 +9,7 @@ export const Route = createFileRoute("/api/console/spaces/$id/members/$user-id")
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const result = await removeSpaceMember(params.id, params["user-id"], cookieHeader);
+        const result = await removeSpaceMember(params.id, params.userId, cookieHeader);
         return Response.json(result);
       },
       POST: async ({ params, request }) => {
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/api/console/spaces/$id/members/$user-id")
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const body = await request.json();
-        const result = await addSpaceMember(params.id, params["user-id"], body.role, cookieHeader);
+        const result = await addSpaceMember(params.id, params.userId, body.role, cookieHeader);
         return Response.json(result);
       },
       PUT: async ({ params, request }) => {
@@ -30,7 +29,7 @@ export const Route = createFileRoute("/api/console/spaces/$id/members/$user-id")
         const body = await request.json();
         const result = await updateSpaceMemberRole(
           params.id,
-          params["user-id"],
+          params.userId,
           body.role,
           cookieHeader,
         );
