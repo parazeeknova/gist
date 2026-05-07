@@ -1,5 +1,5 @@
 import { ShieldCheckIcon } from "@phosphor-icons/react";
-import { useTheme } from "#/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 export const TwoFactorSection = () => {
   const { isDarkMode } = useTheme();

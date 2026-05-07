@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useTheme } from "#/hooks/use-theme";
-import { useConsoleContext } from "../../console/console-context";
-import { useWorkspaces } from "#/hooks/use-console-mutations";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useConsoleContext } from "@/features/console/components/console-context";
+import { useWorkspaces } from "@/features/console/hooks/use-workspaces";
 import { WorkspaceAvatarUploader } from "./workspace-avatar-uploader";
 import { WorkspaceNameEditor } from "./workspace-name-editor";
 import { WorkspaceSlugEditor } from "./workspace-slug-editor";

@@ -23,8 +23,8 @@ import type {
   Stats,
   UpdatePageInput,
   Workspace,
-} from "#/types";
-import { logger } from "#/lib/logger";
+} from "@/shared/types";
+import { logger } from "@/shared/lib/logger";
 
 const getBackyOrigin = (): string => {
   const origin = process.env.BACKY_ORIGIN;

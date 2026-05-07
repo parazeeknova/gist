@@ -1,5 +1,5 @@
 import { CheckIcon, MinusIcon } from "@phosphor-icons/react";
-import { useTheme } from "#/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 interface CheckProps {
   checked: boolean;

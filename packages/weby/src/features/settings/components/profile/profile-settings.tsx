@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "#/hooks/use-auth";
-import { useTheme } from "#/hooks/use-theme";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useTheme } from "@/shared/hooks/use-theme";
 import { AvatarUploader } from "../avatar-uploader";
 import { NameEditor } from "./name-editor";
 import { PasswordChanger } from "./password-changer";

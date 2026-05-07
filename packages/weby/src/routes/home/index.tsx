@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageDetail } from "../components/console/pages/detail";
-import { ConsoleHome } from "../components/console/console-home";
-import { useConsoleContext } from "../components/console/console-context";
+import { PageDetail } from "@/features/console/components/pages/detail";
+import { ConsoleHome } from "@/features/console/components/console-home";
+import { useConsoleContext } from "@/features/console/components/console-context";
 
 const HomeIndex = () => {
   const { selectedPageId, setSelectedPageId } = useConsoleContext();

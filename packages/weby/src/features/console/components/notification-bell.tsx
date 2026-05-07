@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { BellIcon, CircleIcon, XIcon } from "@phosphor-icons/react";
-import type { NotificationItem } from "#/types";
-import { useNotificationStream } from "#/hooks/use-notification-stream";
-import { fetchProtected } from "#/hooks/fetch-protected";
+import type { NotificationItem } from "@/shared/types";
+import { useNotificationStream } from "@/features/console/hooks/use-notification-stream";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
 
 const formatTime = (dateStr: string) => {
   const date = new Date(dateStr);

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CaretDownIcon } from "@phosphor-icons/react";
-import { useTheme } from "#/hooks/use-theme";
-import type { ThemePreference } from "#/hooks/use-theme";
-import { usePushSubscription } from "#/hooks/use-push-subscription";
-import { Check } from "#/components/console/check";
+import { useTheme } from "@/shared/hooks/use-theme";
+import type { ThemePreference } from "@/shared/hooks/use-theme";
+import { usePushSubscription } from "@/features/console/hooks/use-push-subscription";
+import { Check } from "@/features/console/components/check";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const noop = () => {};

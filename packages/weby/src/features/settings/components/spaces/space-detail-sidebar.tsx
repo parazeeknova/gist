@@ -8,8 +8,8 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
-import { useTheme } from "#/hooks/use-theme";
-import { useAuth } from "#/hooks/use-auth";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
   useAddSpaceGroup,
   useAddSpaceMember,
@@ -20,10 +20,10 @@ import {
   useUpdateSpace,
   useUpdateSpaceGroupRole,
   useUpdateSpaceMemberRole,
-  useUsers,
-} from "#/hooks/use-console-mutations";
-import { fetchProtected } from "#/hooks/fetch-protected";
-import type { ConsoleUser, Group, Space, SpaceMemberMixed } from "#/types";
+} from "@/features/console/hooks/use-spaces";
+import { useUsers } from "@/features/console/hooks/use-users";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import type { ConsoleUser, Group, Space, SpaceMemberMixed } from "@/shared/types";
 import { SpaceAvatarUploader } from "./space-avatar-uploader";
 
 const getInitials = (text: string) =>

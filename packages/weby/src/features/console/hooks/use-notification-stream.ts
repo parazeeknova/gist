@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { NotificationItem } from "#/types";
+import type { NotificationItem } from "@/shared/types";
 
 const audio = typeof Audio === "undefined" ? null : new Audio("/notification.mp3");
 

@@ -12,9 +12,9 @@ import {
 } from "@tanstack/react-pacer";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { fetchProtected } from "#/hooks/fetch-protected";
-import { useDebugTables } from "#/hooks/use-console-mutations";
-import { useTheme } from "#/hooks/use-theme";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { useDebugTables } from "@/features/console/hooks/use-debug";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 interface DebugSidebarProps {
   onBack: () => void;

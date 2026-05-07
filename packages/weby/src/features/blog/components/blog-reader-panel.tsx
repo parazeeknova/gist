@@ -1,7 +1,7 @@
 import { BlogReader } from "./blog-reader";
 import { BlogFileTree } from "./blog-file-tree";
-import { useBlogPost } from "../../hooks/use-blog-post";
-import type { BlogManifestSection } from "#/types";
+import { useBlogPost } from "../hooks/use-blog-post";
+import type { BlogManifestSection } from "@/shared/types";
 
 interface BlogReaderPanelProps {
   slug: string;

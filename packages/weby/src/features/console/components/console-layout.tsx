@@ -14,9 +14,9 @@ import { detectPlatform } from "@tanstack/hotkeys";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useAuth } from "#/hooks/use-auth";
-import { useTheme } from "#/hooks/use-theme";
-import { useSpaceBySlug } from "#/hooks/use-console-mutations";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useSpaceBySlug } from "@/features/console/hooks/use-spaces";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
@@ -24,9 +24,9 @@ import { FileTreeSidebar } from "./file-tree-sidebar";
 import { FloatingSidebar } from "./floating-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
 import { SidebarFooter } from "./sidebar-footer";
-import { SpaceSidebar } from "../space/space-sidebar";
-import { useConsoleStore } from "#/stores/console-store";
-import { useConsoleBootstrap } from "#/hooks/use-console-bootstrap";
+import { SpaceSidebar } from "@/features/space/components/space-sidebar";
+import { useConsoleStore } from "@/features/console/stores/console-store";
+import { useConsoleBootstrap } from "@/features/console/hooks/use-console-bootstrap";
 
 const SIDEBAR_WIDTH = 280;
 

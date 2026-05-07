@@ -1,7 +1,8 @@
+/* eslint-disable unicorn/filename-case */
 import { createFileRoute } from "@tanstack/react-router";
 import { deleteBackyWithCookies, postBackyWithCookies, putBackyWithCookies } from "#/server/backy";
 
-export const Route = createFileRoute("/api/console/spaces/$id/groups/$groupId")({
+export const Route = createFileRoute("/api/console/spaces/$id/groups/$group-id")({
   server: {
     handlers: {
       DELETE: async ({ request, params }) => {
@@ -10,7 +11,7 @@ export const Route = createFileRoute("/api/console/spaces/$id/groups/$groupId")(
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const res = await deleteBackyWithCookies(
-          `console/spaces/${params.id}/groups/${params.groupId}`,
+          `console/spaces/${params.id}/groups/${params["group-id"]}`,
           cookieHeader,
         );
         return Response.json(await res.json().catch(() => ({ status: "removed" })), {
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/api/console/spaces/$id/groups/$groupId")(
         }
         const body = await request.json();
         const res = await postBackyWithCookies(
-          `console/spaces/${params.id}/groups/${params.groupId}`,
+          `console/spaces/${params.id}/groups/${params["group-id"]}`,
           body,
           cookieHeader,
         );
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/api/console/spaces/$id/groups/$groupId")(
         }
         const body = await request.json();
         const res = await putBackyWithCookies(
-          `console/spaces/${params.id}/groups/${params.groupId}`,
+          `console/spaces/${params.id}/groups/${params["group-id"]}`,
           body,
           cookieHeader,
         );

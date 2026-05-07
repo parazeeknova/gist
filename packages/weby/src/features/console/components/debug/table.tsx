@@ -15,9 +15,9 @@ import {
   TrashIcon,
   CopyIcon,
 } from "@phosphor-icons/react";
-import { useTheme } from "#/hooks/use-theme";
-import { useDebugTableData } from "#/hooks/use-console-mutations";
-import { fetchProtected } from "#/hooks/fetch-protected";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useDebugTableData } from "@/features/console/hooks/use-debug";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
 import { Check } from "../check";
 import { Dropdown } from "../dropdown";
 

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTheme } from "../hooks/use-theme";
-import { WorkspaceSettings } from "../components/settings/workspace/workspace-settings";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { WorkspaceSettings } from "@/features/settings/components/workspace/workspace-settings";
 
 const SettingsWorkspaceRouteComponent = () => {
   const { isDarkMode } = useTheme();

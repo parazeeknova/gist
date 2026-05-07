@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import { useConsoleStore } from "#/stores/console-store";
+import { useConsoleStore } from "@/features/console/stores/console-store";
 
 interface ConsoleContextValue {
   selectedPageId: string | null;

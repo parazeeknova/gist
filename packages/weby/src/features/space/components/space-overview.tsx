@@ -1,13 +1,13 @@
 import { FileTextIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { useTheme } from "#/hooks/use-theme";
-import { fetchProtected } from "#/hooks/fetch-protected";
-import { useSpaceBySlug } from "#/hooks/use-console-mutations";
-import type { ConsolePage } from "#/types";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { useSpaceBySlug } from "@/features/console/hooks/use-spaces";
+import type { ConsolePage } from "@/shared/types";
 
 export const SpaceOverview = () => {
-  const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });
+  const { spaceSlug } = useParams({ from: "/s/$space-slug" });
   const { data: space } = useSpaceBySlug(spaceSlug);
   const { isDarkMode } = useTheme();
   const { data: pages } = useQuery<ConsolePage[]>({

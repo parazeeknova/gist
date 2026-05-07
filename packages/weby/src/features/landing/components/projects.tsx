@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useProjects } from "../../hooks/use-data";
-import type { Project } from "#/types";
-import { LoadingDots } from "../loading";
+import { useProjects } from "../hooks/use-data";
+import type { Project } from "@/shared/types";
+import { LoadingDots } from "@/shared/components/loading";
 
 interface ProjectCardProps {
   onDetail?: (project: Project) => void;

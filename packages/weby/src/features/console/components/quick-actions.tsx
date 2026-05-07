@@ -6,8 +6,9 @@ import {
 } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useTheme } from "#/hooks/use-theme";
-import { useConsolePages, useCreatePage, useSpaces } from "#/hooks/use-console-mutations";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useConsolePages, useCreatePage } from "@/features/console/hooks/use-pages";
+import { useSpaces } from "@/features/console/hooks/use-spaces";
 import { useConsoleContext } from "./console-context";
 
 const ActionTile = ({

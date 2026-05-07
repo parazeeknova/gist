@@ -1,8 +1,8 @@
-import type { AuthUser } from "#/types";
+import type { AuthUser } from "@/shared/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
-import { setAuthCache } from "#/lib/auth-cache";
-import { useConsoleStore } from "#/stores/console-store";
+import { setAuthCache } from "@/features/auth/lib/auth-cache";
+import { useConsoleStore } from "@/features/console/stores/console-store";
 
 export interface LoginResult {
   mfa_required?: boolean;

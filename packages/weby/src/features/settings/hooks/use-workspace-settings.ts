@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Workspace } from "../types";
-import { fetchProtected } from "./fetch-protected";
+import type { Workspace } from "@/shared/types";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
 
 export const useUpdateWorkspace = () => {
   const queryClient = useQueryClient();

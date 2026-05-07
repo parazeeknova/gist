@@ -1,4 +1,4 @@
-import type { BlogHeading } from "#/lib/blog-headings";
+import type { BlogHeading } from "@/features/blog/lib/blog-headings";
 import { gsap } from "gsap";
 import { useEffect, useRef } from "react";
 

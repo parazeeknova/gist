@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createWrapper } from "../test/utils";
+import { createWrapper } from "@/shared/test/utils";
 import { useBlogPost } from "./use-blog-post";
 
 const createMockResponse = (data: unknown, ok = true): Response =>

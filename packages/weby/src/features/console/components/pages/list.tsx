@@ -1,15 +1,11 @@
-import type { PageTreeItem } from "#/types";
+import type { PageTreeItem } from "@/shared/types";
 import { CaretDownIcon, CaretRightIcon, PlusIcon } from "@phosphor-icons/react";
 import { useQueuer } from "@tanstack/react-pacer";
 import { useState, useCallback, useEffect } from "react";
-import { useTheme } from "#/hooks/use-theme";
-import {
-  useCreatePage,
-  useDeletePage,
-  usePageTree,
-  useSpaces,
-  useWorkspaces,
-} from "#/hooks/use-console-mutations";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useCreatePage, useDeletePage, usePageTree } from "@/features/console/hooks/use-pages";
+import { useSpaces } from "@/features/console/hooks/use-spaces";
+import { useWorkspaces } from "@/features/console/hooks/use-workspaces";
 
 interface PageListProps {
   onSelectPage: (id: string) => void;

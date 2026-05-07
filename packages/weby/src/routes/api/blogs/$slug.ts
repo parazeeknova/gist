@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getBlogPost, BackyError } from "../../server/backy";
+import { getBlogPost, BackyError } from "#/server/backy";
 
 export const Route = createFileRoute("/api/blogs/$slug")({
   server: {

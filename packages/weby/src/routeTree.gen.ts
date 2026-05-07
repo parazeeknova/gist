@@ -15,21 +15,21 @@ import { Route as HomeRouteImport } from './routes/home'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as HomeIndexRouteImport } from './routes/home.index'
-import { Route as SettingsWorkspaceRouteImport } from './routes/settings.workspace'
-import { Route as SettingsSpacesRouteImport } from './routes/settings.spaces'
-import { Route as SettingsMembersRouteImport } from './routes/settings.members'
-import { Route as SettingsGroupsRouteImport } from './routes/settings.groups'
-import { Route as SSpaceSlugRouteImport } from './routes/s.$spaceSlug'
-import { Route as HomeDebugRouteImport } from './routes/home.debug'
+import { Route as HomeIndexRouteImport } from './routes/home/index'
+import { Route as SettingsWorkspaceRouteImport } from './routes/settings/workspace'
+import { Route as SettingsSpacesRouteImport } from './routes/settings/spaces'
+import { Route as SettingsMembersRouteImport } from './routes/settings/members'
+import { Route as SettingsGroupsRouteImport } from './routes/settings/groups'
+import { Route as SSpaceSlugRouteImport } from './routes/s/$space-slug'
+import { Route as HomeDebugRouteImport } from './routes/home/debug'
 import { Route as ApiStatsRouteImport } from './routes/api/stats'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
 import { Route as ApiProfileRouteImport } from './routes/api/profile'
 import { Route as ApiExperienceRouteImport } from './routes/api/experience'
 import { Route as ApiBlogsRouteImport } from './routes/api/blogs'
-import { Route as SSpaceSlugIndexRouteImport } from './routes/s.$spaceSlug.index'
-import { Route as SettingsAccountProfileRouteImport } from './routes/settings.account.profile'
-import { Route as SettingsAccountPreferencesRouteImport } from './routes/settings.account.preferences'
+import { Route as SSpaceSlugIndexRouteImport } from './routes/s/$spaceSlug/index'
+import { Route as SettingsAccountProfileRouteImport } from './routes/settings/account/profile'
+import { Route as SettingsAccountPreferencesRouteImport } from './routes/settings/account/preferences'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
 import { Route as ApiConsoleWorkspacesRouteImport } from './routes/api/console/workspaces'
 import { Route as ApiConsoleUsersRouteImport } from './routes/api/console/users'
@@ -37,55 +37,55 @@ import { Route as ApiConsoleSpacesRouteImport } from './routes/api/console/space
 import { Route as ApiConsoleProfileRouteImport } from './routes/api/console/profile'
 import { Route as ApiConsolePagesRouteImport } from './routes/api/console/pages'
 import { Route as ApiConsoleNotificationsRouteImport } from './routes/api/console/notifications'
-import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs.$slug'
+import { Route as ApiBlogsSlugRouteImport } from './routes/api/blogs/$slug'
 import { Route as ApiAuthRefreshRouteImport } from './routes/api/auth/refresh'
 import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
-import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces.$id'
-import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users.$id'
-import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces.$id'
-import { Route as ApiConsolePushUnsubscribeRouteImport } from './routes/api/console/push.unsubscribe'
-import { Route as ApiConsolePushSubscribeRouteImport } from './routes/api/console/push.subscribe'
-import { Route as ApiConsolePushPublicKeyRouteImport } from './routes/api/console/push.public-key'
-import { Route as ApiConsoleProfileSessionRouteImport } from './routes/api/console/profile.session'
-import { Route as ApiConsoleProfilePasswordRouteImport } from './routes/api/console/profile.password'
-import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages.tree'
-import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages.$id'
-import { Route as ApiConsoleNotificationsUnreadCountRouteImport } from './routes/api/console/notifications.unread-count'
-import { Route as ApiConsoleNotificationsStreamRouteImport } from './routes/api/console/notifications.stream'
-import { Route as ApiConsoleNotificationsReadAllRouteImport } from './routes/api/console/notifications.read-all'
-import { Route as ApiConsoleNotificationsDismissAllRouteImport } from './routes/api/console/notifications.dismiss-all'
-import { Route as ApiConsoleNotificationsIdRouteImport } from './routes/api/console/notifications.$id'
+import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces/$id'
+import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users/$id'
+import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces/$id'
+import { Route as ApiConsolePushUnsubscribeRouteImport } from './routes/api/console/push/unsubscribe'
+import { Route as ApiConsolePushSubscribeRouteImport } from './routes/api/console/push/subscribe'
+import { Route as ApiConsolePushPublicKeyRouteImport } from './routes/api/console/push/public-key'
+import { Route as ApiConsoleProfileSessionRouteImport } from './routes/api/console/profile/session'
+import { Route as ApiConsoleProfilePasswordRouteImport } from './routes/api/console/profile/password'
+import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages/tree'
+import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages/$id'
+import { Route as ApiConsoleNotificationsUnreadCountRouteImport } from './routes/api/console/notifications/unread-count'
+import { Route as ApiConsoleNotificationsStreamRouteImport } from './routes/api/console/notifications/stream'
+import { Route as ApiConsoleNotificationsReadAllRouteImport } from './routes/api/console/notifications/read-all'
+import { Route as ApiConsoleNotificationsDismissAllRouteImport } from './routes/api/console/notifications/dismiss-all'
+import { Route as ApiConsoleNotificationsIdRouteImport } from './routes/api/console/notifications/$id'
 import { Route as ApiConsoleMfaStatusRouteImport } from './routes/api/console/mfa/status'
 import { Route as ApiConsoleMfaSetupRouteImport } from './routes/api/console/mfa/setup'
 import { Route as ApiConsoleMfaEnableRouteImport } from './routes/api/console/mfa/enable'
 import { Route as ApiConsoleMfaDisableRouteImport } from './routes/api/console/mfa/disable'
 import { Route as ApiConsoleMfaBackupCodesRouteImport } from './routes/api/console/mfa/backup-codes'
-import { Route as ApiConsoleGroupsIdRouteImport } from './routes/api/console/groups.$id'
-import { Route as ApiConsoleDebugTablesRouteImport } from './routes/api/console/debug.tables'
+import { Route as ApiConsoleGroupsIdRouteImport } from './routes/api/console/groups/$id'
+import { Route as ApiConsoleDebugTablesRouteImport } from './routes/api/console/debug/tables'
 import { Route as ApiAuthMfaVerifyRouteImport } from './routes/api/auth/mfa/verify'
-import { Route as ApiConsoleWorkspacesIdGroupsRouteImport } from './routes/api/console/workspaces.$id.groups'
-import { Route as ApiConsoleUsersIdRoleRouteImport } from './routes/api/console/users.$id.role'
-import { Route as ApiConsoleUsersIdActiveRouteImport } from './routes/api/console/users.$id.active'
-import { Route as ApiConsoleSpacesBySlugSlugRouteImport } from './routes/api/console/spaces.by-slug.$slug'
-import { Route as ApiConsoleSpacesIdMembersRouteImport } from './routes/api/console/spaces.$id.members'
-import { Route as ApiConsoleProfileSessionRevokeRouteImport } from './routes/api/console/profile.session.revoke'
-import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages.$id.unpublish'
-import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages.$id.restore'
-import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages.$id.publish'
-import { Route as ApiConsolePagesIdMoveRouteImport } from './routes/api/console/pages.$id.move'
-import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/console/pages.$id.history'
-import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages.$id.children'
-import { Route as ApiConsoleNotificationsIdReadRouteImport } from './routes/api/console/notifications.$id.read'
-import { Route as ApiConsoleGroupsIdMembersRouteImport } from './routes/api/console/groups.$id.members'
-import { Route as ApiConsoleDebugTablesTableNameRouteImport } from './routes/api/console/debug.tables.$tableName'
-import { Route as ApiConsoleSpacesIdMembersUserIdRouteImport } from './routes/api/console/spaces.$id.members.$userId'
-import { Route as ApiConsoleSpacesIdGroupsGroupIdRouteImport } from './routes/api/console/spaces.$id.groups.$groupId'
-import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages.$id.history.$historyId'
-import { Route as ApiConsoleGroupsIdMembersUserIdRouteImport } from './routes/api/console/groups.$id.members.$userId'
-import { Route as ApiConsoleDebugTablesTableNameRowsRouteImport } from './routes/api/console/debug.tables.$tableName.rows'
+import { Route as ApiConsoleWorkspacesIdGroupsRouteImport } from './routes/api/console/workspaces/$id/groups'
+import { Route as ApiConsoleUsersIdRoleRouteImport } from './routes/api/console/users/$id/role'
+import { Route as ApiConsoleUsersIdActiveRouteImport } from './routes/api/console/users/$id/active'
+import { Route as ApiConsoleSpacesBySlugSlugRouteImport } from './routes/api/console/spaces/by-slug/$slug'
+import { Route as ApiConsoleSpacesIdMembersRouteImport } from './routes/api/console/spaces/$id/members'
+import { Route as ApiConsoleProfileSessionRevokeRouteImport } from './routes/api/console/profile/session/revoke'
+import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages/$id/unpublish'
+import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages/$id/restore'
+import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages/$id/publish'
+import { Route as ApiConsolePagesIdMoveRouteImport } from './routes/api/console/pages/$id/move'
+import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/console/pages/$id/history'
+import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages/$id/children'
+import { Route as ApiConsoleNotificationsIdReadRouteImport } from './routes/api/console/notifications/$id/read'
+import { Route as ApiConsoleGroupsIdMembersRouteImport } from './routes/api/console/groups/$id/members'
+import { Route as ApiConsoleDebugTablesTableNameRouteImport } from './routes/api/console/debug/tables/$tableName'
+import { Route as ApiConsoleSpacesIdMembersUserIdRouteImport } from './routes/api/console/spaces/$id/members/$userId'
+import { Route as ApiConsoleSpacesIdGroupsGroupIdRouteImport } from './routes/api/console/spaces/$id/groups/$groupId'
+import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages/$id/history/$historyId'
+import { Route as ApiConsoleGroupsIdMembersUserIdRouteImport } from './routes/api/console/groups/$id/members/$userId'
+import { Route as ApiConsoleDebugTablesTableNameRowsRouteImport } from './routes/api/console/debug/tables/$tableName/rows'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -143,8 +143,8 @@ const SettingsGroupsRoute = SettingsGroupsRouteImport.update({
   getParentRoute: () => SettingsRoute,
 } as any)
 const SSpaceSlugRoute = SSpaceSlugRouteImport.update({
-  id: '/s/$spaceSlug',
-  path: '/s/$spaceSlug',
+  id: '/s/$space-slug',
+  path: '/s/$space-slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeDebugRoute = HomeDebugRouteImport.update({
@@ -178,9 +178,9 @@ const ApiBlogsRoute = ApiBlogsRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SSpaceSlugIndexRoute = SSpaceSlugIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => SSpaceSlugRoute,
+  id: '/s/$spaceSlug/',
+  path: '/s/$spaceSlug/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsAccountProfileRoute = SettingsAccountProfileRouteImport.update({
   id: '/account/profile',
@@ -513,7 +513,7 @@ export interface FileRoutesByFullPath {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
-  '/s/$spaceSlug': typeof SSpaceSlugRouteWithChildren
+  '/s/$space-slug': typeof SSpaceSlugRoute
   '/settings/groups': typeof SettingsGroupsRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/spaces': typeof SettingsSpacesRoute
@@ -591,6 +591,7 @@ export interface FileRoutesByTo {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
+  '/s/$space-slug': typeof SSpaceSlugRoute
   '/settings/groups': typeof SettingsGroupsRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/spaces': typeof SettingsSpacesRoute
@@ -670,7 +671,7 @@ export interface FileRoutesById {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
-  '/s/$spaceSlug': typeof SSpaceSlugRouteWithChildren
+  '/s/$space-slug': typeof SSpaceSlugRoute
   '/settings/groups': typeof SettingsGroupsRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/spaces': typeof SettingsSpacesRoute
@@ -751,7 +752,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
-    | '/s/$spaceSlug'
+    | '/s/$space-slug'
     | '/settings/groups'
     | '/settings/members'
     | '/settings/spaces'
@@ -829,6 +830,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
+    | '/s/$space-slug'
     | '/settings/groups'
     | '/settings/members'
     | '/settings/spaces'
@@ -907,7 +909,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
-    | '/s/$spaceSlug'
+    | '/s/$space-slug'
     | '/settings/groups'
     | '/settings/members'
     | '/settings/spaces'
@@ -986,7 +988,7 @@ export interface RootRouteChildren {
   ApiProfileRoute: typeof ApiProfileRoute
   ApiProjectsRoute: typeof ApiProjectsRoute
   ApiStatsRoute: typeof ApiStatsRoute
-  SSpaceSlugRoute: typeof SSpaceSlugRouteWithChildren
+  SSpaceSlugRoute: typeof SSpaceSlugRoute
   ApiAuthBootstrapStateRoute: typeof ApiAuthBootstrapStateRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
@@ -999,6 +1001,7 @@ export interface RootRouteChildren {
   ApiConsoleUsersRoute: typeof ApiConsoleUsersRouteWithChildren
   ApiConsoleWorkspacesRoute: typeof ApiConsoleWorkspacesRouteWithChildren
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute
+  SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
   ApiAuthMfaVerifyRoute: typeof ApiAuthMfaVerifyRoute
   ApiConsoleDebugTablesRoute: typeof ApiConsoleDebugTablesRouteWithChildren
   ApiConsoleGroupsIdRoute: typeof ApiConsoleGroupsIdRouteWithChildren
@@ -1091,10 +1094,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsGroupsRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/s/$spaceSlug': {
-      id: '/s/$spaceSlug'
-      path: '/s/$spaceSlug'
-      fullPath: '/s/$spaceSlug'
+    '/s/$space-slug': {
+      id: '/s/$space-slug'
+      path: '/s/$space-slug'
+      fullPath: '/s/$space-slug'
       preLoaderRoute: typeof SSpaceSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -1142,10 +1145,10 @@ declare module '@tanstack/react-router' {
     }
     '/s/$spaceSlug/': {
       id: '/s/$spaceSlug/'
-      path: '/'
+      path: '/s/$spaceSlug'
       fullPath: '/s/$spaceSlug/'
       preLoaderRoute: typeof SSpaceSlugIndexRouteImport
-      parentRoute: typeof SSpaceSlugRoute
+      parentRoute: typeof rootRouteImport
     }
     '/settings/account/profile': {
       id: '/settings/account/profile'
@@ -1602,18 +1605,6 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
   ApiBlogsRouteChildren,
 )
 
-interface SSpaceSlugRouteChildren {
-  SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
-}
-
-const SSpaceSlugRouteChildren: SSpaceSlugRouteChildren = {
-  SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
-}
-
-const SSpaceSlugRouteWithChildren = SSpaceSlugRoute._addFileChildren(
-  SSpaceSlugRouteChildren,
-)
-
 interface ApiConsoleNotificationsIdRouteChildren {
   ApiConsoleNotificationsIdReadRoute: typeof ApiConsoleNotificationsIdReadRoute
 }
@@ -1885,7 +1876,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,
   ApiStatsRoute: ApiStatsRoute,
-  SSpaceSlugRoute: SSpaceSlugRouteWithChildren,
+  SSpaceSlugRoute: SSpaceSlugRoute,
   ApiAuthBootstrapStateRoute: ApiAuthBootstrapStateRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
@@ -1898,6 +1889,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsoleUsersRoute: ApiConsoleUsersRouteWithChildren,
   ApiConsoleWorkspacesRoute: ApiConsoleWorkspacesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
+  SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
   ApiAuthMfaVerifyRoute: ApiAuthMfaVerifyRoute,
   ApiConsoleDebugTablesRoute: ApiConsoleDebugTablesRouteWithChildren,
   ApiConsoleGroupsIdRoute: ApiConsoleGroupsIdRouteWithChildren,

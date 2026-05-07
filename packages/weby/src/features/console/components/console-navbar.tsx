@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useDebouncedState } from "@tanstack/react-pacer";
 import { useEffect, useRef, useState } from "react";
-import type { Stats } from "#/types";
-import { useAuth, useAuthActions } from "#/hooks/use-auth";
-import { useTheme } from "#/hooks/use-theme";
-import { useSpaceBySlug, useSpaces, useWorkspaces } from "#/hooks/use-console-mutations";
+import type { Stats } from "@/shared/types";
+import { useAuth, useAuthActions } from "@/features/auth/hooks/use-auth";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useSpaceBySlug, useSpaces } from "@/features/console/hooks/use-spaces";
+import { useWorkspaces } from "@/features/console/hooks/use-workspaces";
 import { useConsoleContext } from "./console-context";
 import { NotificationBell } from "./notification-bell";
 import {

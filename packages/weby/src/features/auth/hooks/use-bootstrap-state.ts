@@ -1,4 +1,4 @@
-import type { BootstrapState } from "#/types";
+import type { BootstrapState } from "@/shared/types";
 import { useQuery } from "@tanstack/react-query";
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {

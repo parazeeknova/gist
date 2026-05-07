@@ -17,7 +17,7 @@ import {
   WrenchIcon,
 } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useTheme } from "#/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
 import { SidebarTooltip } from "./sidebar-tooltip";
 
 interface SettingsSidebarProps {

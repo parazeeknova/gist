@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchProtected } from "./fetch-protected";
+import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
 
 const urlBase64ToUint8Array = (base64String: string): Uint8Array => {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

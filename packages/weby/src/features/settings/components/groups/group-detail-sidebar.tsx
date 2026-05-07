@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { MagnifyingGlassIcon, TrashIcon, XIcon } from "@phosphor-icons/react";
-import { useAuth } from "#/hooks/use-auth";
+import { useAuth } from "@/features/auth/hooks/use-auth";
 import {
   useAddGroupMember,
   useDeleteGroup,
   useGroupMembers,
   useRemoveGroupMember,
   useUpdateGroup,
-  useUsers,
-} from "#/hooks/use-console-mutations";
-import { useTheme } from "#/hooks/use-theme";
-import type { ConsoleUser, Group, GroupMember } from "#/types";
+} from "@/features/console/hooks/use-groups";
+import { useUsers } from "@/features/console/hooks/use-users";
+import { useTheme } from "@/shared/hooks/use-theme";
+import type { ConsoleUser, Group, GroupMember } from "@/shared/types";
 
 const getInitials = (text: string) =>
   text

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { DebugTable } from "../components/console/debug/table";
-import { useTheme } from "../hooks/use-theme";
+import { DebugTable } from "@/features/console/components/debug/table";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 const DebugRouteComponent = () => {
   const { isDarkMode } = useTheme();

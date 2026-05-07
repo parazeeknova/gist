@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMFAVerify } from "../hooks/use-mfa";
-import { useTheme } from "../hooks/use-theme";
+import { useMFAVerify } from "@/features/auth/hooks/use-mfa";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 const MFAChallenge = () => {
   const { isDarkMode } = useTheme();

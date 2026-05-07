@@ -1,7 +1,7 @@
 import { DesktopIcon } from "@phosphor-icons/react";
-import { useSessionInfo } from "#/hooks/use-session";
-import { useRevokeSession } from "#/hooks/use-revoke-session";
-import { useTheme } from "#/hooks/use-theme";
+import { useSessionInfo } from "@/features/auth/hooks/use-session";
+import { useRevokeSession } from "@/features/auth/hooks/use-revoke-session";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 const formatLastSeen = (dateStr: string) => {
   if (!dateStr) {

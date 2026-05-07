@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useTheme } from "../hooks/use-theme";
-import { AuthGate } from "../components/auth-gate";
-import { ConsoleLayout } from "../components/console/console-layout";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { AuthGate } from "@/features/auth/components/auth-gate";
+import { ConsoleLayout } from "@/features/console/components/console-layout";
 
 const Console = function Console() {
   const { isDarkMode } = useTheme();

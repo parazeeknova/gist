@@ -1,9 +1,9 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
-import { useAuth } from "#/hooks/use-auth";
-import { useUpdateProfile } from "#/hooks/use-profile";
-import { useTheme } from "#/hooks/use-theme";
-import { compressImage } from "#/lib/image-compress";
+import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useUpdateProfile } from "@/features/settings/hooks/use-profile";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { compressImage } from "@/shared/lib/image-compress";
 
 interface AvatarUploaderProps {
   avatarUrl: string;

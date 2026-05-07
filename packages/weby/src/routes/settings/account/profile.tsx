@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useTheme } from "../hooks/use-theme";
-import { ProfileSettings } from "../components/settings/profile/profile-settings";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { ProfileSettings } from "@/features/settings/components/profile/profile-settings";
 
 const SettingsProfileRouteComponent = () => {
   const { isDarkMode } = useTheme();
