@@ -14,7 +14,7 @@ import (
 	"verso/backy/database"
 	"verso/backy/database/models"
 	notifeat "verso/backy/features/notification"
-	"verso/backy/fractional"
+	"verso/backy/shared/fractional"
 	"verso/backy/repositories"
 )
 
