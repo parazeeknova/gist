@@ -79,3 +79,25 @@ func GetCurrentClaims(c *gin.Context) *auth.AccessTokenClaims {
 	}
 	return claims.(*auth.AccessTokenClaims)
 }
+
+func OwnerRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims := GetCurrentClaims(c)
+		if claims == nil || !claims.IsOwner {
+			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "owner access required"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func AdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		claims := GetCurrentClaims(c)
+		if claims == nil || (claims.Role != "owner" && claims.Role != "admin") {
+			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
+			return
+		}
+		c.Next()
+	}
+}

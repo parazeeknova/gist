@@ -7,15 +7,26 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/database/models"
-	"verso/backy/middleware"
 	"verso/backy/shared/logger"
+	wsfeat "verso/backy/features/workspace"
+	"verso/backy/repositories"
+	"verso/backy/middleware"
+	"verso/backy/database/models"
 )
+
+
+type SpaceHandlers struct {
+	workspaceService *wsfeat.WorkspaceService
+	spaceService *SpaceService
+}
+func NewSpaceHandlers(svc *SpaceService) *SpaceHandlers {
+	return &SpaceHandlers{spaceService: svc}
+}
 
 // --- Space Handlers ---
 
 // GetSpaces handles GET /api/console/spaces.
-func (h *Handlers) GetSpaces(c *gin.Context) {
+func (h *SpaceHandlers) GetSpaces(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusOK, []models.Space{})
 		return
@@ -44,7 +55,7 @@ func (h *Handlers) GetSpaces(c *gin.Context) {
 }
 
 // GetSpaceBySlug handles GET /api/console/spaces/by-slug/:slug.
-func (h *Handlers) GetSpaceBySlug(c *gin.Context) {
+func (h *SpaceHandlers) GetSpaceBySlug(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -59,7 +70,7 @@ func (h *Handlers) GetSpaceBySlug(c *gin.Context) {
 	userID := middleware.GetCurrentUserID(c)
 	space, err := h.spaceService.GetSpaceBySlug(c.Request.Context(), slug, userID)
 	if err != nil {
-		if errors.Is(err, ErrSpaceNotFound) {
+		if errors.Is(err, repositories.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
 			return
 		}
@@ -85,7 +96,7 @@ type CreateSpaceRequest struct {
 }
 
 // CreateSpace handles POST /api/console/spaces.
-func (h *Handlers) CreateSpace(c *gin.Context) {
+func (h *SpaceHandlers) CreateSpace(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -99,7 +110,7 @@ func (h *Handlers) CreateSpace(c *gin.Context) {
 
 	userID := middleware.GetCurrentUserID(c)
 	if err := h.workspaceService.RequireOwnerOrAdmin(c.Request.Context(), req.WorkspaceID, userID); err != nil {
-		if errors.Is(err, ErrWorkspacePermissionDenied) {
+		if errors.Is(err, wsfeat.ErrWorkspacePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -127,7 +138,7 @@ type UpdateSpaceRequest struct {
 }
 
 // UpdateSpace handles PUT /api/console/spaces/:id.
-func (h *Handlers) UpdateSpace(c *gin.Context) {
+func (h *SpaceHandlers) UpdateSpace(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -144,7 +155,7 @@ func (h *Handlers) UpdateSpace(c *gin.Context) {
 
 	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, req.Description, userID)
 	if err != nil {
-		if errors.Is(err, ErrSpaceNotFound) {
+		if errors.Is(err, repositories.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
 			return
 		}
@@ -161,7 +172,7 @@ func (h *Handlers) UpdateSpace(c *gin.Context) {
 }
 
 // DeleteSpace handles DELETE /api/console/spaces/:id.
-func (h *Handlers) DeleteSpace(c *gin.Context) {
+func (h *SpaceHandlers) DeleteSpace(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -171,11 +182,11 @@ func (h *Handlers) DeleteSpace(c *gin.Context) {
 	userID := middleware.GetCurrentUserID(c)
 
 	if err := h.spaceService.DeleteSpace(c.Request.Context(), id, userID); err != nil {
-		if errors.Is(err, ErrSpaceNotEmpty) {
+		if errors.Is(err, repositories.ErrSpaceNotEmpty) {
 			c.JSON(http.StatusConflict, gin.H{"error": "space is not empty, remove pages first"})
 			return
 		}
-		if errors.Is(err, ErrSpaceNotFound) {
+		if errors.Is(err, repositories.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
 			return
 		}
@@ -192,7 +203,7 @@ func (h *Handlers) DeleteSpace(c *gin.Context) {
 }
 
 // GetSpaceMembers handles GET /api/console/spaces/:id/members.
-func (h *Handlers) GetSpaceMembers(c *gin.Context) {
+func (h *SpaceHandlers) GetSpaceMembers(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusOK, []models.SpaceMemberMixed{})
 		return
@@ -227,7 +238,7 @@ type UpdateSpaceMemberRequest struct {
 }
 
 // UpdateSpaceMemberRole handles PUT /api/console/spaces/:id/members/:userId.
-func (h *Handlers) UpdateSpaceMemberRole(c *gin.Context) {
+func (h *SpaceHandlers) UpdateSpaceMemberRole(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -261,7 +272,7 @@ func (h *Handlers) UpdateSpaceMemberRole(c *gin.Context) {
 }
 
 // RemoveSpaceMember handles DELETE /api/console/spaces/:id/members/:userId.
-func (h *Handlers) RemoveSpaceMember(c *gin.Context) {
+func (h *SpaceHandlers) RemoveSpaceMember(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -285,7 +296,7 @@ func (h *Handlers) RemoveSpaceMember(c *gin.Context) {
 }
 
 // AddSpaceMember handles POST /api/console/spaces/:id/members/:userId.
-func (h *Handlers) AddSpaceMember(c *gin.Context) {
+func (h *SpaceHandlers) AddSpaceMember(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -320,7 +331,7 @@ type AddSpaceGroupRequest struct {
 }
 
 // AddSpaceGroup handles POST /api/console/spaces/:id/groups/:groupId.
-func (h *Handlers) AddSpaceGroup(c *gin.Context) {
+func (h *SpaceHandlers) AddSpaceGroup(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -358,7 +369,7 @@ func (h *Handlers) AddSpaceGroup(c *gin.Context) {
 }
 
 // UpdateSpaceGroupRole handles PUT /api/console/spaces/:id/groups/:groupId.
-func (h *Handlers) UpdateSpaceGroupRole(c *gin.Context) {
+func (h *SpaceHandlers) UpdateSpaceGroupRole(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return
@@ -392,7 +403,7 @@ func (h *Handlers) UpdateSpaceGroupRole(c *gin.Context) {
 }
 
 // RemoveSpaceGroup handles DELETE /api/console/spaces/:id/groups/:groupId.
-func (h *Handlers) RemoveSpaceGroup(c *gin.Context) {
+func (h *SpaceHandlers) RemoveSpaceGroup(c *gin.Context) {
 	if h.spaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
 		return

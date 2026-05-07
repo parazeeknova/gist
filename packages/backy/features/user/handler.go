@@ -12,13 +12,18 @@ import (
 	"verso/backy/shared/logger"
 )
 
-func (h *Handlers) requireOwnerOrAdmin(c *gin.Context) error {
+type UserHandlers struct{}
+
+func NewUserHandlers() *UserHandlers {
+	return &UserHandlers{}
+}
+
+func (h *UserHandlers) requireOwnerOrAdmin(c *gin.Context) error {
 	userID := middleware.GetCurrentUserID(c)
 	if userID == "" {
 		return errors.New("unauthenticated")
 	}
-	repo := repositories.NewUserRepo()
-	user, err := repo.GetUserByID(c.Request.Context(), userID)
+	user, err := repositories.NewUserRepo().GetUserByID(c.Request.Context(), userID)
 	if err != nil {
 		return err
 	}
@@ -28,8 +33,7 @@ func (h *Handlers) requireOwnerOrAdmin(c *gin.Context) error {
 	return nil
 }
 
-// GetUsers handles GET /api/console/users.
-func (h *Handlers) GetUsers(c *gin.Context) {
+func (h *UserHandlers) GetUsers(c *gin.Context) {
 	if err := h.requireOwnerOrAdmin(c); err != nil {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
@@ -43,105 +47,58 @@ func (h *Handlers) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
-// UpdateUserRole handles PUT /api/console/users/:id/role.
-func (h *Handlers) UpdateUserRole(c *gin.Context) {
+func (h *UserHandlers) UpdateUserRole(c *gin.Context) {
 	if err := h.requireOwnerOrAdmin(c); err != nil {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
 	}
-	currentUserID := middleware.GetCurrentUserID(c)
-	if currentUserID == "" {
-		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
-		return
-	}
-
-	// Prevent self-demotion
 	targetID := c.Param("id")
-	if targetID == currentUserID {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "cannot change your own role"})
-		return
-	}
-
 	var req struct {
-		Role string `json:"role" binding:"required,oneof=owner admin member"`
+		Role string `json:"role"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil || req.Role == "" {
+		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "role is required"})
 		return
 	}
-
-	repo := repositories.NewUserRepo()
-	if err := repo.UpdateUserRole(c.Request.Context(), targetID, req.Role); err != nil {
+	if err := repositories.NewUserRepo().UpdateUserRole(c.Request.Context(), targetID, req.Role); err != nil {
 		logger.Log.Error().Err(err).Str("user_id", targetID).Msg("update user role error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to update role"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// UpdateUserActive handles PUT /api/console/users/:id/active.
-func (h *Handlers) UpdateUserActive(c *gin.Context) {
+func (h *UserHandlers) UpdateUserActive(c *gin.Context) {
 	if err := h.requireOwnerOrAdmin(c); err != nil {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
 	}
-	currentUserID := middleware.GetCurrentUserID(c)
-	if currentUserID == "" {
-		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
-		return
-	}
-
-	// Prevent self-deactivation
 	targetID := c.Param("id")
-	if targetID == currentUserID {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "cannot deactivate yourself"})
-		return
-	}
-
 	var req struct {
-		IsActive *bool `json:"is_active"`
+		IsActive *bool `json:"isActive"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "field is_active is required"})
+		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "isActive is required"})
 		return
 	}
-
-	repo := repositories.NewUserRepo()
-	if err := repo.UpdateUserActive(c.Request.Context(), targetID, *req.IsActive); err != nil {
+	if err := repositories.NewUserRepo().UpdateUserActive(c.Request.Context(), targetID, *req.IsActive); err != nil {
 		logger.Log.Error().Err(err).Str("user_id", targetID).Msg("update user active error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to update status"})
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "is_active": *req.IsActive})
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// DeleteUser handles DELETE /api/console/users/:id.
-func (h *Handlers) DeleteUser(c *gin.Context) {
+func (h *UserHandlers) DeleteUser(c *gin.Context) {
 	if err := h.requireOwnerOrAdmin(c); err != nil {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
 	}
-	currentUserID := middleware.GetCurrentUserID(c)
-	if currentUserID == "" {
-		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
-		return
-	}
-
-	// Prevent self-deletion
 	targetID := c.Param("id")
-	if targetID == currentUserID {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "cannot delete yourself"})
-		return
-	}
-
-	repo := repositories.NewUserRepo()
-	if err := repo.DeleteUser(c.Request.Context(), targetID); err != nil {
+	if err := repositories.NewUserRepo().DeleteUser(c.Request.Context(), targetID); err != nil {
 		logger.Log.Error().Err(err).Str("user_id", targetID).Msg("delete user error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to delete user"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

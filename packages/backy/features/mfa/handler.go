@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	notifeat "verso/backy/features/notification"
 	"verso/backy/middleware"
 	"verso/backy/shared/auth"
 	"verso/backy/shared/logger"
@@ -14,16 +15,16 @@ import (
 // MFAHandlers holds HTTP handlers for MFA endpoints.
 type MFAHandlers struct {
 	mfaService *MFAService
-	notifier   Notifier
+	notifier   notifeat.Notifier
 }
 
 // NewMFAHandlers creates a new MFAHandlers.
 func NewMFAHandlers(mfaService *MFAService) *MFAHandlers {
-	return &MFAHandlers{mfaService: mfaService, notifier: NoopNotifier()}
+	return &MFAHandlers{mfaService: mfaService, notifier: notifeat.NoopNotifier()}
 }
 
-// SetNotifier sets the notification service on the MFA handlers.
-func (h *MFAHandlers) SetNotifier(n Notifier) {
+// SetNotifier sets the notification service on the MFA
+func (h *MFAHandlers) SetNotifier(n notifeat.Notifier) {
 	h.notifier = n
 }
 
@@ -117,8 +118,8 @@ func (h *MFAHandlers) Enable(c *gin.Context) {
 		return
 	}
 
-	h.notifier.Notify(c.Request.Context(), NotificationEvent{
-		Type:         EventProfileMFAEnabled,
+	h.notifier.Notify(c.Request.Context(), notifeat.NotificationEvent{
+		Type:         notifeat.EventProfileMFAEnabled,
 		WorkspaceID:  "",
 		ActorID:      userID,
 		RecipientIDs: []string{userID},
@@ -155,8 +156,8 @@ func (h *MFAHandlers) Disable(c *gin.Context) {
 		return
 	}
 
-	h.notifier.Notify(c.Request.Context(), NotificationEvent{
-		Type:         EventProfileMFADisabled,
+	h.notifier.Notify(c.Request.Context(), notifeat.NotificationEvent{
+		Type:         notifeat.EventProfileMFADisabled,
 		WorkspaceID:  "",
 		ActorID:      userID,
 		RecipientIDs: []string{userID},

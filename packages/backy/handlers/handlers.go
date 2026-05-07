@@ -11,8 +11,13 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"verso/backy/database/models"
+	"verso/backy/repositories"
 	notifeat "verso/backy/features/notification"
+	ghfeat "verso/backy/features/github"
 	pagefeat "verso/backy/features/page"
+	spacefeat "verso/backy/features/space"
+	wsfeat "verso/backy/features/workspace"
+	groupfeat "verso/backy/features/group"
 	"verso/backy/middleware"
 	"verso/backy/shared/cache"
 	"verso/backy/shared/logger"
@@ -21,17 +26,17 @@ import (
 
 // Handlers holds all HTTP handlers
 type Handlers struct {
-	githubService *GitHubfeat.GitHubService
+	githubService *ghfeat.GitHubService
 	statsCache    *cache.StatsCache
 	config        Config
 	statsGroup    singleflight.Group
 
 	// Optional DB-backed services; if nil, falls back to file-based store
-	pageService      *Pagefeat.PageService
-	spaceService     *Spacefeat.SpaceService
-	workspaceService *Workspacefeat.WorkspaceService
-	groupService     *Groupfeat.GroupService
-	notifier         feat.Notifier
+	pageService      *pagefeat.PageService
+	spaceService     *spacefeat.SpaceService
+	workspaceService *wsfeat.WorkspaceService
+	groupService     *groupfeat.GroupService
+	notifier         notifeat.Notifier
 }
 
 // Config holds application configuration
@@ -41,22 +46,24 @@ type Config struct {
 }
 
 // New creates a new handlers instance
+
+
 func New(cfg Config) *Handlers {
 	return &Handlers{
-		githubService: notifeat.NewGitHubService(10 * time.Minute),
+		githubService: ghfeat.NewGitHubService(10 * time.Minute),
 		statsCache:    cache.NewStatsCache(10 * time.Minute),
 		config:        cfg,
-		notifier:      Noopfeat.Notifier(),
+		notifier:      notifeat.NoopNotifier(),
 	}
 }
 
 // SetNotifier sets the notification service on the handlers.
-func (h *Handlers) SetNotifier(n feat.Notifier) {
+func (h *Handlers) SetNotifier(n notifeat.Notifier) {
 	h.notifier = n
 }
 
 // NewWithDB creates a new handlers instance with database-backed services.
-func NewWithDB(cfg Config, pageService *Pagefeat.PageService, spaceService *Spacefeat.SpaceService, workspaceService *Workspacefeat.WorkspaceService, groupService *Groupfeat.GroupService) *Handlers {
+func NewWithDB(cfg Config, pageService *pagefeat.PageService, spaceService *spacefeat.SpaceService, workspaceService *wsfeat.WorkspaceService, groupService *groupfeat.GroupService) *Handlers {
 	h := New(cfg)
 	h.pageService = pageService
 	h.spaceService = spaceService
@@ -689,7 +696,7 @@ func (h *Handlers) GetConsolePageHistoryEntry(c *gin.Context) {
 	historyID := c.Param("historyId")
 	entry, err := h.pageService.GetHistoryEntry(c.Request.Context(), historyID)
 	if err != nil {
-		if errors.Is(err, pagefeat.ErrPageHistoryNotFound) || errors.Is(err, pagefeat.ErrHistoryNotFound) {
+		if errors.Is(err, repositories.ErrPageHistoryNotFound) || errors.Is(err, pagefeat.ErrHistoryNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
 			return
 		}
@@ -738,7 +745,7 @@ func (h *Handlers) RestoreConsolePage(c *gin.Context) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
-		if errors.Is(err, pagefeat.ErrPageHistoryNotFound) {
+		if errors.Is(err, repositories.ErrPageHistoryNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
 			return
 		}

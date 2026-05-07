@@ -6,14 +6,25 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/middleware"
 	"verso/backy/shared/logger"
+	wsfeat "verso/backy/features/workspace"
+	"verso/backy/middleware"
 )
+
+
+type GroupHandlers struct {
+	groupService     *GroupService
+	workspaceService *wsfeat.WorkspaceService
+}
+
+func NewGroupHandlers(gs *GroupService, ws *wsfeat.WorkspaceService) *GroupHandlers {
+	return &GroupHandlers{groupService: gs, workspaceService: ws}
+}
 
 // --- Group Handlers ---
 
 // GetGroups handles GET /api/console/workspaces/:workspaceId/groups.
-func (h *Handlers) GetGroups(c *gin.Context) {
+func (h *GroupHandlers) GetGroups(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusOK, gin.H{"groups": []any{}})
 		return
@@ -44,7 +55,7 @@ type CreateGroupRequest struct {
 }
 
 // CreateGroup handles POST /api/console/workspaces/:workspaceId/groups.
-func (h *Handlers) CreateGroup(c *gin.Context) {
+func (h *GroupHandlers) CreateGroup(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "group service unavailable"})
 		return
@@ -80,7 +91,7 @@ type UpdateGroupRequest struct {
 }
 
 // UpdateGroup handles PUT /api/console/groups/:id.
-func (h *Handlers) UpdateGroup(c *gin.Context) {
+func (h *GroupHandlers) UpdateGroup(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "group service unavailable"})
 		return
@@ -118,7 +129,7 @@ func (h *Handlers) UpdateGroup(c *gin.Context) {
 }
 
 // DeleteGroup handles DELETE /api/console/groups/:id.
-func (h *Handlers) DeleteGroup(c *gin.Context) {
+func (h *GroupHandlers) DeleteGroup(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "group service unavailable"})
 		return
@@ -149,7 +160,7 @@ func (h *Handlers) DeleteGroup(c *gin.Context) {
 }
 
 // GetGroupMembers handles GET /api/console/groups/:id/members.
-func (h *Handlers) GetGroupMembers(c *gin.Context) {
+func (h *GroupHandlers) GetGroupMembers(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusOK, gin.H{"members": []any{}})
 		return
@@ -181,7 +192,7 @@ type AddGroupMemberRequest struct {
 }
 
 // AddGroupMember handles POST /api/console/groups/:id/members.
-func (h *Handlers) AddGroupMember(c *gin.Context) {
+func (h *GroupHandlers) AddGroupMember(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "group service unavailable"})
 		return
@@ -214,7 +225,7 @@ func (h *Handlers) AddGroupMember(c *gin.Context) {
 }
 
 // RemoveGroupMember handles DELETE /api/console/groups/:id/members/:userId.
-func (h *Handlers) RemoveGroupMember(c *gin.Context) {
+func (h *GroupHandlers) RemoveGroupMember(c *gin.Context) {
 	if h.groupService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "group service unavailable"})
 		return

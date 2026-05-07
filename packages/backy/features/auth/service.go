@@ -14,6 +14,7 @@ import (
 	"verso/backy/shared/auth"
 	"verso/backy/shared/logger"
 	"verso/backy/database/models"
+	wsfeat "verso/backy/features/workspace"
 	"verso/backy/repositories"
 )
 
@@ -24,6 +25,7 @@ var (
 	ErrUserNotFound        = errors.New("user not found")
 	ErrAlreadyBootstrapped = errors.New("system already bootstrapped")
 	ErrInvalidRefreshToken = errors.New("invalid or expired refresh token")
+	ErrDuplicateUser       = errors.New("user already exists")
 )
 
 // TokenPair holds the access and refresh tokens returned after authentication.
@@ -39,7 +41,7 @@ type AuthService struct {
 	workspaceRepo *repositories.WorkspaceRepo
 	spaceRepo     *repositories.SpaceRepo
 	groupRepo     *repositories.GroupRepo
-	wsService     *WorkspaceService
+	wsService     *wsfeat.WorkspaceService
 }
 
 // NewAuthService creates a new AuthService.
@@ -54,7 +56,7 @@ func NewAuthService() *AuthService {
 }
 
 // SetWorkspaceService injects the workspace service for bootstrap use.
-func (s *AuthService) SetWorkspaceService(ws *WorkspaceService) {
+func (s *AuthService) SetWorkspaceService(ws *wsfeat.WorkspaceService) {
 	s.wsService = ws
 }
 
@@ -163,7 +165,7 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 
 	userID, err := s.userRepo.CreateUser(ctx, username, email, name, passwordHash, "owner")
 	if err != nil {
-		if errors.Is(err, repositories.ErrDuplicateUser) {
+		if errors.Is(err, ErrDuplicateUser) {
 			return nil, nil, ErrAlreadyBootstrapped
 		}
 		return nil, nil, fmt.Errorf("create bootstrap user: %w", err)

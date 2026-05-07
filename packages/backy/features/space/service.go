@@ -10,20 +10,24 @@ import (
 
 	"verso/backy/database/models"
 	"verso/backy/repositories"
+	notifeat "verso/backy/features/notification"
 )
 
 // ErrSpaceNotFound is returned when a space is not found.
+var ErrSpaceNotFound = errors.New("space not found")
 
 // ErrSpaceNotEmpty is returned when trying to delete a space that still has pages.
+var ErrSpaceNotEmpty = errors.New("space is not empty")
 
 // ErrSpacePermissionDenied is returned when a user lacks permission for an action.
+var ErrSpacePermissionDenied = errors.New("permission denied for this space")
 
 // SpaceService provides business logic for spaces.
 type SpaceService struct {
 	spaceRepo *repositories.SpaceRepo
 	pageRepo  *repositories.PageRepo
 	groupRepo *repositories.GroupRepo
-	notifier  Notifier
+	notifier  notifeat.Notifier
 }
 
 // NewSpaceService creates a new space service.
@@ -32,12 +36,12 @@ func NewSpaceService(spaceRepo *repositories.SpaceRepo, pageRepo *repositories.P
 		spaceRepo: spaceRepo,
 		pageRepo:  pageRepo,
 		groupRepo: groupRepo,
-		notifier:  NoopNotifier(),
+		notifier:  notifeat.NoopNotifier(),
 	}
 }
 
 // SetNotifier sets the notification service on the space service.
-func (s *SpaceService) SetNotifier(n Notifier) {
+func (s *SpaceService) SetNotifier(n notifeat.Notifier) {
 	s.notifier = n
 }
 
@@ -70,8 +74,8 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 
 	// Notify workspace members (excluding creator)
 	recipients, _ := s.workspaceMemberIDsForSpace(ctx, space.WorkspaceID)
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventSpaceCreated,
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventSpaceCreated,
 		WorkspaceID:  workspaceID,
 		ActorID:      userID,
 		RecipientIDs: recipients,
@@ -91,7 +95,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 
 	existing, err := s.spaceRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrSpaceNotFound) {
+		if errors.Is(err, ErrSpaceNotFound) {
 			return models.Space{}, ErrSpaceNotFound
 		}
 		return models.Space{}, fmt.Errorf("getting space: %w", err)
@@ -116,8 +120,8 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 
 	recipients, _ := s.workspaceMemberIDsForSpace(ctx, existing.WorkspaceID)
 	if iconChanged && !nameOrSlugChanged {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventSpaceIconChanged,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventSpaceIconChanged,
 			WorkspaceID:  existing.WorkspaceID,
 			ActorID:      userID,
 			RecipientIDs: recipients,
@@ -126,8 +130,8 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 			Metadata:     map[string]string{"name": name},
 		})
 	} else if nameOrSlugChanged {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventSpaceRenamed,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventSpaceRenamed,
 			WorkspaceID:  existing.WorkspaceID,
 			ActorID:      userID,
 			RecipientIDs: recipients,
@@ -163,7 +167,7 @@ func (s *SpaceService) DeleteSpace(ctx context.Context, id, userID string) error
 	}
 
 	if err := s.spaceRepo.SoftDelete(ctx, id); err != nil {
-		if errors.Is(err, repositories.ErrSpaceNotFound) {
+		if errors.Is(err, ErrSpaceNotFound) {
 			return ErrSpaceNotFound
 		}
 		return fmt.Errorf("deleting space: %w", err)
@@ -185,7 +189,7 @@ func (s *SpaceService) ListSpaces(ctx context.Context, workspaceID string) ([]mo
 func (s *SpaceService) GetSpaceByID(ctx context.Context, id string) (models.Space, error) {
 	space, err := s.spaceRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrSpaceNotFound) {
+		if errors.Is(err, ErrSpaceNotFound) {
 			return models.Space{}, ErrSpaceNotFound
 		}
 		return models.Space{}, fmt.Errorf("getting space: %w", err)
@@ -197,7 +201,7 @@ func (s *SpaceService) GetSpaceByID(ctx context.Context, id string) (models.Spac
 func (s *SpaceService) GetSpaceBySlug(ctx context.Context, slug, userID string) (models.Space, error) {
 	space, err := s.spaceRepo.GetBySlug(ctx, slug)
 	if err != nil {
-		if errors.Is(err, repositories.ErrSpaceNotFound) {
+		if errors.Is(err, ErrSpaceNotFound) {
 			return models.Space{}, ErrSpaceNotFound
 		}
 		return models.Space{}, fmt.Errorf("getting space by slug: %w", err)
@@ -304,8 +308,8 @@ func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role
 	}
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err == nil {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventSpaceMemberAdded,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventSpaceMemberAdded,
 			WorkspaceID:  space.WorkspaceID,
 			ActorID:      actorID,
 			RecipientIDs: []string{userID},
@@ -330,8 +334,8 @@ func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userI
 	}
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err == nil {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventRoleChanged,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventRoleChanged,
 			WorkspaceID:  space.WorkspaceID,
 			ActorID:      actorID,
 			RecipientIDs: []string{userID},
@@ -353,8 +357,8 @@ func (s *SpaceService) RemoveSpaceMember(ctx context.Context, spaceID, userID, a
 	}
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err == nil {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventSpaceMemberRemoved,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventSpaceMemberRemoved,
 			WorkspaceID:  space.WorkspaceID,
 			ActorID:      actorID,
 			RecipientIDs: []string{userID},

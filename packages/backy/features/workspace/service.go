@@ -9,6 +9,7 @@ import (
 
 	"verso/backy/database"
 	"verso/backy/database/models"
+	notifeat "verso/backy/features/notification"
 	"verso/backy/repositories"
 )
 
@@ -23,7 +24,7 @@ type WorkspaceService struct {
 	workspaceRepo *repositories.WorkspaceRepo
 	spaceRepo     *repositories.SpaceRepo
 	groupRepo     *repositories.GroupRepo
-	notifier      Notifier
+	notifier      notifeat.Notifier
 }
 
 // NewWorkspaceService creates a new workspace service.
@@ -32,12 +33,12 @@ func NewWorkspaceService(workspaceRepo *repositories.WorkspaceRepo, spaceRepo *r
 		workspaceRepo: workspaceRepo,
 		spaceRepo:     spaceRepo,
 		groupRepo:     groupRepo,
-		notifier:      NoopNotifier(),
+		notifier:      notifeat.NoopNotifier(),
 	}
 }
 
 // SetNotifier sets the notification service on the workspace service.
-func (s *WorkspaceService) SetNotifier(n Notifier) {
+func (s *WorkspaceService) SetNotifier(n notifeat.Notifier) {
 	s.notifier = n
 }
 
@@ -130,7 +131,7 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 
 	existing, err := s.workspaceRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrWorkspaceNotFound) {
+		if errors.Is(err, ErrWorkspaceNotFound) {
 			return models.Workspace{}, ErrWorkspaceNotFound
 		}
 		return models.Workspace{}, fmt.Errorf("getting workspace: %w", err)
@@ -152,16 +153,16 @@ func (s *WorkspaceService) UpdateWorkspace(ctx context.Context, id, name, slug, 
 
 	recipients, _ := s.workspaceMemberIDs(ctx, id)
 	if iconChanged && !nameChanged {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventWorkspaceIconChanged,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventWorkspaceIconChanged,
 			WorkspaceID:  id,
 			ActorID:      userID,
 			RecipientIDs: recipients,
 			Metadata:     map[string]string{"name": name},
 		})
 	} else if nameChanged {
-		s.notifier.Notify(ctx, NotificationEvent{
-			Type:         EventWorkspaceRenamed,
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventWorkspaceRenamed,
 			WorkspaceID:  id,
 			ActorID:      userID,
 			RecipientIDs: recipients,
@@ -202,7 +203,7 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id, userID strin
 	recipients, _ := s.workspaceMemberIDs(ctx, id)
 
 	if err := s.workspaceRepo.SoftDelete(ctx, id); err != nil {
-		if errors.Is(err, repositories.ErrWorkspaceNotFound) {
+		if errors.Is(err, ErrWorkspaceNotFound) {
 			return ErrWorkspaceNotFound
 		}
 		return fmt.Errorf("deleting workspace: %w", err)
@@ -212,8 +213,8 @@ func (s *WorkspaceService) DeleteWorkspace(ctx context.Context, id, userID strin
 	if ws.Name != "" {
 		wsName = ws.Name
 	}
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventWorkspaceDeleted,
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventWorkspaceDeleted,
 		WorkspaceID:  id,
 		ActorID:      userID,
 		RecipientIDs: recipients,
@@ -236,7 +237,7 @@ func (s *WorkspaceService) ListWorkspaces(ctx context.Context, userID string) ([
 func (s *WorkspaceService) GetWorkspaceByID(ctx context.Context, id string) (models.Workspace, error) {
 	workspace, err := s.workspaceRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrWorkspaceNotFound) {
+		if errors.Is(err, ErrWorkspaceNotFound) {
 			return models.Workspace{}, ErrWorkspaceNotFound
 		}
 		return models.Workspace{}, fmt.Errorf("getting workspace: %w", err)
@@ -325,8 +326,8 @@ func (s *WorkspaceService) AddWorkspaceMember(ctx context.Context, workspaceID, 
 	if ws.Name != "" {
 		wsName = ws.Name
 	}
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventWorkspaceMemberAdded,
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventWorkspaceMemberAdded,
 		WorkspaceID:  workspaceID,
 		ActorID:      actorID,
 		RecipientIDs: []string{userID},

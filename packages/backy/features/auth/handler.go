@@ -8,18 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"verso/backy/shared/auth"
+	mfafeat "verso/backy/features/mfa"
 	"verso/backy/shared/logger"
-	"verso/backy/services"
 )
 
 // AuthHandlers holds HTTP handlers for authentication endpoints.
 type AuthHandlers struct {
-	authService *services.AuthService
-	mfaService  *services.MFAService
+	authService *AuthService
+	mfaService  *mfafeat.MFAService
 }
 
 // NewAuthHandlers creates a new AuthHandlers.
-func NewAuthHandlers(authService *services.AuthService, mfaService *services.MFAService) *AuthHandlers {
+func NewAuthHandlers(authService *AuthService, mfaService *mfafeat.MFAService) *AuthHandlers {
 	return &AuthHandlers{authService: authService, mfaService: mfaService}
 }
 
@@ -56,9 +56,9 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 		return
 	}
 
-	var bootstrapParams *services.BootstrapParams
+	var bootstrapParams *BootstrapParams
 	if req.Email != "" {
-		bootstrapParams = &services.BootstrapParams{
+		bootstrapParams = &BootstrapParams{
 			Name:          req.Name,
 			WorkspaceName: req.WorkspaceName,
 			SpaceName:     req.SpaceName,
@@ -68,15 +68,15 @@ func (h *AuthHandlers) Login(c *gin.Context) {
 	deviceName := parseDeviceName(c.GetHeader("User-Agent"))
 	userResp, pair, err := h.authService.Login(c.Request.Context(), req.UsernameOrEmail, req.Password, req.Email, bootstrapParams, deviceName)
 	if err != nil {
-		if errors.Is(err, services.ErrNotBootstrapped) {
+		if errors.Is(err, ErrNotBootstrapped) {
 			c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "system not bootstrapped"})
 			return
 		}
-		if errors.Is(err, services.ErrUserInactive) {
+		if errors.Is(err, ErrUserInactive) {
 			c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "user account is inactive"})
 			return
 		}
-		if errors.Is(err, services.ErrAlreadyBootstrapped) {
+		if errors.Is(err, ErrAlreadyBootstrapped) {
 			c.JSON(http.StatusConflict, auth.ErrorResponse{Error: "system already bootstrapped"})
 			return
 		}
@@ -123,7 +123,7 @@ func (h *AuthHandlers) Refresh(c *gin.Context) {
 
 	pair, err := h.authService.Refresh(c.Request.Context(), rawToken)
 	if err != nil {
-		if errors.Is(err, services.ErrInvalidRefreshToken) {
+		if errors.Is(err, ErrInvalidRefreshToken) {
 			c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired refresh token"})
 			return
 		}
@@ -180,7 +180,7 @@ func (h *AuthHandlers) Me(c *gin.Context) {
 
 	userResp, err := h.authService.GetMe(c.Request.Context(), accessClaims.UserID)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
+		if errors.Is(err, ErrUserNotFound) {
 			c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
 			return
 		}
@@ -227,7 +227,7 @@ func extractAuthToken(c *gin.Context) string {
 	return ""
 }
 
-func setAuthCookies(c *gin.Context, pair *services.TokenPair) {
+func setAuthCookies(c *gin.Context, pair *TokenPair) {
 	domain := auth.GetCookieDomain()
 	secure := auth.GetCookieSecure()
 	maxAgeAccess := int(auth.GetAccessTokenTTL().Seconds())
@@ -310,7 +310,7 @@ func (h *AuthHandlers) VerifyMFA(c *gin.Context) {
 
 	valid, _, err := h.mfaService.Verify(c.Request.Context(), claims.UserID, req.Code)
 	if err != nil {
-		if errors.Is(err, services.ErrMFANotEnabled) {
+		if errors.Is(err, mfafeat.ErrMFANotEnabled) {
 			clearMFAChallengeCookie(c)
 			c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "mfa not enabled"})
 			return

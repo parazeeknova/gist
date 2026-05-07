@@ -5,25 +5,26 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	authfeat "verso/backy/features/auth"
+	notifeat "verso/backy/features/notification"
+	"verso/backy/middleware"
 	"verso/backy/shared/auth"
 	"verso/backy/shared/logger"
-	"verso/backy/middleware"
-	"verso/backy/services"
 )
 
 // ProfileHandlers holds HTTP handlers for profile endpoints.
 type ProfileHandlers struct {
-	authService *services.AuthService
-	notifier    services.Notifier
+	authService *authfeat.AuthService
+	notifier    notifeat.Notifier
 }
 
 // NewProfileHandlers creates a new ProfileHandlers.
-func NewProfileHandlers(authService *services.AuthService) *ProfileHandlers {
-	return &ProfileHandlers{authService: authService, notifier: services.NoopNotifier()}
+func NewProfileHandlers(authService *authfeat.AuthService) *ProfileHandlers {
+	return &ProfileHandlers{authService: authService, notifier: notifeat.NoopNotifier()}
 }
 
-// SetNotifier sets the notification service on the profile handlers.
-func (h *ProfileHandlers) SetNotifier(n services.Notifier) {
+// SetNotifier sets the notification service on the profile
+func (h *ProfileHandlers) SetNotifier(n notifeat.Notifier) {
 	h.notifier = n
 }
 
@@ -105,16 +106,16 @@ func (h *ProfileHandlers) UpdateProfile(c *gin.Context) {
 
 	// Notify self only for actual changes.
 	if avatarChanged {
-		h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
-			Type:         services.EventProfileAvatarUpdated,
+		h.notifier.Notify(c.Request.Context(), notifeat.NotificationEvent{
+			Type:         notifeat.EventProfileAvatarUpdated,
 			WorkspaceID:  "",
 			ActorID:      userID,
 			RecipientIDs: []string{userID},
 		})
 	}
 	if nameChanged {
-		h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
-			Type:         services.EventProfileNameChanged,
+		h.notifier.Notify(c.Request.Context(), notifeat.NotificationEvent{
+			Type:         notifeat.EventProfileNameChanged,
 			WorkspaceID:  "",
 			ActorID:      userID,
 			RecipientIDs: []string{userID},
@@ -151,7 +152,7 @@ func (h *ProfileHandlers) ChangePassword(c *gin.Context) {
 	logger.Log.Debug().Str("user_id", userID).Msg("change password requested")
 
 	if err := h.authService.ChangePassword(c.Request.Context(), userID, req.CurrentPassword, req.NewPassword); err != nil {
-		if err == services.ErrInvalidPassword {
+		if err == authfeat.ErrInvalidPassword {
 			logger.Log.Warn().Str("user_id", userID).Msg("change password failed: invalid current password")
 			c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "current password is incorrect"})
 			return
@@ -161,8 +162,8 @@ func (h *ProfileHandlers) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	h.notifier.Notify(c.Request.Context(), services.NotificationEvent{
-		Type:         services.EventProfilePasswordChanged,
+	h.notifier.Notify(c.Request.Context(), notifeat.NotificationEvent{
+		Type:         notifeat.EventProfilePasswordChanged,
 		WorkspaceID:  "",
 		ActorID:      userID,
 		RecipientIDs: []string{userID},

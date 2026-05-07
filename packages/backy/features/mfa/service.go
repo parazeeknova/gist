@@ -32,11 +32,11 @@ type MFAService struct {
 	mfaRepo       *repositories.MFARepo
 	userRepo      *repositories.UserRepo
 	workspaceRepo *repositories.WorkspaceRepo
-	authService   *AuthService
+	authService   any
 }
 
 // NewMFAService creates a new MFAService.
-func NewMFAService(authService *AuthService) *MFAService {
+func NewMFAService(authService any) *MFAService {
 	return &MFAService{
 		mfaRepo:       repositories.NewMFARepo(),
 		userRepo:      repositories.NewUserRepo(),
@@ -122,7 +122,7 @@ func (s *MFAService) Setup(ctx context.Context, userID string) (*MFASetupResult,
 		return nil, fmt.Errorf("get user for setup: %w", err)
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, fmt.Errorf("user not found")
 	}
 
 	return &MFASetupResult{

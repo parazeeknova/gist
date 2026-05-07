@@ -11,10 +11,18 @@ import (
 	"verso/backy/shared/logger"
 )
 
+type WorkspaceHandlers struct {
+	workspaceService *WorkspaceService
+}
+
+func NewWorkspaceHandlers(svc *WorkspaceService) *WorkspaceHandlers {
+	return &WorkspaceHandlers{workspaceService: svc}
+}
+
 // --- Workspace Handlers ---
 
 // GetWorkspaces handles GET /api/console/workspaces.
-func (h *Handlers) GetWorkspaces(c *gin.Context) {
+func (h *WorkspaceHandlers) GetWorkspaces(c *gin.Context) {
 	if h.workspaceService == nil {
 		c.JSON(http.StatusOK, []models.Workspace{})
 		return
@@ -39,7 +47,7 @@ type CreateWorkspaceRequest struct {
 }
 
 // CreateWorkspace handles POST /api/console/workspaces.
-func (h *Handlers) CreateWorkspace(c *gin.Context) {
+func (h *WorkspaceHandlers) CreateWorkspace(c *gin.Context) {
 	if h.workspaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "workspace service unavailable"})
 		return
@@ -70,7 +78,7 @@ type UpdateWorkspaceRequest struct {
 }
 
 // UpdateWorkspace handles PUT /api/console/workspaces/:id.
-func (h *Handlers) UpdateWorkspace(c *gin.Context) {
+func (h *WorkspaceHandlers) UpdateWorkspace(c *gin.Context) {
 	if h.workspaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "workspace service unavailable"})
 		return
@@ -104,7 +112,7 @@ func (h *Handlers) UpdateWorkspace(c *gin.Context) {
 }
 
 // DeleteWorkspace handles DELETE /api/console/workspaces/:id.
-func (h *Handlers) DeleteWorkspace(c *gin.Context) {
+func (h *WorkspaceHandlers) DeleteWorkspace(c *gin.Context) {
 	if h.workspaceService == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "workspace service unavailable"})
 		return

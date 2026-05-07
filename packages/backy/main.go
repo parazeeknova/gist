@@ -11,12 +11,23 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 
+	"verso/backy/shared/auth"
 	"verso/backy/database"
 	"verso/backy/handlers"
+	authfeat "verso/backy/features/auth"
+	mfafeat "verso/backy/features/mfa"
+	notifeat "verso/backy/features/notification"
+	sfeat "verso/backy/features/space"
+	pfeat "verso/backy/features/page"
+	pushfeat "verso/backy/features/push"
+	profilefeat "verso/backy/features/profile"
+	wsfeat "verso/backy/features/workspace"
+	gfeat "verso/backy/features/group"
+	ufeat "verso/backy/features/user"
+	dfeat "verso/backy/features/debug"
+	"verso/backy/shared/logger"
 	"verso/backy/middleware"
 	"verso/backy/repositories"
-	"verso/backy/shared/auth"
-	"verso/backy/shared/logger"
 	"verso/backy/shared/storage"
 )
 
@@ -93,9 +104,12 @@ func main() {
 	}
 
 	var h *handlers.Handlers
-	var notificationService *services.NotificationService
-	var hub *services.NotificationHub
-	var workspaceService *services.WorkspaceService
+	var notificationService *notifeat.NotificationService
+	var hub *notifeat.NotificationHub
+	var workspaceService *wsfeat.WorkspaceService
+	var spaceService *sfeat.SpaceService
+	var groupService *gfeat.GroupService
+	var pageService *pfeat.PageService
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
@@ -103,18 +117,18 @@ func main() {
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
 		groupRepo := repositories.NewGroupRepo()
-		pageService := services.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
-		spaceService := services.NewSpaceService(spaceRepo, pageRepo, groupRepo)
-		workspaceService = services.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
-		groupService := services.NewGroupService(groupRepo, workspaceRepo)
+		pageService = pfeat.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
+		spaceService = sfeat.NewSpaceService(spaceRepo, pageRepo, groupRepo)
+		workspaceService = wsfeat.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
+		groupService = gfeat.NewGroupService(groupRepo, workspaceRepo)
 
 		// Notification service
 		notifRepo := repositories.NewNotificationRepo()
 		pushSubRepo := repositories.NewPushSubscriptionRepo()
-		notificationService = services.NewNotificationService(notifRepo, pushSubRepo, repositories.NewUserRepo())
+		notificationService = notifeat.NewNotificationService(notifRepo, pushSubRepo, repositories.NewUserRepo())
 
 		// SSE hub for real-time notification streaming
-		hub = services.NewNotificationHub()
+		hub = notifeat.NewNotificationHub()
 		notificationService.SetHub(hub)
 
 		// Wire notification service into domain services
@@ -130,26 +144,32 @@ func main() {
 	}
 
 	// Create auth service and handlers
-	authService := services.NewAuthService()
+	authService := authfeat.NewAuthService()
 	if workspaceService != nil {
 		authService.SetWorkspaceService(workspaceService)
 	}
-	mfaService := services.NewMFAService(authService)
-	authHandlers := handlers.NewAuthHandlers(authService, mfaService)
-	profileHandlers := handlers.NewProfileHandlers(authService)
-	mfaHandlers := handlers.NewMFAHandlers(mfaService)
+	mfaService := mfafeat.NewMFAService(interface{}(authService))
+	authHandlers := authfeat.NewAuthHandlers(authService, mfaService)
+	profileHandlers := profilefeat.NewProfileHandlers(authService)
+	mfaHandlers := mfafeat.NewMFAHandlers(mfaService)
 
 	if notificationService != nil {
 		profileHandlers.SetNotifier(notificationService)
 		mfaHandlers.SetNotifier(notificationService)
 	}
 
-	var notifHandlers *handlers.NotificationHandlers
-	var pushHandlers *handlers.PushSubscriptionHandlers
+	var notifHandlers *notifeat.NotificationHandlers
+	var pushHandlers *pushfeat.PushSubscriptionHandlers
 	if notificationService != nil {
-		notifHandlers = handlers.NewNotificationHandlers(notificationService, hub)
-		pushHandlers = handlers.NewPushSubscriptionHandlers(notificationService)
+		notifHandlers = notifeat.NewNotificationHandlers(notificationService, hub)
+		pushHandlers = pushfeat.NewPushSubscriptionHandlers(notificationService)
 	}
+
+	spaceHandlers := sfeat.NewSpaceHandlers(spaceService)
+	workspaceHandlers := wsfeat.NewWorkspaceHandlers(workspaceService)
+	groupHandlers := gfeat.NewGroupHandlers(groupService, workspaceService)
+	userHandlers := ufeat.NewUserHandlers()
+	debugHandlers := dfeat.NewDebugHandlers()
 
 	r := gin.New()
 
@@ -252,33 +272,33 @@ func main() {
 			mfaHandlers.RegisterRoutes(console)
 
 			// Workspaces
-			console.GET("/workspaces", h.GetWorkspaces)
-			console.POST("/workspaces", h.CreateWorkspace)
-			console.PUT("/workspaces/:id", h.UpdateWorkspace)
-			console.DELETE("/workspaces/:id", h.DeleteWorkspace)
+			console.GET("/workspaces", workspaceHandlers.GetWorkspaces)
+			console.POST("/workspaces", workspaceHandlers.CreateWorkspace)
+			console.PUT("/workspaces/:id", workspaceHandlers.UpdateWorkspace)
+			console.DELETE("/workspaces/:id", workspaceHandlers.DeleteWorkspace)
 
 			// Spaces
-			console.GET("/spaces", h.GetSpaces)
-			console.POST("/spaces", h.CreateSpace)
-			console.GET("/spaces/by-slug/:slug", h.GetSpaceBySlug)
-			console.PUT("/spaces/:id", h.UpdateSpace)
-			console.DELETE("/spaces/:id", h.DeleteSpace)
-			console.GET("/spaces/:id/members", h.GetSpaceMembers)
-			console.POST("/spaces/:id/members/:userId", h.AddSpaceMember)
-			console.PUT("/spaces/:id/members/:userId", h.UpdateSpaceMemberRole)
-			console.DELETE("/spaces/:id/members/:userId", h.RemoveSpaceMember)
-			console.POST("/spaces/:id/groups/:groupId", h.AddSpaceGroup)
-			console.PUT("/spaces/:id/groups/:groupId", h.UpdateSpaceGroupRole)
-			console.DELETE("/spaces/:id/groups/:groupId", h.RemoveSpaceGroup)
+			console.GET("/spaces", spaceHandlers.GetSpaces)
+			console.POST("/spaces", spaceHandlers.CreateSpace)
+			console.GET("/spaces/by-slug/:slug", spaceHandlers.GetSpaceBySlug)
+			console.PUT("/spaces/:id", spaceHandlers.UpdateSpace)
+			console.DELETE("/spaces/:id", spaceHandlers.DeleteSpace)
+			console.GET("/spaces/:id/members", spaceHandlers.GetSpaceMembers)
+			console.POST("/spaces/:id/members/:userId", spaceHandlers.AddSpaceMember)
+			console.PUT("/spaces/:id/members/:userId", spaceHandlers.UpdateSpaceMemberRole)
+			console.DELETE("/spaces/:id/members/:userId", spaceHandlers.RemoveSpaceMember)
+			console.POST("/spaces/:id/groups/:groupId", spaceHandlers.AddSpaceGroup)
+			console.PUT("/spaces/:id/groups/:groupId", spaceHandlers.UpdateSpaceGroupRole)
+			console.DELETE("/spaces/:id/groups/:groupId", spaceHandlers.RemoveSpaceGroup)
 
 			// Groups
-			console.GET("/workspaces/:workspaceId/groups", h.GetGroups)
-			console.POST("/workspaces/:workspaceId/groups", h.CreateGroup)
-			console.PUT("/groups/:id", h.UpdateGroup)
-			console.DELETE("/groups/:id", h.DeleteGroup)
-			console.GET("/groups/:id/members", h.GetGroupMembers)
-			console.POST("/groups/:id/members", h.AddGroupMember)
-			console.DELETE("/groups/:id/members/:userId", h.RemoveGroupMember)
+			console.GET("/workspaces/:workspaceId/groups", groupHandlers.GetGroups)
+			console.POST("/workspaces/:workspaceId/groups", groupHandlers.CreateGroup)
+			console.PUT("/groups/:id", groupHandlers.UpdateGroup)
+			console.DELETE("/groups/:id", groupHandlers.DeleteGroup)
+			console.GET("/groups/:id/members", groupHandlers.GetGroupMembers)
+			console.POST("/groups/:id/members", groupHandlers.AddGroupMember)
+			console.DELETE("/groups/:id/members/:userId", groupHandlers.RemoveGroupMember)
 
 			// Page CRUD
 			console.GET("/pages", h.GetConsolePages)
@@ -316,10 +336,10 @@ func main() {
 				debug := console.Group("/debug")
 				debug.Use(middleware.OwnerRequired())
 				{
-					debug.GET("/tables", h.GetDebugTables)
-					debug.GET("/tables/:tableName", h.GetDebugTableData)
-					debug.DELETE("/tables/:tableName", h.DeleteDebugTableData)
-					debug.POST("/tables/:tableName/rows", h.DeleteDebugTableRows)
+					debug.GET("/tables", debugHandlers.GetDebugTables)
+					debug.GET("/tables/:tableName", debugHandlers.GetDebugTableData)
+					debug.DELETE("/tables/:tableName", debugHandlers.DeleteDebugTableData)
+					debug.POST("/tables/:tableName/rows", debugHandlers.DeleteDebugTableRows)
 				}
 			}
 
@@ -327,10 +347,10 @@ func main() {
 			admin := console.Group("/users")
 			admin.Use(middleware.AdminRequired())
 			{
-				admin.GET("", h.GetUsers)
-				admin.PUT("/:id/role", h.UpdateUserRole)
-				admin.PUT("/:id/active", h.UpdateUserActive)
-				admin.DELETE("/:id", h.DeleteUser)
+				admin.GET("", userHandlers.GetUsers)
+				admin.PUT("/:id/role", userHandlers.UpdateUserRole)
+				admin.PUT("/:id/active", userHandlers.UpdateUserActive)
+				admin.DELETE("/:id", userHandlers.DeleteUser)
 			}
 		}
 	}

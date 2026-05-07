@@ -12,8 +12,9 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"verso/backy/database"
-	"verso/backy/database/models"
 	"verso/backy/fractional"
+	"verso/backy/database/models"
+	notifeat "verso/backy/features/notification"
 	"verso/backy/repositories"
 )
 
@@ -151,7 +152,7 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 
 	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
 	s.notifier.Notify(ctx, notifeat.NotificationEvent{
-		Type:         EventPageCreated,
+		Type:         notifeat.EventPageCreated,
 		WorkspaceID:  page.WorkspaceID,
 		ActorID:      page.CreatorID,
 		RecipientIDs: recipients,
@@ -253,7 +254,7 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 	if ws.WorkspaceID != "" {
 		recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, ws.WorkspaceID)
 		s.notifier.Notify(ctx, notifeat.NotificationEvent{
-			Type:         EventPageUpdated,
+			Type:         notifeat.EventPageUpdated,
 			WorkspaceID:  ws.WorkspaceID,
 			ActorID:      userID,
 			RecipientIDs: recipients,
@@ -522,12 +523,16 @@ func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID 
 }
 
 // ErrBlogPostNotFound is returned when a blog post is not found
+var ErrBlogPostNotFound = errors.New("blog post not found")
 
 // ErrPageNotFound is returned when a page is not found.
+var ErrPageNotFound = errors.New("page not found")
 
 // ErrHistoryNotFound is returned when a history entry is not found.
+var ErrHistoryNotFound = errors.New("history entry not found")
 
 // ErrPagePermissionDenied is returned when a user lacks permission for a page action.
+var ErrPagePermissionDenied = errors.New("permission denied for this page")
 
 // ListAllPages returns all pages (published and drafts) from the database.
 func (s *PageService) ListAllPages(ctx context.Context) ([]models.Page, error) {

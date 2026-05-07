@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"verso/backy/database/models"
+	notifeat "verso/backy/features/notification"
 	"verso/backy/middleware"
 	"verso/backy/shared/logger"
 )

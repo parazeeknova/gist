@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"verso/backy/database/models"
+	notifeat "verso/backy/features/notification"
 	"verso/backy/repositories"
 )
 
@@ -21,7 +22,7 @@ var (
 type GroupService struct {
 	groupRepo     *repositories.GroupRepo
 	workspaceRepo *repositories.WorkspaceRepo
-	notifier      Notifier
+	notifier      notifeat.Notifier
 }
 
 // NewGroupService creates a new group service.
@@ -29,12 +30,12 @@ func NewGroupService(groupRepo *repositories.GroupRepo, workspaceRepo *repositor
 	return &GroupService{
 		groupRepo:     groupRepo,
 		workspaceRepo: workspaceRepo,
-		notifier:      NoopNotifier(),
+		notifier:      notifeat.NoopNotifier(),
 	}
 }
 
 // SetNotifier sets the notification service on the group service.
-func (s *GroupService) SetNotifier(n Notifier) {
+func (s *GroupService) SetNotifier(n notifeat.Notifier) {
 	s.notifier = n
 }
 
@@ -64,7 +65,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, workspaceID, name, descr
 func (s *GroupService) UpdateGroup(ctx context.Context, id, name, description, userID string) (models.Group, error) {
 	g, err := s.groupRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return models.Group{}, ErrGroupNotFound
 		}
 		return models.Group{}, fmt.Errorf("getting group: %w", err)
@@ -92,7 +93,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, id, name, description, u
 func (s *GroupService) DeleteGroup(ctx context.Context, id, userID string) error {
 	g, err := s.groupRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return ErrGroupNotFound
 		}
 		return fmt.Errorf("getting group: %w", err)
@@ -126,7 +127,7 @@ func (s *GroupService) ListGroups(ctx context.Context, workspaceID string) ([]mo
 func (s *GroupService) GetGroupByID(ctx context.Context, id string) (models.Group, error) {
 	g, err := s.groupRepo.GetByID(ctx, id)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return models.Group{}, ErrGroupNotFound
 		}
 		return models.Group{}, fmt.Errorf("getting group: %w", err)
@@ -138,7 +139,7 @@ func (s *GroupService) GetGroupByID(ctx context.Context, id string) (models.Grou
 func (s *GroupService) GetDefaultGroupID(ctx context.Context, workspaceID string) (string, error) {
 	id, err := s.groupRepo.GetDefaultGroupID(ctx, workspaceID)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return "", ErrGroupNotFound
 		}
 		return "", fmt.Errorf("getting default group: %w", err)
@@ -153,7 +154,7 @@ func (s *GroupService) GetDefaultGroupID(ctx context.Context, workspaceID string
 func (s *GroupService) AddGroupMember(ctx context.Context, groupID, memberUserID, actorID string) error {
 	g, err := s.groupRepo.GetByID(ctx, groupID)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return ErrGroupNotFound
 		}
 		return fmt.Errorf("getting group: %w", err)
@@ -174,8 +175,8 @@ func (s *GroupService) AddGroupMember(ctx context.Context, groupID, memberUserID
 	if err := s.groupRepo.AddUser(ctx, groupID, memberUserID); err != nil {
 		return err
 	}
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventGroupMemberAdded,
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventGroupMemberAdded,
 		WorkspaceID:  g.WorkspaceID,
 		ActorID:      actorID,
 		RecipientIDs: []string{memberUserID},
@@ -190,7 +191,7 @@ func (s *GroupService) AddGroupMember(ctx context.Context, groupID, memberUserID
 func (s *GroupService) RemoveGroupMember(ctx context.Context, groupID, memberUserID, actorID string) error {
 	g, err := s.groupRepo.GetByID(ctx, groupID)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return ErrGroupNotFound
 		}
 		return fmt.Errorf("getting group: %w", err)
@@ -207,8 +208,8 @@ func (s *GroupService) RemoveGroupMember(ctx context.Context, groupID, memberUse
 	if err := s.groupRepo.RemoveUser(ctx, groupID, memberUserID); err != nil {
 		return err
 	}
-	s.notifier.Notify(ctx, NotificationEvent{
-		Type:         EventGroupMemberRemoved,
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventGroupMemberRemoved,
 		WorkspaceID:  g.WorkspaceID,
 		ActorID:      actorID,
 		RecipientIDs: []string{memberUserID},
@@ -223,7 +224,7 @@ func (s *GroupService) RemoveGroupMember(ctx context.Context, groupID, memberUse
 func (s *GroupService) GetGroupMembers(ctx context.Context, groupID, actorID string) ([]models.GroupMemberWithUser, error) {
 	g, err := s.groupRepo.GetByID(ctx, groupID)
 	if err != nil {
-		if errors.Is(err, repositories.ErrGroupNotFound) {
+		if errors.Is(err, ErrGroupNotFound) {
 			return nil, ErrGroupNotFound
 		}
 		return nil, fmt.Errorf("getting group: %w", err)
