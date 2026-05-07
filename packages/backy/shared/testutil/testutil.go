@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -101,7 +102,7 @@ func GetTestDatabaseURL(t *testing.T, databaseURL string) string {
 	_, err = adminPool.Exec(ctx, fmt.Sprintf(`CREATE DATABASE "%s"`, testDBName))
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if pgErr != nil && pgErr.Code == "42P04" {
+		if errors.As(err, &pgErr) && pgErr.Code == "42P04" {
 			// already exists, skip
 		} else {
 			t.Fatalf("create test database: %v", err)
