@@ -7,7 +7,7 @@ import { useSpaceBySlug } from "@/features/console/hooks/use-spaces";
 import type { ConsolePage } from "@/shared/types";
 
 export const SpaceOverview = () => {
-  const { spaceSlug } = useParams({ from: "/s/$space-slug" });
+  const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });
   const { data: space } = useSpaceBySlug(spaceSlug);
   const { isDarkMode } = useTheme();
   const { data: pages } = useQuery<ConsolePage[]>({
