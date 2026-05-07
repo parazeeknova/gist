@@ -1,20 +1,11 @@
 import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import type { ConsolePage } from "#/types";
 import { useAuth } from "#/hooks/use-auth";
 import { useTheme } from "#/hooks/use-theme";
-import { fetchProtected } from "#/hooks/fetch-protected";
 import { useCreateSpace, useSpaces } from "#/hooks/use-console-mutations";
 import { useConsoleContext } from "./console-context";
-
-const useConsolePages = () =>
-  useQuery<ConsolePage[]>({
-    queryFn: ({ signal }) => fetchProtected<ConsolePage[]>("/api/console/pages", { signal }),
-    queryKey: ["consolePages"],
-    staleTime: 30 * 1000,
-  });
+import { QuickActions } from "./quick-actions";
 
 const subMessages = [
   "hope you're having a good day",
@@ -46,11 +37,19 @@ const createSubMessages = [
   "a space for everything",
 ];
 
+const MOCK_DOCS = [
+  { id: "1", modified: "2026-05-07", space: "engineering", title: "api design notes" },
+  { id: "2", modified: "2026-05-06", space: "engineering", title: "sprint retro — may" },
+  { id: "3", modified: "2026-05-05", space: "design", title: "color palette v3" },
+  { id: "4", modified: "2026-05-04", space: "personal", title: "reading list" },
+  { id: "5", modified: "2026-05-03", space: "design", title: "typography reference" },
+  { id: "6", modified: "2026-05-01", space: "personal", title: "weekly standup template" },
+];
+
 export const ConsoleHome = () => {
   const { data: user } = useAuth();
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
-  const { data: pages } = useConsolePages();
   const { selectedWorkspaceId } = useConsoleContext();
   const { data: spaces } = useSpaces(selectedWorkspaceId);
   const createSpace = useCreateSpace();
@@ -148,9 +147,6 @@ export const ConsoleHome = () => {
   const subMessage = useMemo(() => subMessages[Math.floor(Math.random() * subMessages.length)], []);
 
   const mySpaces = spaces ?? [];
-  const recentDocs = [...(pages ?? [])]
-    .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 6);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col px-4 pt-12 min-h-full">
@@ -167,6 +163,8 @@ export const ConsoleHome = () => {
       <p className={`mt-1 text-[12px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
         {subMessage}
       </p>
+
+      <QuickActions />
 
       <div className="mt-10">
         <div className="flex items-center justify-between mb-3">
@@ -193,6 +191,7 @@ export const ConsoleHome = () => {
               <button
                 key={s.id}
                 className={`w-44 shrink-0 border px-3 py-2 text-left lowercase bg-linear-to-b ${t("border-border-dark from-white/3 to-transparent hover:bg-white/5", "border-border-light from-black/2 to-transparent hover:bg-black/3")}`}
+                onClick={() => navigate({ to: `/s/${s.slug}` })}
                 type="button"
               >
                 <div className="flex items-center gap-2">
@@ -351,56 +350,44 @@ export const ConsoleHome = () => {
         </div>
       )}
 
-      <div className={`mt-8 border-t pt-5 ${t("border-border-dark", "border-border-light")}`}>
-        <div className="flex items-center justify-between">
-          <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
-            my docs
-          </p>
-          <div className="flex gap-2">
-            <button
-              className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
-              type="button"
-            >
-              new doc
-            </button>
-            <span className={t("text-text-dark/20", "text-text-light/20")}>|</span>
-            <button
-              className={`text-[10px] lowercase ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
-              type="button"
-            >
-              view all
-            </button>
-          </div>
-        </div>
+      <div
+        className={`mt-8 border-t pt-5 ${t("border-border-dark", "border-border-light")}`}
+        id="recent-docs-section"
+      >
+        <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
+          my docs
+        </p>
 
-        {recentDocs.length === 0 ? (
-          <p
-            className={`mt-6 text-center text-[13px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
-          >
-            no docs yet
-          </p>
-        ) : (
-          <div className="mt-3 space-y-0.5">
-            {recentDocs.map((doc) => (
-              <div
-                key={doc.id}
-                className={`flex items-center gap-3 rounded px-2 py-1.5 ${t("hover:bg-white/5", "hover:bg-black/3")}`}
-              >
-                <FileTextIcon className={t("text-text-dark/30", "text-text-light/30")} size={14} />
+        <div className="mt-3 space-y-0.5">
+          {MOCK_DOCS.map((doc) => (
+            <div
+              key={doc.id}
+              className={`grid grid-cols-[1fr_120px_100px] gap-2 items-center px-2 py-1.5 lowercase transition-colors ${t(
+                "hover:bg-white/5",
+                "hover:bg-black/3",
+              )}`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <FileTextIcon className={t("text-text-dark/25", "text-text-light/25")} size={14} />
                 <span
-                  className={`min-w-0 flex-1 truncate text-[13px] lowercase ${t("text-text-dark/60", "text-text-light/60")}`}
+                  className={`truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
                 >
                   {doc.title}
                 </span>
-                <span
-                  className={`shrink-0 text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}
-                >
-                  {new Date(doc.updatedAt).toISOString().slice(0, 10)}
-                </span>
               </div>
-            ))}
-          </div>
-        )}
+              <span
+                className={`truncate text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
+              >
+                {doc.space}
+              </span>
+              <span
+                className={`text-right text-[10px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
+              >
+                {doc.modified}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
       <p
         className={`sticky bottom-0 mt-auto pb-4 pt-2 text-center text-[10px] lowercase transition-colors duration-500 ease-out ${t("text-text-dark/20 bg-bg-dark/80", "text-text-light/20 bg-bg-light/80")}`}

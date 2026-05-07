@@ -44,6 +44,38 @@ func (h *Handlers) GetSpaces(c *gin.Context) {
 	c.JSON(http.StatusOK, spaces)
 }
 
+// GetSpaceBySlug handles GET /api/console/spaces/by-slug/:slug.
+func (h *Handlers) GetSpaceBySlug(c *gin.Context) {
+	if h.spaceService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "space service unavailable"})
+		return
+	}
+
+	slug := c.Param("slug")
+	if slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "slug is required"})
+		return
+	}
+
+	userID := middleware.GetCurrentUserID(c)
+	space, err := h.spaceService.GetSpaceBySlug(c.Request.Context(), slug, userID)
+	if err != nil {
+		if errors.Is(err, services.ErrSpaceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
+			return
+		}
+		if errors.Is(err, services.ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Err(err).Str("slug", slug).Msg("get space by slug error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get space"})
+		return
+	}
+
+	c.JSON(http.StatusOK, space)
+}
+
 // CreateSpaceRequest is the request body for creating a space.
 type CreateSpaceRequest struct {
 	Name        string `json:"name" binding:"required"`

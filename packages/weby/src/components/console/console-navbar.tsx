@@ -1,15 +1,16 @@
 import { gsap } from "gsap";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useDebouncedState } from "@tanstack/react-pacer";
 import { useEffect, useRef, useState } from "react";
 import type { Stats } from "#/types";
 import { useAuth, useAuthActions } from "#/hooks/use-auth";
 import { useTheme } from "#/hooks/use-theme";
-import { useWorkspaces } from "#/hooks/use-console-mutations";
+import { useSpaceBySlug, useSpaces, useWorkspaces } from "#/hooks/use-console-mutations";
 import { useConsoleContext } from "./console-context";
 import { NotificationBell } from "./notification-bell";
 import {
+  CaretDownIcon,
   GearSixIcon,
   MagnifyingGlassIcon,
   SidebarIcon,
@@ -233,8 +234,165 @@ const ProfileDropdown = ({
   );
 };
 
+interface SpaceBreadcrumbProps {
+  isDarkMode: boolean;
+  navigate: ReturnType<typeof useNavigate>;
+  selectedWorkspace: { icon: string; id: string; name: string } | undefined;
+  workspaces: { icon: string; id: string; name: string }[] | undefined;
+  spaceSlug: string;
+}
+
+const SpaceBreadcrumb = ({
+  isDarkMode,
+  navigate,
+  selectedWorkspace,
+  workspaces,
+  spaceSlug,
+}: SpaceBreadcrumbProps) => {
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  const { data: spaces } = useSpaces(selectedWorkspace?.id ?? "");
+  const { data: currentSpace } = useSpaceBySlug(spaceSlug);
+  const [wsMenuOpen, setWsMenuOpen] = useState(false);
+  const [spMenuOpen, setSpMenuOpen] = useState(false);
+  const wsRef = useRef<HTMLDivElement>(null);
+  const spRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!wsMenuOpen) {
+      return;
+    }
+    const h = (e: MouseEvent) => {
+      if (wsRef.current && !wsRef.current.contains(e.target as Node)) {
+        setWsMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [wsMenuOpen]);
+
+  useEffect(() => {
+    if (!spMenuOpen) {
+      return;
+    }
+    const h = (e: MouseEvent) => {
+      if (spRef.current && !spRef.current.contains(e.target as Node)) {
+        setSpMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [spMenuOpen]);
+
+  const wsInit = getInitials(selectedWorkspace?.name ?? "?");
+
+  return (
+    <div className="flex items-center gap-1">
+      <a
+        className={`lowercase ${t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
+        href="/home"
+      >
+        <img alt="verso" className="h-3.5 w-3.5" src="/verso.svg" />
+      </a>
+
+      <span className={t("text-text-dark/15", "text-text-light/15")}>/</span>
+
+      <div className="relative" ref={wsRef}>
+        <button
+          className={`flex items-center gap-0.5 lowercase text-[12px] ${t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
+          onClick={() => setWsMenuOpen((o) => !o)}
+          type="button"
+        >
+          {selectedWorkspace?.icon ? (
+            <img
+              alt=""
+              className="w-3.5 h-3.5 rounded-full object-cover"
+              src={selectedWorkspace.icon}
+            />
+          ) : (
+            <span
+              className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-medium ${t("bg-white/10 text-text-dark/50", "bg-black/5 text-text-light/50")}`}
+            >
+              {wsInit}
+            </span>
+          )}
+          {selectedWorkspace?.name ?? "..."}
+          <CaretDownIcon size={10} />
+        </button>
+        {wsMenuOpen && (
+          <div
+            className={`absolute left-0 top-full mt-1 border p-1.5 z-50 shadow-lg w-44 max-h-48 overflow-y-auto ${t("border-border-dark bg-text-light", "border-border-light bg-[#e0e0e0]")}`}
+          >
+            {workspaces?.map((w) => (
+              <button
+                className={`flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-[11px] lowercase ${w.id === selectedWorkspace?.id ? t("text-text-dark", "text-text-light") : t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
+                key={w.id}
+                onClick={() => {
+                  setWsMenuOpen(false);
+                }}
+                type="button"
+              >
+                {w.icon ? (
+                  <img
+                    alt=""
+                    className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
+                    src={w.icon}
+                  />
+                ) : null}
+                <span className="truncate">{w.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <span className={t("text-text-dark/15", "text-text-light/15")}>/</span>
+
+      <div className="relative" ref={spRef}>
+        <button
+          className={`flex items-center gap-0.5 lowercase text-[12px] ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
+          onClick={() => setSpMenuOpen((o) => !o)}
+          type="button"
+        >
+          {currentSpace?.icon ? (
+            <img alt="" className="w-3.5 h-3.5 rounded-full object-cover" src={currentSpace.icon} />
+          ) : null}
+          <span className="truncate max-w-25">{currentSpace?.name ?? spaceSlug}</span>
+          <CaretDownIcon size={10} />
+        </button>
+        {spMenuOpen && (
+          <div
+            className={`absolute left-0 top-full mt-1 border p-1.5 z-50 shadow-lg w-44 max-h-48 overflow-y-auto ${t("border-border-dark bg-text-light", "border-border-light bg-[#e0e0e0]")}`}
+          >
+            {spaces?.map((s) => (
+              <button
+                className={`flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-[11px] lowercase ${s.id === currentSpace?.id ? t("text-text-dark", "text-text-light") : t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
+                key={s.id}
+                onClick={() => {
+                  setSpMenuOpen(false);
+                  navigate({ to: `/s/${s.slug}` });
+                }}
+                type="button"
+              >
+                {s.icon ? (
+                  <img
+                    alt=""
+                    className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
+                    src={s.icon}
+                  />
+                ) : null}
+                <span className="truncate">{s.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarProps) => {
   const navigate = useNavigate();
+  const routerState = useRouterState();
   const { data: user } = useAuth();
   const { logout } = useAuthActions();
   const { isDarkMode, toggleTheme } = useTheme();
@@ -244,6 +402,10 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
   const selectedWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
   const workspaceName = selectedWorkspace?.name ?? user?.username ?? "...";
   const workspaceInitials = getInitials(workspaceName);
+  const isSpaceRoute = routerState.location.pathname.startsWith("/s/");
+  const spaceSlug = isSpaceRoute
+    ? routerState.location.pathname.replace("/s/", "").split("/")[0]
+    : "";
   const [searchQuery, setSearchQuery] = useDebouncedState("", { wait: 150 });
 
   const { data: stats } = useQuery<Stats>({
@@ -273,13 +435,31 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
         >
           {sidebarOpen ? <SidebarSimpleIcon size={14} /> : <SidebarIcon size={14} />}
         </button>
-        <a
-          className={`flex items-center gap-1.5 lowercase mr-1 md:mr-3 ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
-          href="/"
-        >
-          <img alt="verso" className="h-3.5 w-3.5" src="/verso.svg" />
-          verso
-        </a>
+        {isSpaceRoute ? (
+          <SpaceBreadcrumb
+            isDarkMode={isDarkMode}
+            navigate={navigate}
+            selectedWorkspace={
+              selectedWorkspace
+                ? {
+                    icon: selectedWorkspace.icon,
+                    id: selectedWorkspace.id,
+                    name: selectedWorkspace.name,
+                  }
+                : undefined
+            }
+            spaceSlug={spaceSlug}
+            workspaces={workspaces}
+          />
+        ) : (
+          <a
+            className={`flex items-center gap-1.5 lowercase mr-1 md:mr-3 ${t("text-text-dark/70 hover:text-text-dark", "text-text-light/70 hover:text-text-light")}`}
+            href="/home"
+          >
+            <img alt="verso" className="h-3.5 w-3.5" src="/verso.svg" />
+            verso
+          </a>
+        )}
       </div>
 
       {/* Middle: search */}

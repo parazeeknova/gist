@@ -20,12 +20,13 @@ import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/use-auth";
 import { useTheme } from "../../hooks/use-theme";
-import { useWorkspaces } from "../../hooks/use-console-mutations";
+import { useSpaceBySlug, useWorkspaces } from "#/hooks/use-console-mutations";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
 import { FileTreeSidebar } from "./file-tree-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
+import { SpaceSidebar } from "../space/space-sidebar";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -97,6 +98,7 @@ export const ConsoleLayout = () => {
 
   const isDebugRoute = routerState.location.pathname === "/home/debug";
   const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
+  const isSpaceRoute = routerState.location.pathname.startsWith("/s/");
   const isProfileRoute = routerState.location.pathname === "/settings/account/profile";
   const isPreferencesRoute = routerState.location.pathname === "/settings/account/preferences";
   const isWorkspaceRoute = routerState.location.pathname === "/settings/workspace";
@@ -106,7 +108,12 @@ export const ConsoleLayout = () => {
   const debugSelectedTable =
     ((routerState.location.search as Record<string, unknown> | undefined)?.table as string) ?? null;
 
-  const isSpecialRoute = isDebugRoute || isSettingsRoute;
+  const isSpecialRoute = isDebugRoute || isSettingsRoute || isSpaceRoute;
+
+  const spaceSlug = isSpaceRoute
+    ? routerState.location.pathname.replace("/s/", "").split("/")[0]
+    : "";
+  const { data: currentSpace } = useSpaceBySlug(spaceSlug);
 
   useEffect(() => {
     if (mainRef.current) {
@@ -233,6 +240,8 @@ export const ConsoleLayout = () => {
         userIsOwner={user?.isOwner}
       />
     );
+  } else if (isSpaceRoute && currentSpace) {
+    sidebarContent = <SpaceSidebar space={currentSpace} />;
   } else {
     sidebarContent = (
       <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">

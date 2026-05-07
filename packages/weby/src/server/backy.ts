@@ -292,6 +292,11 @@ export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | n
   });
 };
 
+export const getSpaceBySlug = (slug: string, cookieHeader?: string | null) =>
+  fetchBacky<Space>(`console/spaces/by-slug/${encodeURIComponent(slug)}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
 export const createSpace = (
   input: { name: string; slug: string; icon?: string; description?: string },
   cookieHeader?: string | null,

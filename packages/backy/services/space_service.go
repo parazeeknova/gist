@@ -196,6 +196,21 @@ func (s *SpaceService) GetSpaceByID(ctx context.Context, id string) (models.Spac
 	return space, nil
 }
 
+// GetSpaceBySlug returns a space by slug with read permission check.
+func (s *SpaceService) GetSpaceBySlug(ctx context.Context, slug, userID string) (models.Space, error) {
+	space, err := s.spaceRepo.GetBySlug(ctx, slug)
+	if err != nil {
+		if errors.Is(err, repositories.ErrSpaceNotFound) {
+			return models.Space{}, ErrSpaceNotFound
+		}
+		return models.Space{}, fmt.Errorf("getting space by slug: %w", err)
+	}
+	if err := s.RequireRead(ctx, space.ID, userID); err != nil {
+		return models.Space{}, err
+	}
+	return space, nil
+}
+
 // GetDefaultSpaceID returns the ID of the default space.
 func (s *SpaceService) GetDefaultSpaceID(ctx context.Context) (string, error) {
 	id, err := s.spaceRepo.GetDefaultSpaceID(ctx)
