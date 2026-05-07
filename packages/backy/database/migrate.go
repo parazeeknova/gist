@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"verso/backy/logger"
+	"verso/backy/shared/logger"
 )
 
 //go:embed migrations/*.sql

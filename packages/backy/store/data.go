@@ -1,6 +1,6 @@
 package store
 
-import "verso/backy/models"
+import "verso/backy/database/models"
 
 var Profile = models.Profile{
 	Name:     "Harsh Sahu",

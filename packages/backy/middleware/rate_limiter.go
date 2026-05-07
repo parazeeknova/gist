@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/auth"
+	"verso/backy/shared/auth"
 )
 
 // RateLimiter provides a simple in-memory rate limiter keyed by client IP.
