@@ -41,10 +41,10 @@ func SetupTestDB(t *testing.T) *TestDB {
 
 	cfg := database.Config{DatabaseURL: testURL}
 	ctx := context.Background()
-	pool, err := database.NewPool(ctx, cfg)
-	if err != nil {
+	if err := database.InitPool(ctx, cfg); err != nil {
 		t.Fatalf("connect to test db: %v", err)
 	}
+	pool := database.GetPool()
 
 	if err := database.MigrateUp(ctx, pool); err != nil {
 		pool.Close()
