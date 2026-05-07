@@ -20,7 +20,7 @@ import { Route as SettingsWorkspaceRouteImport } from './routes/settings/workspa
 import { Route as SettingsSpacesRouteImport } from './routes/settings/spaces'
 import { Route as SettingsMembersRouteImport } from './routes/settings/members'
 import { Route as SettingsGroupsRouteImport } from './routes/settings/groups'
-import { Route as SSpaceSlugRouteImport } from './routes/s/$space-slug'
+import { Route as SSpaceSlugRouteImport } from './routes/s/$spaceSlug'
 import { Route as HomeDebugRouteImport } from './routes/home/debug'
 import { Route as ApiStatsRouteImport } from './routes/api/stats'
 import { Route as ApiProjectsRouteImport } from './routes/api/projects'
@@ -143,8 +143,8 @@ const SettingsGroupsRoute = SettingsGroupsRouteImport.update({
   getParentRoute: () => SettingsRoute,
 } as any)
 const SSpaceSlugRoute = SSpaceSlugRouteImport.update({
-  id: '/s/$space-slug',
-  path: '/s/$space-slug',
+  id: '/s/$spaceSlug',
+  path: '/s/$spaceSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeDebugRoute = HomeDebugRouteImport.update({
@@ -178,9 +178,9 @@ const ApiBlogsRoute = ApiBlogsRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const SSpaceSlugIndexRoute = SSpaceSlugIndexRouteImport.update({
-  id: '/s/$spaceSlug/',
-  path: '/s/$spaceSlug/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => SSpaceSlugRoute,
 } as any)
 const SettingsAccountProfileRoute = SettingsAccountProfileRouteImport.update({
   id: '/account/profile',
@@ -513,7 +513,7 @@ export interface FileRoutesByFullPath {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
-  '/s/$space-slug': typeof SSpaceSlugRoute
+  '/s/$spaceSlug': typeof SSpaceSlugRouteWithChildren
   '/settings/groups': typeof SettingsGroupsRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/spaces': typeof SettingsSpacesRoute
@@ -591,7 +591,6 @@ export interface FileRoutesByTo {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
-  '/s/$space-slug': typeof SSpaceSlugRoute
   '/settings/groups': typeof SettingsGroupsRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/spaces': typeof SettingsSpacesRoute
@@ -671,7 +670,7 @@ export interface FileRoutesById {
   '/api/projects': typeof ApiProjectsRoute
   '/api/stats': typeof ApiStatsRoute
   '/home/debug': typeof HomeDebugRoute
-  '/s/$space-slug': typeof SSpaceSlugRoute
+  '/s/$spaceSlug': typeof SSpaceSlugRouteWithChildren
   '/settings/groups': typeof SettingsGroupsRoute
   '/settings/members': typeof SettingsMembersRoute
   '/settings/spaces': typeof SettingsSpacesRoute
@@ -752,7 +751,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
-    | '/s/$space-slug'
+    | '/s/$spaceSlug'
     | '/settings/groups'
     | '/settings/members'
     | '/settings/spaces'
@@ -830,7 +829,6 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
-    | '/s/$space-slug'
     | '/settings/groups'
     | '/settings/members'
     | '/settings/spaces'
@@ -909,7 +907,7 @@ export interface FileRouteTypes {
     | '/api/projects'
     | '/api/stats'
     | '/home/debug'
-    | '/s/$space-slug'
+    | '/s/$spaceSlug'
     | '/settings/groups'
     | '/settings/members'
     | '/settings/spaces'
@@ -988,7 +986,7 @@ export interface RootRouteChildren {
   ApiProfileRoute: typeof ApiProfileRoute
   ApiProjectsRoute: typeof ApiProjectsRoute
   ApiStatsRoute: typeof ApiStatsRoute
-  SSpaceSlugRoute: typeof SSpaceSlugRoute
+  SSpaceSlugRoute: typeof SSpaceSlugRouteWithChildren
   ApiAuthBootstrapStateRoute: typeof ApiAuthBootstrapStateRoute
   ApiAuthLoginRoute: typeof ApiAuthLoginRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
@@ -1001,7 +999,6 @@ export interface RootRouteChildren {
   ApiConsoleUsersRoute: typeof ApiConsoleUsersRouteWithChildren
   ApiConsoleWorkspacesRoute: typeof ApiConsoleWorkspacesRouteWithChildren
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute
-  SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
   ApiAuthMfaVerifyRoute: typeof ApiAuthMfaVerifyRoute
   ApiConsoleDebugTablesRoute: typeof ApiConsoleDebugTablesRouteWithChildren
   ApiConsoleGroupsIdRoute: typeof ApiConsoleGroupsIdRouteWithChildren
@@ -1094,10 +1091,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsGroupsRouteImport
       parentRoute: typeof SettingsRoute
     }
-    '/s/$space-slug': {
-      id: '/s/$space-slug'
-      path: '/s/$space-slug'
-      fullPath: '/s/$space-slug'
+    '/s/$spaceSlug': {
+      id: '/s/$spaceSlug'
+      path: '/s/$spaceSlug'
+      fullPath: '/s/$spaceSlug'
       preLoaderRoute: typeof SSpaceSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -1145,10 +1142,10 @@ declare module '@tanstack/react-router' {
     }
     '/s/$spaceSlug/': {
       id: '/s/$spaceSlug/'
-      path: '/s/$spaceSlug'
+      path: '/'
       fullPath: '/s/$spaceSlug/'
       preLoaderRoute: typeof SSpaceSlugIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof SSpaceSlugRoute
     }
     '/settings/account/profile': {
       id: '/settings/account/profile'
@@ -1605,6 +1602,18 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
   ApiBlogsRouteChildren,
 )
 
+interface SSpaceSlugRouteChildren {
+  SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
+}
+
+const SSpaceSlugRouteChildren: SSpaceSlugRouteChildren = {
+  SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
+}
+
+const SSpaceSlugRouteWithChildren = SSpaceSlugRoute._addFileChildren(
+  SSpaceSlugRouteChildren,
+)
+
 interface ApiConsoleNotificationsIdRouteChildren {
   ApiConsoleNotificationsIdReadRoute: typeof ApiConsoleNotificationsIdReadRoute
 }
@@ -1876,7 +1885,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfileRoute: ApiProfileRoute,
   ApiProjectsRoute: ApiProjectsRoute,
   ApiStatsRoute: ApiStatsRoute,
-  SSpaceSlugRoute: SSpaceSlugRoute,
+  SSpaceSlugRoute: SSpaceSlugRouteWithChildren,
   ApiAuthBootstrapStateRoute: ApiAuthBootstrapStateRoute,
   ApiAuthLoginRoute: ApiAuthLoginRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
@@ -1889,7 +1898,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsoleUsersRoute: ApiConsoleUsersRouteWithChildren,
   ApiConsoleWorkspacesRoute: ApiConsoleWorkspacesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,
-  SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
   ApiAuthMfaVerifyRoute: ApiAuthMfaVerifyRoute,
   ApiConsoleDebugTablesRoute: ApiConsoleDebugTablesRouteWithChildren,
   ApiConsoleGroupsIdRoute: ApiConsoleGroupsIdRouteWithChildren,

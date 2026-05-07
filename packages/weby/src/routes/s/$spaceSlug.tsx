@@ -25,7 +25,7 @@ const SpaceConsole = function SpaceConsole() {
   );
 };
 
-export const Route = createFileRoute("/s/$space-slug")({
+export const Route = createFileRoute("/s/$spaceSlug")({
   component: SpaceConsole,
   head: () => ({
     meta: [{ content: "noindex, nofollow", name: "robots" }],

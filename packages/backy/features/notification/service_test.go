@@ -25,27 +25,33 @@ func seedTestData(t *testing.T, db *testutil.TestDB) (userA *models.AuthUser, us
 	idB := uuid.New().String()
 	idC := uuid.New().String()
 	idW := uuid.New().String()
+	suffix := idA[:8]
+
+	unA := "user_a_" + suffix
+	unB := "user_b_" + suffix
+	unC := "user_c_" + suffix
+	slug := "test-workspace-" + suffix
 
 	// Create test users directly via pool (skip auth)
 	pool := database.GetPool()
 	_, err := pool.Exec(
 		ctx,
 		`INSERT INTO users (id, username, email, name, role) VALUES ($1, $2, $3, $4, $5), ($6, $7, $8, $9, $10), ($11, $12, $13, $14, $15)`,
-		idA, "user_a", "a@test.com", "User A", "owner",
-		idB, "user_b", "b@test.com", "User B", "member",
-		idC, "user_c", "c@test.com", "User C", "member",
+		idA, unA, unA+"@test.com", "User A", "owner",
+		idB, unB, unB+"@test.com", "User B", "member",
+		idC, unC, unC+"@test.com", "User C", "member",
 	)
 	require.NoError(t, err)
 
-	userA = &models.AuthUser{ID: idA, Username: "user_a", Name: "User A", Email: "a@test.com", Role: "owner"}
-	userB = &models.AuthUser{ID: idB, Username: "user_b", Name: "User B", Email: "b@test.com", Role: "member"}
-	userC = &models.AuthUser{ID: idC, Username: "user_c", Name: "User C", Email: "c@test.com", Role: "member"}
+	userA = &models.AuthUser{ID: idA, Username: unA, Name: "User A", Email: unA + "@test.com", Role: "owner"}
+	userB = &models.AuthUser{ID: idB, Username: unB, Name: "User B", Email: unB + "@test.com", Role: "member"}
+	userC = &models.AuthUser{ID: idC, Username: unC, Name: "User C", Email: unC + "@test.com", Role: "member"}
 
 	// Create workspace directly
 	_, err = pool.Exec(
 		ctx,
 		`INSERT INTO workspaces (id, name, slug) VALUES ($1, $2, $3)`,
-		idW, "Test Workspace", "test-workspace",
+		idW, "Test Workspace", slug,
 	)
 	require.NoError(t, err)
 
@@ -57,7 +63,7 @@ func seedTestData(t *testing.T, db *testutil.TestDB) (userA *models.AuthUser, us
 	)
 	require.NoError(t, err)
 
-	workspace = &models.Workspace{ID: idW, Name: "Test Workspace", Slug: "test-workspace"}
+	workspace = &models.Workspace{ID: idW, Name: "Test Workspace", Slug: slug}
 	return
 }
 

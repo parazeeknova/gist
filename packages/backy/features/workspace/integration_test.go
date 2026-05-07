@@ -108,18 +108,6 @@ func setupTestDB(t *testing.T) *testDB {
 
 	db.groupRepo = repositories.NewGroupRepo()
 	db.workspaceSvc = ws.NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
-
-	t.Cleanup(func() {
-		_, _ = pool.Exec(ctx, `DELETE FROM workspace_members`)
-		_, _ = pool.Exec(ctx, `DELETE FROM workspaces`)
-		_, _ = pool.Exec(ctx, `DELETE FROM users`)
-		_, _ = pool.Exec(ctx, `DELETE FROM notifications`)
-		_, _ = pool.Exec(ctx, `DELETE FROM groups`)
-		_, _ = pool.Exec(ctx, `DELETE FROM spaces`)
-		_, _ = pool.Exec(ctx, `DELETE FROM pages`)
-		_, _ = pool.Exec(ctx, `DELETE FROM push_subscriptions`)
-		database.ClosePool()
-	})
 	db.spaceSvc = spacefeat.NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
 	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
 	db.groupSvc = groupfeat.NewGroupService(db.groupRepo, db.workspaceRepo)
@@ -211,7 +199,7 @@ func TestWorkspaceService_CreateWorkspace_IsTransactional(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w, err := db.workspaceSvc.CreateWorkspace(ctx, "Test Workspace", "test-workspace", "", ownerID)
+	w, err := db.workspaceSvc.CreateWorkspace(ctx, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], "", ownerID)
 	if err != nil {
 		t.Fatalf("create workspace: %v", err)
 	}
@@ -256,7 +244,7 @@ func TestWorkspaceService_UpdateWorkspace_PermissionDenied(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	otherID := createTestUser(t, ctx, db, "other", "other@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	_, err := db.workspaceSvc.UpdateWorkspace(ctx, w.ID, "Hacked", "hacked", "", otherID)
 	if !errors.Is(err, ws.ErrWorkspacePermissionDenied) {
@@ -270,7 +258,7 @@ func TestWorkspaceService_DeleteWorkspace_PermissionDenied(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	otherID := createTestUser(t, ctx, db, "other", "other@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	err := db.workspaceSvc.DeleteWorkspace(ctx, w.ID, otherID)
 	if !errors.Is(err, ws.ErrWorkspacePermissionDenied) {
@@ -288,7 +276,7 @@ func TestSpaceService_CreateSpace_RequiresWorkspaceOwnerOrAdmin(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	addWorkspaceMember(t, ctx, db, w.ID, memberID, "member")
 
 	// Owner should succeed.
@@ -315,7 +303,7 @@ func TestSpaceService_GetSpaceMembers_RequiresReadAccess(t *testing.T) {
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	readerID := createTestUser(t, ctx, db, "reader", "reader@example.com")
 	outsiderID := createTestUser(t, ctx, db, "outsider", "outsider@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
 	addSpaceMember(t, ctx, db, s.ID, readerID, models.SpaceRoleReader)
 
@@ -337,7 +325,7 @@ func TestSpaceService_UpdateMemberRole_ValidatesRole(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
 	addSpaceMember(t, ctx, db, s.ID, memberID, models.SpaceRoleReader)
 
@@ -364,7 +352,7 @@ func TestPageService_ReaderCannotCreateUpdateDeletePublish(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	readerID := createTestUser(t, ctx, db, "reader", "reader@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
 	addSpaceMember(t, ctx, db, s.ID, readerID, models.SpaceRoleReader)
 
@@ -415,7 +403,7 @@ func TestPageService_WriterCanEditButNotManageMembers(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	writerID := createTestUser(t, ctx, db, "writer", "writer@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
 	addSpaceMember(t, ctx, db, s.ID, writerID, models.SpaceRoleWriter)
 
@@ -459,7 +447,7 @@ func TestPageService_AdminCanManageMembersSettingsPages(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	adminID := createTestUser(t, ctx, db, "admin", "admin@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
 	addSpaceMember(t, ctx, db, s.ID, adminID, models.SpaceRoleAdmin)
 
@@ -499,7 +487,7 @@ func TestPageService_SoftDeletedPagesDisappearFromListAndTree(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
 	p := createTestPage(t, ctx, db, s.ID, ownerID)
 
@@ -552,7 +540,7 @@ func TestSpaceService_SoftDeletedSpacesDisappearFromList(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	// Create a space with no pages so it can be deleted.
 	s, err := db.spaceSvc.CreateSpace(ctx, "Deletable", "deletable", "", "", w.ID, ownerID)
@@ -643,7 +631,7 @@ func TestGroupService_DefaultGroupCreatedWithWorkspace(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	// Default group should exist.
 	groups, err := db.groupSvc.ListGroups(ctx, w.ID)
@@ -678,7 +666,7 @@ func TestGroupService_GroupUniquenessPerWorkspace(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	// Creating a group with the same name in the same workspace should fail.
 	_, err := db.groupSvc.CreateGroup(ctx, w.ID, "Everyone", "desc", ownerID)
@@ -702,7 +690,7 @@ func TestGroupService_AddRemoveMembers(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	addWorkspaceMember(t, ctx, db, w.ID, memberID, "member")
 
 	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Engineering", "eng team", ownerID)
@@ -740,7 +728,7 @@ func TestGroupService_DefaultGroupImmutable(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	defaultGroupID, err := db.groupSvc.GetDefaultGroupID(ctx, w.ID)
 	if err != nil {
@@ -772,7 +760,7 @@ func TestGroupService_GroupBasedSpaceAccess(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	// Add member to workspace and default group (which gives writer access to default space).
 	if err := db.workspaceRepo.AddMember(ctx, w.ID, memberID, "member"); err != nil {
@@ -803,7 +791,7 @@ func TestGroupService_HighestRoleResolution(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	// Create a new space.
 	s, err := db.spaceSvc.CreateSpace(ctx, "Test Space", "test-space", "", "", w.ID, ownerID)
@@ -863,7 +851,7 @@ func TestGroupService_AccessRevocationAfterGroupRemoval(t *testing.T) {
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
 	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 
 	// Create a group and space.
 	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Temp", "temp group", ownerID)
