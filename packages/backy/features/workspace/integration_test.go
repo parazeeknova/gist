@@ -108,6 +108,18 @@ func setupTestDB(t *testing.T) *testDB {
 
 	db.groupRepo = repositories.NewGroupRepo()
 	db.workspaceSvc = ws.NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
+
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM workspace_members`)
+		_, _ = pool.Exec(ctx, `DELETE FROM workspaces`)
+		_, _ = pool.Exec(ctx, `DELETE FROM users`)
+		_, _ = pool.Exec(ctx, `DELETE FROM notifications`)
+		_, _ = pool.Exec(ctx, `DELETE FROM groups`)
+		_, _ = pool.Exec(ctx, `DELETE FROM spaces`)
+		_, _ = pool.Exec(ctx, `DELETE FROM pages`)
+		_, _ = pool.Exec(ctx, `DELETE FROM push_subscriptions`)
+		database.ClosePool()
+	})
 	db.spaceSvc = spacefeat.NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
 	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
 	db.groupSvc = groupfeat.NewGroupService(db.groupRepo, db.workspaceRepo)
