@@ -7,18 +7,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/shared/logger"
-	wsfeat "verso/backy/features/workspace"
-	"verso/backy/repositories"
-	"verso/backy/middleware"
 	"verso/backy/database/models"
+	wsfeat "verso/backy/features/workspace"
+	"verso/backy/middleware"
+	"verso/backy/repositories"
+	"verso/backy/shared/logger"
 )
-
 
 type SpaceHandlers struct {
 	workspaceService *wsfeat.WorkspaceService
-	spaceService *SpaceService
+	spaceService     *SpaceService
 }
+
 func NewSpaceHandlers(svc *SpaceService) *SpaceHandlers {
 	return &SpaceHandlers{spaceService: svc}
 }

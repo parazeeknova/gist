@@ -12,9 +12,9 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"verso/backy/database"
-	"verso/backy/fractional"
 	"verso/backy/database/models"
 	notifeat "verso/backy/features/notification"
+	"verso/backy/fractional"
 	"verso/backy/repositories"
 )
 

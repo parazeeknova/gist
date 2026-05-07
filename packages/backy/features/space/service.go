@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 
 	"verso/backy/database/models"
-	"verso/backy/repositories"
 	notifeat "verso/backy/features/notification"
+	"verso/backy/repositories"
 )
 
 // ErrSpaceNotFound is returned when a space is not found.
@@ -89,7 +89,7 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 
 // UpdateSpace updates an existing space. Requires admin role.
 func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, description, userID string) (models.Space, error) {
-	if err := s.requireAdmin(ctx, id, userID); err != nil {
+	if err := s.RequireAdmin(ctx, id, userID); err != nil {
 		return models.Space{}, err
 	}
 
@@ -154,7 +154,7 @@ func (s *SpaceService) workspaceMemberIDsForSpace(ctx context.Context, workspace
 
 // DeleteSpace soft-deletes a space only if it has no pages. Requires admin role.
 func (s *SpaceService) DeleteSpace(ctx context.Context, id, userID string) error {
-	if err := s.requireAdmin(ctx, id, userID); err != nil {
+	if err := s.RequireAdmin(ctx, id, userID); err != nil {
 		return err
 	}
 
@@ -230,7 +230,7 @@ func (s *SpaceService) userGroupIDs(ctx context.Context, userID, workspaceID str
 	return s.groupRepo.ListUserGroupIDsInWorkspace(ctx, userID, workspaceID)
 }
 
-func (s *SpaceService) requireAdmin(ctx context.Context, spaceID, userID string) error {
+func (s *SpaceService) RequireAdmin(ctx context.Context, spaceID, userID string) error {
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)
 	if err != nil {
 		return fmt.Errorf("getting space: %w", err)
@@ -300,7 +300,7 @@ func (s *SpaceService) AddSpaceMember(ctx context.Context, spaceID, userID, role
 	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
 		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
 	}
-	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+	if err := s.RequireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	if err := s.spaceRepo.AddMember(ctx, spaceID, userID, role); err != nil {
@@ -326,7 +326,7 @@ func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userI
 	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
 		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
 	}
-	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+	if err := s.RequireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	if err := s.spaceRepo.UpdateMemberRole(ctx, spaceID, userID, role); err != nil {
@@ -349,7 +349,7 @@ func (s *SpaceService) UpdateSpaceMemberRole(ctx context.Context, spaceID, userI
 
 // RemoveSpaceMember removes a user from a space.
 func (s *SpaceService) RemoveSpaceMember(ctx context.Context, spaceID, userID, actorID string) error {
-	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+	if err := s.RequireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 	if err := s.spaceRepo.RemoveMember(ctx, spaceID, userID); err != nil {
@@ -380,7 +380,7 @@ func (s *SpaceService) AddSpaceGroup(ctx context.Context, spaceID, groupID, role
 	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
 		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
 	}
-	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+	if err := s.RequireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 
@@ -409,7 +409,7 @@ func (s *SpaceService) UpdateSpaceGroupRole(ctx context.Context, spaceID, groupI
 	if role != models.SpaceRoleAdmin && role != models.SpaceRoleWriter && role != models.SpaceRoleReader {
 		return fmt.Errorf("invalid role %q: must be admin, writer, or reader", role)
 	}
-	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+	if err := s.RequireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 
@@ -433,7 +433,7 @@ func (s *SpaceService) UpdateSpaceGroupRole(ctx context.Context, spaceID, groupI
 
 // RemoveSpaceGroup removes a group from a space.
 func (s *SpaceService) RemoveSpaceGroup(ctx context.Context, spaceID, groupID, actorID string) error {
-	if err := s.requireAdmin(ctx, spaceID, actorID); err != nil {
+	if err := s.RequireAdmin(ctx, spaceID, actorID); err != nil {
 		return err
 	}
 

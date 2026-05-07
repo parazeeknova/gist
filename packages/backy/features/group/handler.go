@@ -6,11 +6,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/shared/logger"
 	wsfeat "verso/backy/features/workspace"
 	"verso/backy/middleware"
+	"verso/backy/shared/logger"
 )
-
 
 type GroupHandlers struct {
 	groupService     *GroupService

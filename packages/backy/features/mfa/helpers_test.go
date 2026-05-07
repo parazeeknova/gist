@@ -1,4 +1,4 @@
-package mfa_test
+package mfa
 
 import (
 	"strings"

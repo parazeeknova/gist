@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/shared/auth"
 	mfafeat "verso/backy/features/mfa"
+	"verso/backy/shared/auth"
 	"verso/backy/shared/logger"
 )
 

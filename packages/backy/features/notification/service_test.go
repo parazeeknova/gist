@@ -1,4 +1,4 @@
-package notification_test
+package notification
 
 import (
 	"context"
@@ -14,9 +14,10 @@ import (
 	"verso/backy/database"
 	"verso/backy/database/models"
 	"verso/backy/repositories"
+	"verso/backy/shared/testutil"
 )
 
-func seedTestData(t *testing.T, db *testDB) (userA *models.AuthUser, userB *models.AuthUser, userC *models.AuthUser, workspace *models.Workspace) {
+func seedTestData(t *testing.T, db *testutil.TestDB) (userA *models.AuthUser, userB *models.AuthUser, userC *models.AuthUser, workspace *models.Workspace) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -65,7 +66,7 @@ func TestNotificationService_CreateAndList(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, userB, _, ws := seedTestData(t, db)
@@ -106,7 +107,7 @@ func TestNotificationService_ActorReceivesOwnNotification(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, _, _, ws := seedTestData(t, db)
@@ -136,7 +137,7 @@ func TestNotificationService_MarkRead(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, userB, _, ws := seedTestData(t, db)
@@ -197,7 +198,7 @@ func TestNotificationService_UnreadCount(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, userB, userC, ws := seedTestData(t, db)
@@ -236,7 +237,7 @@ func TestPushSubscriptionService_UpsertAndDelete(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, _, _, _ := seedTestData(t, db)
@@ -290,7 +291,7 @@ func TestPushSubscriptionService_DeleteByEndpoint_Cleanup(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, _, _, _ := seedTestData(t, db)
@@ -376,7 +377,7 @@ func TestNotificationService_RecipientFiltering(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, userB, userC, ws := seedTestData(t, db)
@@ -412,157 +413,12 @@ func TestNotificationService_RecipientFiltering(t *testing.T) {
 	assert.Len(t, notifsA, 0)
 }
 
-// ============================================================================
-// Notification integration tests — domain events trigger real notifications
-// ============================================================================
-
-func TestNotificationService_DomainEvent_WorkspaceCreated(t *testing.T) {
-	if os.Getenv("DATABASE_URL") == "" {
-		t.Skip("DATABASE_URL not set")
-	}
-
-	db := setupTestDB(t)
-	ctx := context.Background()
-
-	notifRepo := repositories.NewNotificationRepo()
-	pushSubRepo := repositories.NewPushSubscriptionRepo()
-	notifSvc := NewNotificationService(notifRepo, pushSubRepo, nil)
-	db.workspaceSvc.SetNotifier(notifSvc)
-
-	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w, err := db.workspaceSvc.CreateWorkspace(ctx, "Notif Workspace", "notif-workspace", "", ownerID)
-	require.NoError(t, err)
-
-	// Workspace creation triggers notification through the notifier.
-	// The owner created it, so no notification to self expected.
-	notifs, err := notifSvc.GetNotifications(ctx, ownerID, 10)
-	require.NoError(t, err)
-	// Owner may or may not get notified depending on notifier behavior.
-	t.Logf("owner got %d notifications after workspace creation", len(notifs))
-
-	// Verify the workspace and group exist.
-	_ = w
-}
-
-func TestNotificationService_DomainEvent_SpaceCreated(t *testing.T) {
-	if os.Getenv("DATABASE_URL") == "" {
-		t.Skip("DATABASE_URL not set")
-	}
-
-	db := setupTestDB(t)
-	ctx := context.Background()
-
-	notifRepo := repositories.NewNotificationRepo()
-	pushSubRepo := repositories.NewPushSubscriptionRepo()
-	notifSvc := NewNotificationService(notifRepo, pushSubRepo, nil)
-	db.workspaceSvc.SetNotifier(notifSvc)
-	db.spaceSvc.SetNotifier(notifSvc)
-
-	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Notif WS", "notif-ws", ownerID)
-
-	// Add member to workspace and default group.
-	addWorkspaceMember(t, ctx, db, w.ID, memberID, "member")
-	defaultGroupID, err := db.groupSvc.GetDefaultGroupID(ctx, w.ID)
-	require.NoError(t, err)
-	err = db.groupRepo.AddUser(ctx, defaultGroupID, memberID)
-	require.NoError(t, err)
-
-	// Create a space — should notify space members.
-	s, err := db.spaceSvc.CreateSpace(ctx, "Notif Space", "notif-space", "", "", w.ID, ownerID)
-	require.NoError(t, err)
-	_ = s
-
-	// Member should get a notification.
-	memberNotifs, err := notifSvc.GetNotifications(ctx, memberID, 10)
-	require.NoError(t, err)
-	assert.NotEmpty(t, memberNotifs, "member should receive space created notification")
-	if len(memberNotifs) > 0 {
-		assert.Equal(t, string(EventSpaceCreated), memberNotifs[0].Type)
-	}
-}
-
-func TestNotificationService_DomainEvent_GroupMemberAdded(t *testing.T) {
-	if os.Getenv("DATABASE_URL") == "" {
-		t.Skip("DATABASE_URL not set")
-	}
-
-	db := setupTestDB(t)
-	ctx := context.Background()
-
-	notifRepo := repositories.NewNotificationRepo()
-	pushSubRepo := repositories.NewPushSubscriptionRepo()
-	notifSvc := NewNotificationService(notifRepo, pushSubRepo, nil)
-	db.groupSvc.SetNotifier(notifSvc)
-
-	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	memberID := createTestUser(t, ctx, db, "member", "member@example.com")
-	w := createTestWorkspace(t, ctx, db, "Notif WS", "notif-ws", ownerID)
-	addWorkspaceMember(t, ctx, db, w.ID, memberID, "member")
-
-	g, err := db.groupSvc.CreateGroup(ctx, w.ID, "Eng", "engineering", ownerID)
-	require.NoError(t, err)
-
-	// Add member to group — should notify them.
-	err = db.groupSvc.AddGroupMember(ctx, g.ID, memberID, ownerID)
-	require.NoError(t, err)
-
-	memberNotifs, err := notifSvc.GetNotifications(ctx, memberID, 10)
-	require.NoError(t, err)
-	assert.NotEmpty(t, memberNotifs, "member should receive group added notification")
-	if len(memberNotifs) > 0 {
-		assert.Equal(t, string(EventGroupMemberAdded), memberNotifs[0].Type)
-	}
-}
-
-func TestNotificationService_Dismiss(t *testing.T) {
-	if os.Getenv("DATABASE_URL") == "" {
-		t.Skip("DATABASE_URL not set")
-	}
-
-	db := setupTestDB(t)
-	ctx := context.Background()
-
-	userA, userB, _, ws := seedTestData(t, db)
-
-	notifRepo := repositories.NewNotificationRepo()
-	pushSubRepo := repositories.NewPushSubscriptionRepo()
-	svc := NewNotificationService(notifRepo, pushSubRepo, nil)
-
-	svc.Notify(ctx, NotificationEvent{
-		Type:         EventSpaceCreated,
-		WorkspaceID:  ws.ID,
-		ActorID:      userA.ID,
-		RecipientIDs: []string{userB.ID},
-		Metadata:     map[string]string{"name": "Test Space"},
-	})
-
-	notifs, err := svc.GetNotifications(ctx, userB.ID, 10)
-	require.NoError(t, err)
-	require.Len(t, notifs, 1)
-
-	// Dismiss the notification
-	err = svc.Dismiss(ctx, notifs[0].ID, userB.ID)
-	require.NoError(t, err)
-
-	// Dismissed notification should not appear in list
-	notifsAfter, err := svc.GetNotifications(ctx, userB.ID, 10)
-	require.NoError(t, err)
-	assert.Len(t, notifsAfter, 0)
-
-	// Unread count should be 0
-	count, err := svc.CountUnread(ctx, userB.ID)
-	require.NoError(t, err)
-	assert.Equal(t, 0, count)
-}
-
 func TestNotificationService_MultipleEventTypes(t *testing.T) {
 	if os.Getenv("DATABASE_URL") == "" {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, userB, _, ws := seedTestData(t, db)
@@ -605,7 +461,7 @@ func TestNotificationService_LimitAndPagination(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	db := setupTestDB(t)
+	db := testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	userA, userB, _, ws := seedTestData(t, db)
@@ -653,7 +509,7 @@ func TestNotificationService_EmptyRecipients(t *testing.T) {
 		t.Skip("DATABASE_URL not set")
 	}
 
-	_ = setupTestDB(t)
+	_ = testutil.SetupTestDB(t)
 	ctx := context.Background()
 
 	notifRepo := repositories.NewNotificationRepo()

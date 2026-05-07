@@ -11,14 +11,14 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"verso/backy/database/models"
-	"verso/backy/repositories"
-	notifeat "verso/backy/features/notification"
 	ghfeat "verso/backy/features/github"
+	groupfeat "verso/backy/features/group"
+	notifeat "verso/backy/features/notification"
 	pagefeat "verso/backy/features/page"
 	spacefeat "verso/backy/features/space"
 	wsfeat "verso/backy/features/workspace"
-	groupfeat "verso/backy/features/group"
 	"verso/backy/middleware"
+	"verso/backy/repositories"
 	"verso/backy/shared/cache"
 	"verso/backy/shared/logger"
 	"verso/backy/store"
@@ -46,7 +46,6 @@ type Config struct {
 }
 
 // New creates a new handlers instance
-
 
 func New(cfg Config) *Handlers {
 	return &Handlers{

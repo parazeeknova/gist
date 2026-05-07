@@ -16,6 +16,11 @@ import (
 	"verso/backy/database/models"
 	"verso/backy/repositories"
 
+	authfeat "verso/backy/features/auth"
+	groupfeat "verso/backy/features/group"
+	pagefeat "verso/backy/features/page"
+	spacefeat "verso/backy/features/space"
+	ws "verso/backy/features/workspace"
 	"verso/backy/shared/auth"
 )
 
@@ -27,10 +32,10 @@ type testDB struct {
 	groupRepo       *repositories.GroupRepo
 	pageRepo        *repositories.PageRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
-	workspaceSvc    *WorkspaceService
-	spaceSvc        *SpaceService
-	pageSvc         *PageService
-	groupSvc        *GroupService
+	workspaceSvc    *ws.WorkspaceService
+	spaceSvc        *spacefeat.SpaceService
+	pageSvc         *pagefeat.PageService
+	groupSvc        *groupfeat.GroupService
 }
 
 func getTestDatabaseURL(t *testing.T, databaseURL string) string {
@@ -102,10 +107,10 @@ func setupTestDB(t *testing.T) *testDB {
 	}
 
 	db.groupRepo = repositories.NewGroupRepo()
-	db.workspaceSvc = NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
-	db.spaceSvc = NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
-	db.pageSvc = NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
-	db.groupSvc = NewGroupService(db.groupRepo, db.workspaceRepo)
+	db.workspaceSvc = ws.NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
+	db.spaceSvc = spacefeat.NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
+	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
+	db.groupSvc = groupfeat.NewGroupService(db.groupRepo, db.workspaceRepo)
 
 	truncateTables(t, ctx)
 
@@ -242,8 +247,8 @@ func TestWorkspaceService_UpdateWorkspace_PermissionDenied(t *testing.T) {
 	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
 
 	_, err := db.workspaceSvc.UpdateWorkspace(ctx, w.ID, "Hacked", "hacked", "", otherID)
-	if !errors.Is(err, ErrWorkspacePermissionDenied) {
-		t.Fatalf("expected ErrWorkspacePermissionDenied, got %v", err)
+	if !errors.Is(err, ws.ErrWorkspacePermissionDenied) {
+		t.Fatalf("expected ws.ErrWorkspacePermissionDenied, got %v", err)
 	}
 }
 
@@ -256,8 +261,8 @@ func TestWorkspaceService_DeleteWorkspace_PermissionDenied(t *testing.T) {
 	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace", ownerID)
 
 	err := db.workspaceSvc.DeleteWorkspace(ctx, w.ID, otherID)
-	if !errors.Is(err, ErrWorkspacePermissionDenied) {
-		t.Fatalf("expected ErrWorkspacePermissionDenied, got %v", err)
+	if !errors.Is(err, ws.ErrWorkspacePermissionDenied) {
+		t.Fatalf("expected ws.ErrWorkspacePermissionDenied, got %v", err)
 	}
 }
 
@@ -282,7 +287,7 @@ func TestSpaceService_CreateSpace_RequiresWorkspaceOwnerOrAdmin(t *testing.T) {
 
 	// Member should fail.
 	_, err = db.spaceSvc.CreateSpace(ctx, "New Space 2", "new-space-2", "", "", w.ID, memberID)
-	if !errors.Is(err, ErrWorkspacePermissionDenied) {
+	if !errors.Is(err, ws.ErrWorkspacePermissionDenied) {
 		// Note: the actual error comes from workspaceSvc.RequireOwnerOrAdmin in the handler,
 		// but at the service level space creation itself doesn't check workspace role.
 		// The test above verifies handler behavior. For service-level, we only verify
@@ -309,8 +314,8 @@ func TestSpaceService_GetSpaceMembers_RequiresReadAccess(t *testing.T) {
 
 	// Outsider should not.
 	err := db.spaceSvc.RequireRead(ctx, s.ID, outsiderID)
-	if !errors.Is(err, ErrSpacePermissionDenied) {
-		t.Fatalf("expected ErrSpacePermissionDenied, got %v", err)
+	if !errors.Is(err, spacefeat.ErrSpacePermissionDenied) {
+		t.Fatalf("expected spacefeat.ErrSpacePermissionDenied, got %v", err)
 	}
 }
 
@@ -362,8 +367,8 @@ func TestPageService_ReaderCannotCreateUpdateDeletePublish(t *testing.T) {
 
 	// Reader cannot create page.
 	err := db.pageSvc.CreatePage(ctx, p)
-	if !errors.Is(err, ErrPagePermissionDenied) {
-		t.Fatalf("create page: expected ErrPagePermissionDenied, got %v", err)
+	if !errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+		t.Fatalf("create page: expected pagefeat.ErrPagePermissionDenied, got %v", err)
 	}
 
 	// Create page as owner so we can test update/delete/publish.
@@ -374,21 +379,21 @@ func TestPageService_ReaderCannotCreateUpdateDeletePublish(t *testing.T) {
 
 	// Reader cannot update.
 	title := "Hacked"
-	_, err = db.pageSvc.UpdatePage(ctx, p.ID, readerID, UpdatePageInput{Title: &title})
-	if !errors.Is(err, ErrPagePermissionDenied) {
-		t.Fatalf("update page: expected ErrPagePermissionDenied, got %v", err)
+	_, err = db.pageSvc.UpdatePage(ctx, p.ID, readerID, pagefeat.UpdatePageInput{Title: &title})
+	if !errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+		t.Fatalf("update page: expected pagefeat.ErrPagePermissionDenied, got %v", err)
 	}
 
 	// Reader cannot delete.
 	err = db.pageSvc.DeletePage(ctx, p.ID, readerID)
-	if !errors.Is(err, ErrPagePermissionDenied) {
-		t.Fatalf("delete page: expected ErrPagePermissionDenied, got %v", err)
+	if !errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+		t.Fatalf("delete page: expected pagefeat.ErrPagePermissionDenied, got %v", err)
 	}
 
 	// Reader cannot publish.
 	_, err = db.pageSvc.PublishPage(ctx, p.ID, readerID)
-	if !errors.Is(err, ErrPagePermissionDenied) {
-		t.Fatalf("publish page: expected ErrPagePermissionDenied, got %v", err)
+	if !errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+		t.Fatalf("publish page: expected pagefeat.ErrPagePermissionDenied, got %v", err)
 	}
 }
 
@@ -418,21 +423,21 @@ func TestPageService_WriterCanEditButNotManageMembers(t *testing.T) {
 
 	// Writer can update page.
 	title := "Updated Title"
-	_, err := db.pageSvc.UpdatePage(ctx, p.ID, writerID, UpdatePageInput{Title: &title})
+	_, err := db.pageSvc.UpdatePage(ctx, p.ID, writerID, pagefeat.UpdatePageInput{Title: &title})
 	if err != nil {
 		t.Fatalf("writer update page: %v", err)
 	}
 
 	// Writer cannot manage space members.
 	err = db.spaceSvc.UpdateSpaceMemberRole(ctx, s.ID, ownerID, models.SpaceRoleReader, writerID)
-	if !errors.Is(err, ErrSpacePermissionDenied) {
-		t.Fatalf("expected ErrSpacePermissionDenied, got %v", err)
+	if !errors.Is(err, spacefeat.ErrSpacePermissionDenied) {
+		t.Fatalf("expected spacefeat.ErrSpacePermissionDenied, got %v", err)
 	}
 
 	// Writer cannot delete space.
 	err = db.spaceSvc.DeleteSpace(ctx, s.ID, writerID)
-	if !errors.Is(err, ErrSpacePermissionDenied) {
-		t.Fatalf("expected ErrSpacePermissionDenied, got %v", err)
+	if !errors.Is(err, spacefeat.ErrSpacePermissionDenied) {
+		t.Fatalf("expected spacefeat.ErrSpacePermissionDenied, got %v", err)
 	}
 }
 
@@ -612,8 +617,8 @@ func TestWorkspaceService_UserACannotListWorkspaceBSpaces(t *testing.T) {
 
 	// But user A should fail workspace membership check.
 	err = db.workspaceSvc.RequireMembership(ctx, wB.ID, userA)
-	if !errors.Is(err, ErrWorkspacePermissionDenied) {
-		t.Fatalf("expected ErrWorkspacePermissionDenied, got %v", err)
+	if !errors.Is(err, ws.ErrWorkspacePermissionDenied) {
+		t.Fatalf("expected ws.ErrWorkspacePermissionDenied, got %v", err)
 	}
 }
 
@@ -732,20 +737,20 @@ func TestGroupService_DefaultGroupImmutable(t *testing.T) {
 
 	// Cannot rename default group.
 	_, err = db.groupSvc.UpdateGroup(ctx, defaultGroupID, "New Name", "", ownerID)
-	if !errors.Is(err, ErrDefaultGroupImmutable) {
-		t.Fatalf("expected ErrDefaultGroupImmutable, got %v", err)
+	if !errors.Is(err, groupfeat.ErrDefaultGroupImmutable) {
+		t.Fatalf("expected groupfeat.ErrDefaultGroupImmutable, got %v", err)
 	}
 
 	// Cannot delete default group.
 	err = db.groupSvc.DeleteGroup(ctx, defaultGroupID, ownerID)
-	if !errors.Is(err, ErrDefaultGroupImmutable) {
-		t.Fatalf("expected ErrDefaultGroupImmutable, got %v", err)
+	if !errors.Is(err, groupfeat.ErrDefaultGroupImmutable) {
+		t.Fatalf("expected groupfeat.ErrDefaultGroupImmutable, got %v", err)
 	}
 
 	// Cannot remove member from default group.
 	err = db.groupSvc.RemoveGroupMember(ctx, defaultGroupID, ownerID, ownerID)
-	if !errors.Is(err, ErrDefaultGroupImmutable) {
-		t.Fatalf("expected ErrDefaultGroupImmutable, got %v", err)
+	if !errors.Is(err, groupfeat.ErrDefaultGroupImmutable) {
+		t.Fatalf("expected groupfeat.ErrDefaultGroupImmutable, got %v", err)
 	}
 }
 
@@ -776,7 +781,7 @@ func TestGroupService_GroupBasedSpaceAccess(t *testing.T) {
 	}
 
 	// Member should NOT have admin access.
-	if err := db.spaceSvc.requireAdmin(ctx, spaceID, memberID); err == nil {
+	if err := db.spaceSvc.RequireAdmin(ctx, spaceID, memberID); err == nil {
 		t.Fatal("member should not have admin access")
 	}
 }
@@ -901,8 +906,8 @@ func TestGroupService_CrossWorkspaceIsolation(t *testing.T) {
 
 	// User B should not be able to modify group in workspace A.
 	_, err = db.groupSvc.UpdateGroup(ctx, gA.ID, "Hacked", "", userB)
-	if !errors.Is(err, ErrGroupPermissionDenied) {
-		t.Fatalf("expected ErrGroupPermissionDenied, got %v", err)
+	if !errors.Is(err, groupfeat.ErrGroupPermissionDenied) {
+		t.Fatalf("expected groupfeat.ErrGroupPermissionDenied, got %v", err)
 	}
 }
 
@@ -914,11 +919,11 @@ func TestAuthService_Bootstrap_CreatesUserWorkspaceGroupAndSpace(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()
 
-	authSvc := NewAuthService()
+	authSvc := authfeat.NewAuthService()
 	authSvc.SetWorkspaceService(db.workspaceSvc)
 
 	// Bootstrap — emulates the first-user registration flow.
-	params := &BootstrapParams{
+	params := &authfeat.BootstrapParams{
 		Name:          "First Owner",
 		WorkspaceName: "My Workspace",
 		SpaceName:     "notes",
@@ -940,7 +945,7 @@ func TestAuthService_Bootstrap_CreatesUserWorkspaceGroupAndSpace(t *testing.T) {
 	userID := userResp.ID.String()
 
 	// Verify user was created.
-	dbUser, err := authSvc.repositories.UserRepo().FindUserByUsernameOrEmail(ctx, "owner")
+	dbUser, err := db.userRepo.FindUserByUsernameOrEmail(ctx, "owner")
 	if err != nil {
 		t.Fatalf("find user: %v", err)
 	}
@@ -1025,7 +1030,7 @@ func TestAuthService_Bootstrap_CreatesUserWorkspaceGroupAndSpace(t *testing.T) {
 
 	// Verify second bootstrap attempt returns nil user (login with wrong creds)
 	// when system is already bootstrapped.
-	ur, _, err := authSvc.Login(ctx, "hacker", "hackpass", "hacker@evil.com", &BootstrapParams{
+	ur, _, err := authSvc.Login(ctx, "hacker", "hackpass", "hacker@evil.com", &authfeat.BootstrapParams{
 		Name:          "Hacker",
 		WorkspaceName: "Evil Corp",
 		SpaceName:     "evil",
@@ -1042,7 +1047,7 @@ func TestAuthService_Bootstrap_WithoutWorkspaceName_CreatesDefault(t *testing.T)
 	db := setupTestDB(t)
 	ctx := context.Background()
 
-	authSvc := NewAuthService()
+	authSvc := authfeat.NewAuthService()
 	authSvc.SetWorkspaceService(db.workspaceSvc)
 
 	// Bootstrap without workspace params — should still create a default workspace.
@@ -1077,11 +1082,11 @@ func TestAuthService_LoginAfterBootstrap_NormalFlow(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()
 
-	authSvc := NewAuthService()
+	authSvc := authfeat.NewAuthService()
 	authSvc.SetWorkspaceService(db.workspaceSvc)
 
 	// Bootstrap first.
-	userResp, _, err := authSvc.Login(ctx, "owner", "securepass", "owner@example.com", &BootstrapParams{
+	userResp, _, err := authSvc.Login(ctx, "owner", "securepass", "owner@example.com", &authfeat.BootstrapParams{
 		Name:          "Owner",
 		WorkspaceName: "WS",
 		SpaceName:     "notes",
@@ -1122,14 +1127,14 @@ func TestAuthService_LoginAfterBootstrap_NormalFlow(t *testing.T) {
 	}
 
 	// Inactive user.
-	dbUser, _ := authSvc.repositories.UserRepo().FindUserByUsernameOrEmail(ctx, "owner")
+	dbUser, _ := db.userRepo.FindUserByUsernameOrEmail(ctx, "owner")
 	if dbUser != nil {
 		dbUser.IsActive = false
 		pool := database.GetPool()
 		_, _ = pool.Exec(ctx, "UPDATE users SET is_active = false WHERE id = $1", dbUser.ID)
 	}
 	_, _, err = authSvc.Login(ctx, "owner", "securepass", "", nil, "test-device")
-	if !errors.Is(err, ErrUserInactive) {
-		t.Fatalf("expected ErrUserInactive, got %v", err)
+	if !errors.Is(err, authfeat.ErrUserInactive) {
+		t.Fatalf("expected authfeat.ErrUserInactive, got %v", err)
 	}
 }
