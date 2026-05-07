@@ -1,6 +1,8 @@
 import type { AuthUser } from "#/types";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
+import { setAuthCache } from "#/lib/auth-cache";
+import { useConsoleStore } from "#/stores/console-store";
 
 export interface LoginResult {
   mfa_required?: boolean;
@@ -24,6 +26,7 @@ export const useAuth = () => {
           error instanceof Error &&
           (error.message.startsWith("HTTP 401") || error.message.startsWith("HTTP 403"))
         ) {
+          setAuthCache("unauthenticated");
           queryClient.setQueryData(["auth"], null);
           queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
           return null;
@@ -33,7 +36,7 @@ export const useAuth = () => {
     },
     queryKey: ["auth"],
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 60 * 1000,
   });
 };
 
@@ -88,6 +91,8 @@ export const useAuthActions = () => {
     if (!res.ok) {
       throw new Error("Logout failed");
     }
+    setAuthCache("unauthenticated");
+    useConsoleStore.getState().reset();
     queryClient.setQueryData(["auth"], null);
     await queryClient.invalidateQueries({ queryKey: ["auth"] });
     await queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });

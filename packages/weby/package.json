@@ -1,6 +1,6 @@
 {
   "name": "@verso/weby",
-  "version": "0.1.26",
+  "version": "0.1.28",
   "private": true,
   "type": "module",
   "imports": {
@@ -48,7 +48,8 @@
     "react-github-calendar": "^5.0.6",
     "react-tooltip": "^6.0.0",
     "tailwindcss": "^4.2.4",
-    "theme-change": "^2.5.0"
+    "theme-change": "^2.5.0",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.33.2",

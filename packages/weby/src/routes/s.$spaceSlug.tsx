@@ -1,16 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { gsap } from "gsap";
-import { useEffect, useRef, useState } from "react";
-import { useAuth } from "../hooks/use-auth";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTheme } from "../hooks/use-theme";
+import { AuthGate } from "../components/auth-gate";
 import { ConsoleLayout } from "../components/console/console-layout";
 
 const SpaceConsole = function SpaceConsole() {
-  const { data: user, isPending } = useAuth();
-  const navigate = useNavigate();
   const { isDarkMode } = useTheme();
-  const loadingRef = useRef<HTMLDivElement>(null);
-  const [done, setDone] = useState(false);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -23,41 +18,11 @@ const SpaceConsole = function SpaceConsole() {
     };
   }, [isDarkMode]);
 
-  useEffect(() => {
-    if (!isPending && !user) {
-      void navigate({ replace: true, to: "/" });
-    }
-  }, [isPending, user, navigate]);
-
-  useEffect(() => {
-    if (!isPending && user && !done && loadingRef.current) {
-      gsap.to(loadingRef.current, {
-        duration: 0.3,
-        ease: "power2.in",
-        onComplete: () => setDone(true),
-        opacity: 0,
-        scale: 0.97,
-      });
-    }
-    if (isPending) {
-      setDone(false);
-    }
-  }, [isPending, user, done]);
-
-  if (!done) {
-    return (
-      <div
-        ref={loadingRef}
-        className={`flex min-h-screen items-center justify-center ${isDarkMode ? "bg-bg-dark" : "bg-bg-light"}`}
-      >
-        <p className={`text-sm ${isDarkMode ? "text-text-dark/40" : "text-text-light/40"}`}>
-          {isPending ? "checking authentication..." : "redirecting..."}
-        </p>
-      </div>
-    );
-  }
-
-  return <ConsoleLayout />;
+  return (
+    <AuthGate>
+      <ConsoleLayout />
+    </AuthGate>
+  );
 };
 
 export const Route = createFileRoute("/s/$spaceSlug")({

@@ -191,24 +191,24 @@ export const FileTreeSidebar = () => {
         {(() => {
           if (!selectedWorkspaceId) {
             return (
-              <p className={`text-[13px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+              <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
                 select a workspace
               </p>
             );
           }
           if (isPending) {
             return (
-              <p className={`text-[13px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+              <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
                 loading spaces...
               </p>
             );
           }
           if (isError) {
-            return <p className="text-[13px] text-red-400">failed to load spaces</p>;
+            return <p className="px-1 text-[11px] text-red-400">failed to load spaces</p>;
           }
           if (!spaces || spaces.length === 0) {
             return (
-              <p className={`text-[13px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+              <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
                 no spaces yet
               </p>
             );
@@ -230,7 +230,7 @@ export const FileTreeSidebar = () => {
           favorites
         </p>
       </div>
-      <p className={`px-1 text-[13px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+      <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
         no favorites yet
       </p>
     </>

@@ -180,56 +180,47 @@ export const ConsoleHome = () => {
           </button>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {mySpaces.length === 0 && !showCreateSpace ? (
-            <p
-              className={`w-full text-center text-[13px] lowercase ${t("text-text-dark/20", "text-text-light/20")}`}
+          {mySpaces.map((s) => (
+            <button
+              key={s.id}
+              className={`w-44 shrink-0 border px-3 py-2 text-left lowercase bg-linear-to-b ${t("border-border-dark from-white/3 to-transparent hover:bg-white/5", "border-border-light from-black/2 to-transparent hover:bg-black/3")}`}
+              onClick={() => navigate({ to: `/s/${s.slug}` })}
+              type="button"
             >
-              no spaces yet
-            </p>
-          ) : (
-            mySpaces.map((s) => (
-              <button
-                key={s.id}
-                className={`w-44 shrink-0 border px-3 py-2 text-left lowercase bg-linear-to-b ${t("border-border-dark from-white/3 to-transparent hover:bg-white/5", "border-border-light from-black/2 to-transparent hover:bg-black/3")}`}
-                onClick={() => navigate({ to: `/s/${s.slug}` })}
-                type="button"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 flex items-center gap-2 min-w-0">
-                    {s.icon ? (
-                      <img
-                        alt=""
-                        className="w-5 h-5 shrink-0 rounded-full object-cover"
-                        src={s.icon}
-                      />
-                    ) : (
-                      <div
-                        className={`w-5 h-5 shrink-0 rounded-full ${t("bg-white/5", "bg-black/5")}`}
-                      />
-                    )}
-                    <p
-                      className={`text-[13px] truncate ${t("text-text-dark/70", "text-text-light/70")}`}
-                    >
-                      {s.name}
-                    </p>
-                  </div>
-                  <span
-                    className={`shrink-0 text-[9px] font-mono ${t("text-text-dark/20", "text-text-light/20")}`}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 min-w-0">
+                  {s.icon ? (
+                    <img
+                      alt=""
+                      className="w-5 h-5 shrink-0 rounded-full object-cover"
+                      src={s.icon}
+                    />
+                  ) : (
+                    <div
+                      className={`w-5 h-5 shrink-0 rounded-full ${t("bg-white/5", "bg-black/5")}`}
+                    />
+                  )}
+                  <p
+                    className={`text-[13px] truncate ${t("text-text-dark/70", "text-text-light/70")}`}
                   >
-                    {s.memberCount}
-                  </span>
+                    {s.name}
+                  </p>
                 </div>
-                <p
-                  className={`mt-1.5 text-[10px] line-clamp-2 ${t("text-text-dark/30", "text-text-light/30")}`}
+                <span
+                  className={`shrink-0 text-[9px] font-mono ${t("text-text-dark/20", "text-text-light/20")}`}
                 >
-                  {s.description || "\u00A0"}
-                </p>
-              </button>
-            ))
-          )}
+                  {s.memberCount}
+                </span>
+              </div>
+              <p
+                className={`mt-1.5 text-[10px] line-clamp-2 ${t("text-text-dark/30", "text-text-light/30")}`}
+              >
+                {s.description || "\u00A0"}
+              </p>
+            </button>
+          ))}
           <div className="shrink-0">
             <button
-              ref={createBtnRef}
               className={`w-44 shrink-0 border border-dashed px-3 py-2 text-left lowercase bg-linear-to-b ${t("border-border-dark from-white/3 to-transparent hover:bg-white/5 text-text-dark/25 hover:text-text-dark/40", "border-border-light from-black/2 to-transparent hover:bg-black/3 text-text-light/25 hover:text-text-light/40")}`}
               onClick={() => {
                 setShowCreateSpace(true);

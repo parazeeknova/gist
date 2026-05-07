@@ -3,30 +3,30 @@ import {
   ClockCounterClockwiseIcon,
   CommandIcon,
   ControlIcon,
-  DatabaseIcon,
   FileTextIcon,
-  GearSixIcon,
   GlobeSimpleIcon,
   HouseSimpleIcon,
   PlusIcon,
-  QuestionIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { detectPlatform } from "@tanstack/hotkeys";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useThrottledCallback } from "@tanstack/react-pacer";
 import { gsap } from "gsap";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useAuth } from "../../hooks/use-auth";
-import { useTheme } from "../../hooks/use-theme";
-import { useSpaceBySlug, useWorkspaces } from "#/hooks/use-console-mutations";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useAuth } from "#/hooks/use-auth";
+import { useTheme } from "#/hooks/use-theme";
+import { useSpaceBySlug } from "#/hooks/use-console-mutations";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
 import { FileTreeSidebar } from "./file-tree-sidebar";
+import { FloatingSidebar } from "./floating-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
+import { SidebarFooter } from "./sidebar-footer";
 import { SpaceSidebar } from "../space/space-sidebar";
+import { useConsoleStore } from "#/stores/console-store";
+import { useConsoleBootstrap } from "#/hooks/use-console-bootstrap";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -39,62 +39,28 @@ const NAV_ROUTES = [
   { href: "/blogs", icon: ChatCenteredTextIcon, label: "blogs", shortcut: "3" },
 ] as const;
 
-const getStoredWorkspaceId = (): string => {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  try {
-    return localStorage.getItem("verso_selected_workspace_id") ?? "";
-  } catch {
-    return "";
-  }
-};
-
-const getStoredSpaceId = (): string => {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  try {
-    return localStorage.getItem("verso_selected_space_id") ?? "";
-  } catch {
-    return "";
-  }
-};
-
 export const ConsoleLayout = () => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const mainRef = useRef<HTMLDivElement>(null);
   const sidebarContentRef = useRef<HTMLDivElement>(null);
   const routerState = useRouterState();
-  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
-  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>(getStoredWorkspaceId);
-  const [selectedSpaceId, setSelectedSpaceId] = useState<string>(getStoredSpaceId);
   const [debugSearch, setDebugSearch] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window === "undefined") {
-      return true;
-    }
-    return window.innerWidth >= 768;
-  });
+  const { sidebarOpen, toggleSidebar: toggleSidebarStore } = useConsoleStore();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
   const { data: user } = useAuth();
-  const { data: workspaces } = useWorkspaces();
-  const currentWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
 
-  // Persist selected workspace / space across route changes
-  useEffect(() => {
-    if (typeof window !== "undefined" && selectedWorkspaceId) {
-      localStorage.setItem("verso_selected_workspace_id", selectedWorkspaceId);
-    }
-  }, [selectedWorkspaceId]);
+  const {
+    selectedWorkspaceId,
+    selectedSpaceId,
+    selectedPageId,
+    setSelectedWorkspaceId,
+    setSelectedSpaceId,
+    setSelectedPageId,
+  } = useConsoleStore();
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && selectedSpaceId) {
-      localStorage.setItem("verso_selected_space_id", selectedSpaceId);
-    }
-  }, [selectedSpaceId]);
+  const { currentWorkspace } = useConsoleBootstrap();
 
   const isDebugRoute = routerState.location.pathname === "/home/debug";
   const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
@@ -115,7 +81,7 @@ export const ConsoleLayout = () => {
     : "";
   const { data: currentSpace } = useSpaceBySlug(spaceSlug);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (mainRef.current) {
       if (isSpecialRoute) {
         gsap.fromTo(
@@ -152,40 +118,52 @@ export const ConsoleLayout = () => {
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
-  const toggleSidebar = useThrottledCallback(
-    () => {
-      if (animatingRef.current || !sidebarRef.current) {
-        return;
-      }
-      animatingRef.current = true;
-      const open = !sidebarOpen;
-      setSidebarOpen(open);
-      gsap.to(sidebarRef.current, {
-        duration: 0.25,
-        ease: "power2.inOut",
-        onComplete: () => {
-          animatingRef.current = false;
-        },
-        opacity: open ? 1 : 0,
-        paddingLeft: open ? 16 : 0,
-        paddingRight: open ? 16 : 0,
-        width: open ? SIDEBAR_WIDTH : 0,
-      });
-    },
-    { wait: 300 },
-  );
+  const toggleSidebar = useCallback(() => {
+    if (animatingRef.current || !sidebarRef.current) {
+      return;
+    }
+    animatingRef.current = true;
+    const open = !sidebarOpen;
+    toggleSidebarStore();
+    gsap.to(sidebarRef.current, {
+      duration: 0.25,
+      ease: "power2.inOut",
+      onComplete: () => {
+        animatingRef.current = false;
+      },
+      opacity: open ? 1 : 0,
+      paddingLeft: open ? 16 : 0,
+      paddingRight: open ? 16 : 0,
+      width: open ? SIDEBAR_WIDTH : 0,
+    });
+  }, [sidebarOpen, toggleSidebarStore]);
 
-  useEffect(() => {
+  // Apply initial sidebar state before paint to prevent flash
+  useLayoutEffect(() => {
     if (sidebarRef.current) {
-      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
       gsap.set(sidebarRef.current, {
-        opacity: isMobile ? 0 : 1,
-        paddingLeft: isMobile ? 0 : 16,
-        paddingRight: isMobile ? 0 : 16,
-        width: isMobile ? 0 : SIDEBAR_WIDTH,
+        opacity: sidebarOpen ? 1 : 0,
+        paddingLeft: sidebarOpen ? 16 : 0,
+        paddingRight: sidebarOpen ? 16 : 0,
+        visibility: "visible",
+        width: sidebarOpen ? SIDEBAR_WIDTH : 0,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Sync sidebar state changes (e.g., after Zustand hydration)
+  useEffect(() => {
+    if (sidebarRef.current && !animatingRef.current) {
+      gsap.set(sidebarRef.current, {
+        opacity: sidebarOpen ? 1 : 0,
+        paddingLeft: sidebarOpen ? 16 : 0,
+        paddingRight: sidebarOpen ? 16 : 0,
+        visibility: "visible",
+        width: sidebarOpen ? SIDEBAR_WIDTH : 0,
+      });
+    }
+  }, [sidebarOpen]);
 
   const handleDebugBack = useCallback(() => {
     if (mainRef.current) {
@@ -343,54 +321,26 @@ export const ConsoleLayout = () => {
           <aside
             ref={sidebarRef}
             className={`absolute inset-y-0 left-0 z-40 md:relative md:shrink-0 flex flex-col border-r overflow-hidden p-4 transition-colors duration-500 ease-out ${t("border-border-dark", "border-border-light")} ${isDarkMode ? "bg-[#171717]" : "bg-[#e8e8e8]"}`}
+            style={{ visibility: "hidden" }}
           >
             <div className="min-h-0 flex-1 flex flex-col" ref={sidebarContentRef}>
               {sidebarContent}
             </div>
 
-            <div
-              className={`mt-2 w-70 space-y-2 border-t pt-2 px-4 ${t("border-border-dark", "border-border-light")}`}
-            >
-              <button
-                className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${isSettingsRoute ? t("text-text-dark", "text-text-light") : t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-                onClick={() => navigate({ to: "/settings/account/profile" })}
-                type="button"
-              >
-                <GearSixIcon size={12} />
-                <span className={isSettingsRoute ? "border-b" : ""}>settings</span>
-              </button>
-              <button
-                className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-                type="button"
-              >
-                <QuestionIcon size={12} />
-                help & feedback
-              </button>
-              <button
-                className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${isDebugRoute ? t("text-text-dark", "text-text-light") : t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-                onClick={() => navigate({ search: { table: undefined }, to: "/home/debug" })}
-                type="button"
-              >
-                <DatabaseIcon size={12} />
-                <span className={isDebugRoute ? "border-b" : ""}>debug & database</span>
-              </button>
-              <p className={`px-1 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
-                powered by{" "}
-                <a
-                  className="underline"
-                  href="https://github.com/parazeeknova/verso"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  verso
-                </a>{" "}
-                know more at{" "}
-                <a className="underline" href="/about" target="_blank" rel="noopener noreferrer">
-                  here
-                </a>
-              </p>
+            <div className="w-70 px-4">
+              <SidebarFooter isDebugRoute={isDebugRoute} isSettingsRoute={isSettingsRoute} />
             </div>
           </aside>
+
+          {!sidebarOpen && (
+            <FloatingSidebar
+              footer={
+                <SidebarFooter isDebugRoute={isDebugRoute} isSettingsRoute={isSettingsRoute} />
+              }
+            >
+              {sidebarContent}
+            </FloatingSidebar>
+          )}
 
           <main className="min-h-0 flex-1 overflow-y-auto relative" ref={mainRef}>
             <Outlet />

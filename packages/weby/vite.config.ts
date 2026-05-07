@@ -37,6 +37,9 @@ const config = defineConfig(async ({ mode }) => {
     define: {
       "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
     },
+    optimizeDeps: {
+      include: ["use-sync-external-store/shim/with-selector", "use-sync-external-store/shim"],
+    },
     plugins,
     resolve: { tsconfigPaths: true },
     server: {
