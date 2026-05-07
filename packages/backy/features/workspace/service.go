@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -18,6 +19,18 @@ var (
 	ErrWorkspaceNotEmpty         = errors.New("workspace is not empty")
 	ErrWorkspacePermissionDenied = errors.New("permission denied for this workspace")
 )
+
+func slugify(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
 
 // WorkspaceService provides business logic for workspaces.
 type WorkspaceService struct {
@@ -43,7 +56,7 @@ func (s *WorkspaceService) SetNotifier(n notifeat.Notifier) {
 }
 
 // CreateWorkspace creates a new workspace with a default group, default space, and memberships atomically.
-func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon, userID string) (models.Workspace, error) {
+func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon, userID string, spaceName string) (models.Workspace, error) {
 	w := models.Workspace{
 		ID:       uuid.New().String(),
 		Name:     name,
@@ -61,10 +74,14 @@ func (s *WorkspaceService) CreateWorkspace(ctx context.Context, name, slug, icon
 		CreatorID:   userID,
 	}
 
+	if spaceName == "" {
+		spaceName = "notes"
+	}
+
 	space := models.Space{
 		ID:          uuid.New().String(),
-		Name:        "notes",
-		Slug:        "notes",
+		Name:        spaceName,
+		Slug:        slugify(spaceName),
 		WorkspaceID: w.ID,
 		CreatedBy:   userID,
 		Visibility:  "private",

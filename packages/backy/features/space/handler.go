@@ -19,8 +19,8 @@ type SpaceHandlers struct {
 	spaceService     *SpaceService
 }
 
-func NewSpaceHandlers(svc *SpaceService) *SpaceHandlers {
-	return &SpaceHandlers{spaceService: svc}
+func NewSpaceHandlers(svc *SpaceService, wsSvc *wsfeat.WorkspaceService) *SpaceHandlers {
+	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc}
 }
 
 // --- Space Handlers ---

@@ -89,9 +89,11 @@ func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, e
 	return s, nil
 }
 
-// GetDefaultSpaceID returns the ID of the "notes" default space.
+// GetDefaultSpaceID returns the ID of the first space (ordered by created_at).
+// This is used when no workspace context is available; prefer getting the default
+// space ID from the workspace's default_space_id field when possible.
 func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
-	query := `SELECT id FROM spaces WHERE slug = 'notes' AND deleted_at IS NULL LIMIT 1`
+	query := `SELECT id FROM spaces WHERE deleted_at IS NULL ORDER BY created_at ASC LIMIT 1`
 	var id string
 	err := r.pool.QueryRow(ctx, query).Scan(&id)
 	if err != nil {

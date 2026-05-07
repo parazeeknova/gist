@@ -46,6 +46,15 @@ const MOCK_DOCS = [
   { id: "6", modified: "2026-05-01", space: "personal", title: "weekly standup template" },
 ];
 
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .map((word) => word[0])
+    .filter(Boolean)
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
 export const ConsoleHome = () => {
   const { data: user } = useAuth();
   const { isDarkMode } = useTheme();
@@ -197,8 +206,10 @@ export const ConsoleHome = () => {
                     />
                   ) : (
                     <div
-                      className={`w-5 h-5 shrink-0 rounded-full ${t("bg-white/5", "bg-black/5")}`}
-                    />
+                      className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[8px] font-medium ${t("bg-white/10 text-text-dark/70", "bg-black/10 text-text-light/70")}`}
+                    >
+                      {getInitials(s.name)}
+                    </div>
                   )}
                   <p
                     className={`text-[13px] truncate ${t("text-text-dark/70", "text-text-light/70")}`}

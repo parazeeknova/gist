@@ -142,9 +142,13 @@ func createTestUser(t *testing.T, ctx context.Context, db *testDB, username, ema
 	return id
 }
 
-func createTestWorkspace(t *testing.T, ctx context.Context, db *testDB, name, slug, ownerID string) models.Workspace {
+func createTestWorkspace(t *testing.T, ctx context.Context, db *testDB, name, slug, ownerID string, spaceName ...string) models.Workspace {
 	t.Helper()
-	w, err := db.workspaceSvc.CreateWorkspace(ctx, name, slug, "", ownerID)
+	sp := ""
+	if len(spaceName) > 0 {
+		sp = spaceName[0]
+	}
+	w, err := db.workspaceSvc.CreateWorkspace(ctx, name, slug, "", ownerID, sp)
 	if err != nil {
 		t.Fatalf("create workspace: %v", err)
 	}
@@ -199,7 +203,7 @@ func TestWorkspaceService_CreateWorkspace_IsTransactional(t *testing.T) {
 	ctx := context.Background()
 
 	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
-	w, err := db.workspaceSvc.CreateWorkspace(ctx, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], "", ownerID)
+	w, err := db.workspaceSvc.CreateWorkspace(ctx, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], "", ownerID, "notes")
 	if err != nil {
 		t.Fatalf("create workspace: %v", err)
 	}

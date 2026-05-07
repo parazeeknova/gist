@@ -165,7 +165,7 @@ func main() {
 		pushHandlers = pushfeat.NewPushSubscriptionHandlers(notificationService)
 	}
 
-	spaceHandlers := sfeat.NewSpaceHandlers(spaceService)
+	spaceHandlers := sfeat.NewSpaceHandlers(spaceService, workspaceService)
 	workspaceHandlers := wsfeat.NewWorkspaceHandlers(workspaceService)
 	groupHandlers := gfeat.NewGroupHandlers(groupService, workspaceService)
 	userHandlers := ufeat.NewUserHandlers()

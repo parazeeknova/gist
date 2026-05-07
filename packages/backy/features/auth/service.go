@@ -171,17 +171,22 @@ func (s *AuthService) bootstrap(ctx context.Context, username, email, password s
 		return nil, nil, fmt.Errorf("create bootstrap user: %w", err)
 	}
 
+	spaceName := ""
+	if params != nil {
+		spaceName = params.SpaceName
+	}
+
 	// Create workspace with default group, space, and memberships atomically.
 	if params != nil && params.WorkspaceName != "" {
 		if s.wsService != nil {
-			_, err := s.wsService.CreateWorkspace(ctx, params.WorkspaceName, slugify(params.WorkspaceName), "", userID)
+			_, err := s.wsService.CreateWorkspace(ctx, params.WorkspaceName, slugify(params.WorkspaceName), "", userID, spaceName)
 			if err != nil {
 				logger.Log.Error().Err(err).Msg("bootstrap: failed to create workspace")
 			}
 		}
 	} else if s.wsService != nil {
 		// No workspace name provided — create a default workspace
-		_, err := s.wsService.CreateWorkspace(ctx, "My Workspace", "my-workspace", "", userID)
+		_, err := s.wsService.CreateWorkspace(ctx, "My Workspace", "my-workspace", "", userID, spaceName)
 		if err != nil {
 			logger.Log.Error().Err(err).Msg("bootstrap: failed to create default workspace")
 		}

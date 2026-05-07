@@ -41,9 +41,10 @@ func (h *WorkspaceHandlers) GetWorkspaces(c *gin.Context) {
 
 // CreateWorkspaceRequest is the request body for creating a workspace.
 type CreateWorkspaceRequest struct {
-	Name string `json:"name" binding:"required"`
-	Slug string `json:"slug" binding:"required"`
-	Icon string `json:"icon"`
+	Name      string `json:"name" binding:"required"`
+	Slug      string `json:"slug" binding:"required"`
+	Icon      string `json:"icon"`
+	SpaceName string `json:"spaceName"`
 }
 
 // CreateWorkspace handles POST /api/console/workspaces.
@@ -60,7 +61,7 @@ func (h *WorkspaceHandlers) CreateWorkspace(c *gin.Context) {
 	}
 
 	userID := middleware.GetCurrentUserID(c)
-	workspace, err := h.workspaceService.CreateWorkspace(c.Request.Context(), req.Name, req.Slug, req.Icon, userID)
+	workspace, err := h.workspaceService.CreateWorkspace(c.Request.Context(), req.Name, req.Slug, req.Icon, userID, req.SpaceName)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("create workspace error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create workspace"})
