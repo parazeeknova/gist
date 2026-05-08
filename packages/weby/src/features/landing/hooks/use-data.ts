@@ -1,4 +1,4 @@
-import type { BlogManifestSection, ExperienceItem, Profile, Project } from "@/shared/types";
+import type { BlogManifestSection, ExperienceItem, Profile, Project } from "#/shared/types";
 import { useQuery } from "@tanstack/react-query";
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {

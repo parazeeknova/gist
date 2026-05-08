@@ -1,10 +1,10 @@
 import { FileTextIcon } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "@tanstack/react-router";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
-import { useSpaceBySlug } from "@/features/console/hooks/use-spaces";
-import type { ConsolePage } from "@/shared/types";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
+import { useSpaceBySlug } from "#/features/console/hooks/use-spaces";
+import type { ConsolePage } from "#/shared/types";
 
 export const SpaceOverview = () => {
   const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });

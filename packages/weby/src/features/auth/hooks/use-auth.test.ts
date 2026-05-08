@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createWrapper } from "@/shared/test/utils";
+import { createWrapper } from "#/shared/test/utils";
 import { useAuth, useAuthActions } from "./use-auth";
 
 const createMockResponse = (data: unknown, ok = true, status = 200): Response => {

@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { BlogPost } from "@/shared/types";
+import type { BlogPost } from "#/shared/types";
 import { BlogReader } from "./blog-reader";
 import { BlogReaderPanel } from "./blog-reader-panel";
-import { renderWithQuery } from "@/shared/test/utils";
+import { renderWithQuery } from "#/shared/test/utils";
 
 const mockPost: BlogPost = {
   content: {

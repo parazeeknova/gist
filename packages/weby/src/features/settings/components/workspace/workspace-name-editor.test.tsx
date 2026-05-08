@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createWrapper } from "@/shared/test/utils";
+import { createWrapper } from "#/shared/test/utils";
 import { WorkspaceNameEditor } from "./workspace-name-editor";
 
 const createMockResponse = (data: unknown, ok = true, status = 200): Response => {

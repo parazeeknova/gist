@@ -21,6 +21,7 @@ import (
 	profilefeat "verso/backy/features/profile"
 	pushfeat "verso/backy/features/push"
 	sfeat "verso/backy/features/space"
+	ssfeat "verso/backy/features/systemsettings"
 	ufeat "verso/backy/features/user"
 	wsfeat "verso/backy/features/workspace"
 	"verso/backy/handlers"
@@ -331,16 +332,26 @@ func main() {
 				pushHandlers.RegisterRoutes(console)
 			}
 
-			// Debug (owner-only, gated by env)
-			if os.Getenv("ENABLE_DEBUG_ROUTES") == "true" {
-				debug := console.Group("/debug")
-				debug.Use(middleware.OwnerRequired())
-				{
-					debug.GET("/tables", debugHandlers.GetDebugTables)
-					debug.GET("/tables/:tableName", debugHandlers.GetDebugTableData)
-					debug.DELETE("/tables/:tableName", debugHandlers.DeleteDebugTableData)
-					debug.POST("/tables/:tableName/rows", debugHandlers.DeleteDebugTableRows)
-				}
+			// System settings (owner-only)
+			systemSettingsHandlers := ssfeat.NewSystemSettingsHandlers()
+			systemSettings := console.Group("/system-settings")
+			systemSettings.Use(middleware.OwnerRequired())
+			{
+				systemSettings.GET("", systemSettingsHandlers.GetSettings)
+				systemSettings.PATCH("", systemSettingsHandlers.UpdateSetting)
+			}
+
+			// Debug (owner-only, gated by system_setting debug_api)
+			debug := console.Group("/debug")
+			debug.Use(middleware.OwnerRequired())
+			debug.Use(middleware.DebugAPIRequired())
+			{
+				debug.GET("/tables", debugHandlers.GetDebugTables)
+				debug.GET("/tables/:tableName", debugHandlers.GetDebugTableData)
+				debug.DELETE("/tables/:tableName", debugHandlers.DeleteDebugTableData)
+				debug.POST("/tables/:tableName/rows", debugHandlers.DeleteDebugTableRows)
+				debug.GET("/storage/orphans", debugHandlers.GetStorageOrphanReport)
+				debug.GET("/storage/objects", debugHandlers.GetStorageObjects)
 			}
 
 			// Users (admin+ only)

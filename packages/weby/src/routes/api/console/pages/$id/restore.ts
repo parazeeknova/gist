@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { restorePage } from "#/server/backy";
-import type { RestorePageInput } from "@/shared/types";
+import type { RestorePageInput } from "#/shared/types";
 
 export const Route = createFileRoute("/api/console/pages/$id/restore")({
   server: {

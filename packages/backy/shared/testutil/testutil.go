@@ -2,7 +2,9 @@ package testutil
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/url"
@@ -88,7 +90,6 @@ func GetTestDatabaseURL(t *testing.T, databaseURL string) string {
 	if originalDB == "" {
 		originalDB = "verso"
 	}
-	testDBName := originalDB + "_test"
 
 	u.Path = "/postgres"
 	adminCfg := database.Config{DatabaseURL: u.String()}
@@ -100,6 +101,12 @@ func GetTestDatabaseURL(t *testing.T, databaseURL string) string {
 	}
 	defer adminPool.Close()
 
+	suffix := make([]byte, 4)
+	if _, err := rand.Read(suffix); err != nil {
+		t.Fatalf("generate random suffix: %v", err)
+	}
+	testDBName := originalDB + "_test_" + hex.EncodeToString(suffix)
+
 	_, err = adminPool.Exec(ctx, fmt.Sprintf(`CREATE DATABASE "%s"`, testDBName))
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -109,6 +116,16 @@ func GetTestDatabaseURL(t *testing.T, databaseURL string) string {
 			t.Fatalf("create test database: %v", err)
 		}
 	}
+
+	t.Cleanup(func() {
+		cleanupCtx := context.Background()
+		cleanupPool, cErr := database.NewPool(cleanupCtx, adminCfg)
+		if cErr != nil {
+			return
+		}
+		defer cleanupPool.Close()
+		_, _ = cleanupPool.Exec(cleanupCtx, fmt.Sprintf(`DROP DATABASE "%s" WITH (FORCE)`, testDBName))
+	})
 
 	u.Path = "/" + testDBName
 	return u.String()

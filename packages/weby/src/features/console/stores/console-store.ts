@@ -1,5 +1,29 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+
+const safeStorage = {
+  getItem: (name: string) => {
+    try {
+      return localStorage.getItem(name);
+    } catch {
+      return null;
+    }
+  },
+  removeItem: (name: string) => {
+    try {
+      localStorage.removeItem(name);
+    } catch {
+      /* unavailable */
+    }
+  },
+  setItem: (name: string, value: string) => {
+    try {
+      localStorage.setItem(name, value);
+    } catch {
+      /* unavailable */
+    }
+  },
+};
 
 interface ConsoleState {
   sidebarOpen: boolean;
@@ -33,16 +57,20 @@ const getInitialSidebarOpen = (): boolean => {
   if (window.innerWidth < 768) {
     return false;
   }
-  const stored = localStorage.getItem("verso-console-store");
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      if (typeof parsed.state?.sidebarOpen === "boolean") {
-        return parsed.state.sidebarOpen;
+  try {
+    const stored = localStorage.getItem("verso-console-store");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (typeof parsed.state?.sidebarOpen === "boolean") {
+          return parsed.state.sidebarOpen;
+        }
+      } catch {
+        /* ignore */
       }
-    } catch {
-      /* ignore */
     }
+  } catch {
+    /* localStorage unavailable */
   }
   return true;
 };
@@ -66,6 +94,7 @@ export const useConsoleStore = create<ConsoleState & ConsoleActions>()(
         selectedWorkspaceId: state.selectedWorkspaceId,
         sidebarOpen: state.sidebarOpen,
       }),
+      storage: createJSONStorage(() => safeStorage),
     },
   ),
 );

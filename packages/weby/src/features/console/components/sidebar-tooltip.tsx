@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
 
 interface TooltipProps {
   children: ReactNode;

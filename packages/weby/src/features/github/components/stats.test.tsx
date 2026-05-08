@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createWrapper } from "@/shared/test/utils";
+import { createWrapper } from "#/shared/test/utils";
 import type { GitHubStatsData } from "./stats";
 import { GitHubStats } from "./stats";
 

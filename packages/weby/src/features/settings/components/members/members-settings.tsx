@@ -15,16 +15,16 @@ import {
   MagnifyingGlassIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { Check } from "@/features/console/components/check";
-import { useAuth } from "@/features/auth/hooks/use-auth";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { Check } from "#/features/console/components/check";
+import { useAuth } from "#/features/auth/hooks/use-auth";
 import {
   useDeleteUser,
   useUpdateUserActive,
   useUpdateUserRole,
   useUsers,
-} from "@/features/console/hooks/use-users";
-import type { ConsoleUser } from "@/shared/types";
+} from "#/features/console/hooks/use-users";
+import type { ConsoleUser } from "#/shared/types";
 
 const columnHelper = createColumnHelper<ConsoleUser>();
 

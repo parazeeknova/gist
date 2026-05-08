@@ -1,6 +1,6 @@
-import type { Space, SpaceMemberMixed } from "@/shared/types";
+import type { Space, SpaceMemberMixed } from "#/shared/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
 export const useSpaces = (workspaceId: string) =>
   useQuery<Space[]>({

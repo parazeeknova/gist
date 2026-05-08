@@ -1,9 +1,9 @@
 import { CaretDownIcon, CaretRightIcon, FileIcon, FolderIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import type { PageTreeItem, Space } from "@/shared/types";
-import { usePageTree } from "@/features/console/hooks/use-pages";
-import { useSpaces } from "@/features/console/hooks/use-spaces";
-import { useTheme } from "@/shared/hooks/use-theme";
+import type { PageTreeItem, Space } from "#/shared/types";
+import { usePageTree } from "#/features/console/hooks/use-pages";
+import { useSpaces } from "#/features/console/hooks/use-spaces";
+import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "./console-context";
 
 interface TreeNode {

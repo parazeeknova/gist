@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { ExperienceItem, Profile } from "@/shared/types";
+import type { ExperienceItem, Profile } from "#/shared/types";
 import { ExperienceSection, ProfileSection, SocialLinks } from "./sections";
 
 describe("ProfileSection", () => {

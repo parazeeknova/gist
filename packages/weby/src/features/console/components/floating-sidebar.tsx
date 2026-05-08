@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
 import type React from "react";
 
 interface FloatingSidebarProps {

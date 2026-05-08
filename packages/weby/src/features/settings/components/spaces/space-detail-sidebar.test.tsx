@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { SpaceDetailSidebar } from "./space-detail-sidebar";
-import { createWrapper } from "@/shared/test/utils";
+import { createWrapper } from "#/shared/test/utils";
 
 const mockSpace = {
   createdAt: "2025-01-01T00:00:00Z",
@@ -19,11 +19,11 @@ const mockSpace = {
   workspaceId: "ws-1",
 };
 
-vi.mock("@/features/auth/hooks/use-auth", () => ({
+vi.mock("#/features/auth/hooks/use-auth", () => ({
   useAuth: () => ({ data: { email: "alice@test.com", id: "user-1", name: "Alice" } }),
 }));
 
-vi.mock("@/features/console/hooks/use-spaces", () => ({
+vi.mock("#/features/console/hooks/use-spaces", () => ({
   useAddSpaceGroup: () => ({ isPending: false, mutate: vi.fn() }),
   useAddSpaceMember: () => ({ isPending: false, mutate: vi.fn() }),
   useDeleteSpace: () => ({ isPending: false, mutate: vi.fn() }),
@@ -58,7 +58,7 @@ vi.mock("@/features/console/hooks/use-spaces", () => ({
   useUpdateSpaceMemberRole: () => ({ isPending: false, mutate: vi.fn() }),
 }));
 
-vi.mock("@/features/console/hooks/use-users", () => ({
+vi.mock("#/features/console/hooks/use-users", () => ({
   useUsers: () => ({
     data: [
       { email: "alice@test.com", id: "user-1", name: "Alice", role: "admin" },

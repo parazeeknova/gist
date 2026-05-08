@@ -5,7 +5,7 @@ import { useRateLimitedCallback } from "@tanstack/react-pacer";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { AuthUser, Stats } from "@/shared/types";
+import type { AuthUser, Stats } from "#/shared/types";
 import { useAuth, useAuthActions } from "../hooks/use-auth";
 import { useBootstrapState } from "../hooks/use-bootstrap-state";
 

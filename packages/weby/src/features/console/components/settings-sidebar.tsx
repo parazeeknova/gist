@@ -17,11 +17,12 @@ import {
   WrenchIcon,
 } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
 import { SidebarTooltip } from "./sidebar-tooltip";
 
 interface SettingsSidebarProps {
   currentWorkspaceName?: string;
+  isDebugRoute: boolean;
   isGroupsRoute: boolean;
   isMembersRoute: boolean;
   isPreferencesRoute: boolean;
@@ -34,6 +35,7 @@ interface SettingsSidebarProps {
 
 export const SettingsSidebar = ({
   currentWorkspaceName,
+  isDebugRoute,
   isGroupsRoute,
   isMembersRoute,
   isPreferencesRoute,
@@ -216,16 +218,6 @@ export const SettingsSidebar = ({
             v{import.meta.env.VITE_APP_VERSION}
           </span>
         </div>
-        {userIsOwner && (
-          <button
-            className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(false)}`}
-            onClick={() => navigate({ search: { table: undefined }, to: "/home/debug" })}
-            type="button"
-          >
-            <BugBeetleIcon size={12} />
-            debug
-          </button>
-        )}
         <SidebarTooltip label="coming soon">
           <button
             className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
@@ -235,6 +227,26 @@ export const SettingsSidebar = ({
             update
           </button>
         </SidebarTooltip>
+        {userIsOwner ? (
+          <button
+            className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${navItemClass(isDebugRoute)}`}
+            onClick={() => navigate({ to: "/settings/systems/debug" })}
+            type="button"
+          >
+            <BugBeetleIcon size={12} />
+            debug
+          </button>
+        ) : (
+          <SidebarTooltip label="only admins">
+            <button
+              className={`flex w-full cursor-not-allowed items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase opacity-40 ${t("text-text-dark/50", "text-text-light/50")}`}
+              type="button"
+            >
+              <BugBeetleIcon size={12} />
+              debug
+            </button>
+          </SidebarTooltip>
+        )}
       </div>
     </div>
   );

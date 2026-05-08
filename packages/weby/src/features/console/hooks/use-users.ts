@@ -1,6 +1,6 @@
-import type { ConsoleUser } from "@/shared/types";
+import type { ConsoleUser } from "#/shared/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
 export const useUsers = () =>
   useQuery<ConsoleUser[]>({

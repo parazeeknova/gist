@@ -1,8 +1,8 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { compressImage } from "@/shared/lib/image-compress";
-import { useUpdateWorkspace } from "@/features/settings/hooks/use-workspace-settings";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { compressImage } from "#/shared/lib/image-compress";
+import { useUpdateWorkspace } from "#/features/settings/hooks/use-workspace-settings";
 
 interface WorkspaceAvatarUploaderProps {
   avatarUrl: string;

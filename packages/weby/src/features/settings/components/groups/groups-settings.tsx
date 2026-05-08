@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PlusIcon, UsersThreeIcon } from "@phosphor-icons/react";
-import { useConsoleContext } from "@/features/console/components/console-context";
-import { useCreateGroup } from "@/features/console/hooks/use-groups";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
-import { useTheme } from "@/shared/hooks/use-theme";
-import type { Group } from "@/shared/types";
+import { useConsoleContext } from "#/features/console/components/console-context";
+import { useCreateGroup } from "#/features/console/hooks/use-groups";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
+import { useTheme } from "#/shared/hooks/use-theme";
+import type { Group } from "#/shared/types";
 import { GroupDetailSidebar } from "./group-detail-sidebar";
 
 const useGroups = () => {

@@ -12,12 +12,14 @@ import {
 } from "@tanstack/react-pacer";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
-import { useDebugTables } from "@/features/console/hooks/use-debug";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
+import { useDebugStorageOrphanReport, useDebugTables } from "#/features/console/hooks/use-debug";
+import { useTheme } from "#/shared/hooks/use-theme";
 
 interface DebugSidebarProps {
   onBack: () => void;
+  onSelectTab: (tab: "database" | "storage") => void;
+  selectedTab: "database" | "storage";
   selectedTable: string | null;
   onSelectTable: (table: string) => void;
   searchQuery: string;
@@ -26,6 +28,8 @@ interface DebugSidebarProps {
 
 export const DebugSidebar = ({
   onBack,
+  onSelectTab,
+  selectedTab,
   selectedTable,
   onSelectTable,
   searchQuery,
@@ -33,6 +37,11 @@ export const DebugSidebar = ({
 }: DebugSidebarProps) => {
   const { isDarkMode } = useTheme();
   const { data: tables, refetch } = useDebugTables();
+  const {
+    data: orphanReport,
+    isFetching: isScanningStorage,
+    refetch: scanStorageOrphans,
+  } = useDebugStorageOrphanReport();
   const queryClient = useQueryClient();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
@@ -65,6 +74,8 @@ export const DebugSidebar = ({
     (state) => ({ size: state.size }),
   );
 
+  const tableList = Array.isArray(tables) ? tables : [];
+
   const handleDeleteAll = () => {
     if (!confirmDeleteAll) {
       setConfirmDeleteAll(true);
@@ -76,10 +87,8 @@ export const DebugSidebar = ({
     }
     setConfirmDeleteAll(false);
 
-    for (const table of tables ?? []) {
-      if (table.enabled) {
-        deleteQueue.addItem(table.name);
-      }
+    for (const table of tableList) {
+      deleteQueue.addItem(table.name);
     }
 
     // Wait for queue to drain then cleanup
@@ -101,19 +110,9 @@ export const DebugSidebar = ({
     debouncedSearch(value);
   };
 
-  const tableList = tables ?? [];
   const filteredTables = tableList
     .filter((table) => table.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    .toSorted((a, b) => {
-      // Enabled tables first
-      if (a.enabled && !b.enabled) {
-        return -1;
-      }
-      if (!a.enabled && b.enabled) {
-        return 1;
-      }
-      return a.name.localeCompare(b.name);
-    });
+    .toSorted((a, b) => a.name.localeCompare(b.name));
 
   const deleteBtnClass = confirmDeleteAll
     ? t(
@@ -146,63 +145,110 @@ export const DebugSidebar = ({
       <div
         className={`px-1 py-2 space-y-2 border-b ${t("border-border-dark", "border-border-light")}`}
       >
-        <div className="flex items-center gap-2">
-          <MagnifyingGlassIcon className={t("text-text-dark/20", "text-text-light/20")} size={12} />
-          <input
-            aria-label="Search tables"
-            className={`w-full bg-transparent py-1 text-[11px] lowercase outline-none ${t("placeholder:text-text-dark/20 text-text-dark/60", "placeholder:text-text-light/20 text-text-light/60")}`}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="search tables"
-            value={inputValue}
-          />
-        </div>
-
         <div className="flex gap-2">
           <button
-            className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${t("text-text-dark/50 hover:text-text-dark/80 border-border-dark", "text-text-light/50 hover:text-text-light/80 border-border-light")}`}
-            onClick={() => throttledRefresh()}
+            className={`flex-1 px-2 py-1 text-[10px] lowercase border ${selectedTab === "database" ? t("text-text-dark border-border-dark bg-white/5", "text-text-light border-border-light bg-black/5") : t("text-text-dark/50 border-border-dark hover:text-text-dark/80", "text-text-light/50 border-border-light hover:text-text-light/80")}`}
+            onClick={() => onSelectTab("database")}
             type="button"
           >
-            <ArrowClockwiseIcon size={10} />
-            refresh
+            database
           </button>
           <button
-            className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${deleteBtnClass}`}
-            onClick={handleDeleteAll}
+            className={`flex-1 px-2 py-1 text-[10px] lowercase border ${selectedTab === "storage" ? t("text-text-dark border-border-dark bg-white/5", "text-text-light border-border-light bg-black/5") : t("text-text-dark/50 border-border-dark hover:text-text-dark/80", "text-text-light/50 border-border-light hover:text-text-light/80")}`}
+            onClick={() => onSelectTab("storage")}
             type="button"
           >
-            <TrashIcon size={10} />
-            {confirmDeleteAll ? "confirm ?" : "delete all"}
+            storage
           </button>
         </div>
-        {deleteQueue.state.size > 0 && (
+
+        {selectedTab === "database" ? (
+          <>
+            <div className="flex items-center gap-2">
+              <MagnifyingGlassIcon
+                className={t("text-text-dark/20", "text-text-light/20")}
+                size={12}
+              />
+              <input
+                aria-label="Search tables"
+                className={`w-full bg-transparent py-1 text-[11px] lowercase outline-none ${t("placeholder:text-text-dark/20 text-text-dark/60", "placeholder:text-text-light/20 text-text-light/60")}`}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="search tables"
+                value={inputValue}
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${t("text-text-dark/50 hover:text-text-dark/80 border-border-dark", "text-text-light/50 hover:text-text-light/80 border-border-light")}`}
+                onClick={() => throttledRefresh()}
+                type="button"
+              >
+                <ArrowClockwiseIcon size={10} />
+                refresh
+              </button>
+              <button
+                className={`flex items-center gap-1 px-2 py-1 text-[10px] lowercase border ${deleteBtnClass}`}
+                onClick={handleDeleteAll}
+                type="button"
+              >
+                <TrashIcon size={10} />
+                {confirmDeleteAll ? "confirm ?" : "delete all"}
+              </button>
+            </div>
+            {deleteQueue.state.size > 0 && (
+              <p className={`text-[10px] ${t("text-text-dark/40", "text-text-light/40")}`}>
+                deleting {deleteQueue.state.size} tables...
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="space-y-2">
+            <button
+              className={`w-full text-left px-1 text-[10px] lowercase ${t("text-text-dark/50 hover:text-text-dark/80", "text-text-light/50 hover:text-text-light/80")}`}
+              onClick={() => scanStorageOrphans()}
+              type="button"
+            >
+              {isScanningStorage ? "scanning..." : "scan orphaned objects"}
+            </button>
+            <p className={`text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}>
+              storage objects are shown in the main panel
+            </p>
+          </div>
+        )}
+        {orphanReport && (
           <p className={`text-[10px] ${t("text-text-dark/40", "text-text-light/40")}`}>
-            deleting {deleteQueue.state.size} tables...
+            storage scan: {orphanReport.totalOrphanCount} orphan objects /{" "}
+            {orphanReport.totalObjectCount} total
           </p>
         )}
       </div>
 
       <div className="flex-1 py-2 overflow-y-auto custom-scrollbar">
-        {filteredTables.length === 0 ? (
-          <p
-            className={`px-2 py-4 text-[10px] text-center ${t("text-text-dark/20", "text-text-light/20")}`}
-          >
-            {tableList.length === 0 ? "loading..." : "no tables match"}
-          </p>
-        ) : (
-          filteredTables.map((table) => {
+        {(() => {
+          if (selectedTab === "storage") {
+            return (
+              <p
+                className={`px-2 py-4 text-[10px] text-center ${t("text-text-dark/20", "text-text-light/20")}`}
+              >
+                switch to database tab to inspect tables
+              </p>
+            );
+          }
+
+          if (filteredTables.length === 0) {
+            return (
+              <p
+                className={`px-2 py-4 text-[10px] text-center ${t("text-text-dark/20", "text-text-light/20")}`}
+              >
+                {tableList.length === 0 ? "loading..." : "no tables match"}
+              </p>
+            );
+          }
+
+          return filteredTables.map((table) => {
             const isSelected = selectedTable === table.name;
             const baseClass = "w-full text-left px-2 py-1.5 text-[11px] lowercase";
-            if (!table.enabled) {
-              return (
-                <div
-                  key={table.name}
-                  className={`${baseClass} ${t("text-text-dark/20", "text-text-light/20")} cursor-default`}
-                >
-                  {table.name}
-                </div>
-              );
-            }
             return (
               <button
                 key={table.name}
@@ -220,8 +266,8 @@ export const DebugSidebar = ({
                 {table.name}
               </button>
             );
-          })
-        )}
+          });
+        })()}
       </div>
     </div>
   );

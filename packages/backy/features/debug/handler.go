@@ -57,7 +57,7 @@ func (h *DebugHandlers) GetDebugTableData(c *gin.Context) {
 	}
 	limit := c.DefaultQuery("limit", "100")
 	offset := c.DefaultQuery("offset", "0")
-	query := fmt.Sprintf("SELECT * FROM %s ORDER BY created_at DESC LIMIT %s OFFSET %s", tableName, limit, offset)
+	query := fmt.Sprintf("SELECT * FROM %s LIMIT %s OFFSET %s", tableName, limit, offset)
 	rows, err := pool.Query(c.Request.Context(), query)
 	if err != nil {
 		logger.Log.Error().Err(err).Str("table", tableName).Msg("get debug table data error")
@@ -66,6 +66,13 @@ func (h *DebugHandlers) GetDebugTableData(c *gin.Context) {
 	}
 	defer rows.Close()
 	columns := rows.FieldDescriptions()
+	var columnMeta []map[string]interface{}
+	for _, field := range columns {
+		columnMeta = append(columnMeta, map[string]interface{}{
+			"name": field.Name,
+			"type": "",
+		})
+	}
 	var results []map[string]interface{}
 	for rows.Next() {
 		values, err := rows.Values()
@@ -78,7 +85,7 @@ func (h *DebugHandlers) GetDebugTableData(c *gin.Context) {
 		}
 		results = append(results, row)
 	}
-	c.JSON(http.StatusOK, gin.H{"rows": results, "columns": columns})
+	c.JSON(http.StatusOK, gin.H{"rows": results, "columns": columnMeta})
 }
 
 func (h *DebugHandlers) DeleteDebugTableData(c *gin.Context) {
@@ -133,6 +140,34 @@ func (h *DebugHandlers) DeleteDebugTableRows(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+func (h *DebugHandlers) GetStorageOrphanReport(c *gin.Context) {
+	pool := database.GetPool()
+	if pool == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database not available"})
+		return
+	}
+
+	report, err := buildStorageOrphanReport(c.Request.Context(), pool)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("build storage orphan report error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to build storage orphan report"})
+		return
+	}
+
+	c.JSON(http.StatusOK, report)
+}
+
+func (h *DebugHandlers) GetStorageObjects(c *gin.Context) {
+	response, err := buildStorageObjectsResponse(c.Request.Context())
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("list storage objects error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list storage objects"})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 func isValidTableName(name string) bool {

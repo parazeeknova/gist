@@ -1,6 +1,6 @@
 import { gsap } from "gsap";
 import { useEffect, useRef, useState } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
 import {
   ArrowRightIcon,
   BellIcon,

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { movePage } from "#/server/backy";
-import type { MovePageInput } from "@/shared/types";
+import type { MovePageInput } from "#/shared/types";
 
 export const Route = createFileRoute("/api/console/pages/$id/move")({
   server: {

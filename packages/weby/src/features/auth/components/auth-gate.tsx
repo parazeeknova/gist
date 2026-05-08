@@ -1,9 +1,9 @@
 import { useNavigate } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useEffect, useRef, useState } from "react";
-import { getAuthCache, setAuthCache } from "@/features/auth/lib/auth-cache";
-import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { getAuthCache, setAuthCache } from "#/features/auth/lib/auth-cache";
+import { useAuth } from "#/features/auth/hooks/use-auth";
+import { useTheme } from "#/shared/hooks/use-theme";
 
 export const AuthGate = ({ children }: { children: React.ReactNode }) => {
   const { data: user, isPending, isError } = useAuth();

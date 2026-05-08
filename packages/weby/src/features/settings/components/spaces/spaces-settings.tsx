@@ -8,10 +8,10 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import type { SortingState } from "@tanstack/react-table";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { useCreateSpace, useSpaces } from "@/features/console/hooks/use-spaces";
-import { useWorkspaces } from "@/features/console/hooks/use-workspaces";
-import type { Space } from "@/shared/types";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useCreateSpace, useSpaces } from "#/features/console/hooks/use-spaces";
+import { useWorkspaces } from "#/features/console/hooks/use-workspaces";
+import type { Space } from "#/shared/types";
 import { SpaceDetailSidebar } from "./space-detail-sidebar";
 
 const columnHelper = createColumnHelper<Space>();

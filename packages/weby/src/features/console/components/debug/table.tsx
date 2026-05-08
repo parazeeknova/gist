@@ -15,9 +15,9 @@ import {
   TrashIcon,
   CopyIcon,
 } from "@phosphor-icons/react";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { useDebugTableData } from "@/features/console/hooks/use-debug";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useDebugTableData } from "#/features/console/hooks/use-debug";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 import { Check } from "../check";
 import { Dropdown } from "../dropdown";
 
@@ -53,8 +53,9 @@ export const DebugTable = ({ tableName }: DebugTableProps) => {
 
   const columns = useMemo(() => {
     const colMeta = data?.columns ?? [];
-    const dataCols = colMeta.map((col) =>
-      columnHelper.accessor((row) => row[col.name], {
+    const dataCols = colMeta.map((col, index) => {
+      const colId = col.name || `col_${index}`;
+      return columnHelper.accessor((row) => row[col.name], {
         cell: (info) => {
           const val = info.getValue();
           if (val === null || val === undefined) {
@@ -92,9 +93,9 @@ export const DebugTable = ({ tableName }: DebugTableProps) => {
             </button>
           );
         },
-        id: col.name,
-      }),
-    );
+        id: colId,
+      });
+    });
 
     return [
       columnHelper.display({

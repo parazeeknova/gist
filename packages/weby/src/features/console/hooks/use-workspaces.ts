@@ -1,6 +1,6 @@
-import type { Workspace } from "@/shared/types";
+import type { Workspace } from "#/shared/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
 export const useWorkspaces = () =>
   useQuery<Workspace[]>({

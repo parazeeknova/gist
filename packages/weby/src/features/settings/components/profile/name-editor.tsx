@@ -1,7 +1,7 @@
 import { CheckIcon } from "@phosphor-icons/react";
 import { useState, useCallback } from "react";
-import { useUpdateProfile } from "@/features/settings/hooks/use-profile";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useUpdateProfile } from "#/features/settings/hooks/use-profile";
+import { useTheme } from "#/shared/hooks/use-theme";
 
 interface NameEditorProps {
   avatarUrl: string;

@@ -28,11 +28,13 @@ import { Route as ApiProfileRouteImport } from './routes/api/profile'
 import { Route as ApiExperienceRouteImport } from './routes/api/experience'
 import { Route as ApiBlogsRouteImport } from './routes/api/blogs'
 import { Route as SSpaceSlugIndexRouteImport } from './routes/s/$spaceSlug/index'
+import { Route as SettingsSystemsDebugRouteImport } from './routes/settings/systems/debug'
 import { Route as SettingsAccountProfileRouteImport } from './routes/settings/account/profile'
 import { Route as SettingsAccountPreferencesRouteImport } from './routes/settings/account/preferences'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
 import { Route as ApiConsoleWorkspacesRouteImport } from './routes/api/console/workspaces'
 import { Route as ApiConsoleUsersRouteImport } from './routes/api/console/users'
+import { Route as ApiConsoleSystemSettingsRouteImport } from './routes/api/console/system-settings'
 import { Route as ApiConsoleSpacesRouteImport } from './routes/api/console/spaces'
 import { Route as ApiConsoleProfileRouteImport } from './routes/api/console/profile'
 import { Route as ApiConsolePagesRouteImport } from './routes/api/console/pages'
@@ -182,6 +184,11 @@ const SSpaceSlugIndexRoute = SSpaceSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SSpaceSlugRoute,
 } as any)
+const SettingsSystemsDebugRoute = SettingsSystemsDebugRouteImport.update({
+  id: '/systems/debug',
+  path: '/systems/debug',
+  getParentRoute: () => SettingsRoute,
+} as any)
 const SettingsAccountProfileRoute = SettingsAccountProfileRouteImport.update({
   id: '/account/profile',
   path: '/account/profile',
@@ -208,6 +215,12 @@ const ApiConsoleUsersRoute = ApiConsoleUsersRouteImport.update({
   path: '/api/console/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiConsoleSystemSettingsRoute =
+  ApiConsoleSystemSettingsRouteImport.update({
+    id: '/api/console/system-settings',
+    path: '/api/console/system-settings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiConsoleSpacesRoute = ApiConsoleSpacesRouteImport.update({
   id: '/api/console/spaces',
   path: '/api/console/spaces',
@@ -529,11 +542,13 @@ export interface FileRoutesByFullPath {
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/profile': typeof ApiConsoleProfileRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
+  '/api/console/system-settings': typeof ApiConsoleSystemSettingsRoute
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
+  '/settings/systems/debug': typeof SettingsSystemsDebugRoute
   '/s/$spaceSlug/': typeof SSpaceSlugIndexRoute
   '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
@@ -606,11 +621,13 @@ export interface FileRoutesByTo {
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/profile': typeof ApiConsoleProfileRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
+  '/api/console/system-settings': typeof ApiConsoleSystemSettingsRoute
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
+  '/settings/systems/debug': typeof SettingsSystemsDebugRoute
   '/s/$spaceSlug': typeof SSpaceSlugIndexRoute
   '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
@@ -686,11 +703,13 @@ export interface FileRoutesById {
   '/api/console/pages': typeof ApiConsolePagesRouteWithChildren
   '/api/console/profile': typeof ApiConsoleProfileRouteWithChildren
   '/api/console/spaces': typeof ApiConsoleSpacesRouteWithChildren
+  '/api/console/system-settings': typeof ApiConsoleSystemSettingsRoute
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
+  '/settings/systems/debug': typeof SettingsSystemsDebugRoute
   '/s/$spaceSlug/': typeof SSpaceSlugIndexRoute
   '/api/auth/mfa/verify': typeof ApiAuthMfaVerifyRoute
   '/api/console/debug/tables': typeof ApiConsoleDebugTablesRouteWithChildren
@@ -767,11 +786,13 @@ export interface FileRouteTypes {
     | '/api/console/pages'
     | '/api/console/profile'
     | '/api/console/spaces'
+    | '/api/console/system-settings'
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
     | '/settings/account/preferences'
     | '/settings/account/profile'
+    | '/settings/systems/debug'
     | '/s/$spaceSlug/'
     | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
@@ -844,11 +865,13 @@ export interface FileRouteTypes {
     | '/api/console/pages'
     | '/api/console/profile'
     | '/api/console/spaces'
+    | '/api/console/system-settings'
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
     | '/settings/account/preferences'
     | '/settings/account/profile'
+    | '/settings/systems/debug'
     | '/s/$spaceSlug'
     | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
@@ -923,11 +946,13 @@ export interface FileRouteTypes {
     | '/api/console/pages'
     | '/api/console/profile'
     | '/api/console/spaces'
+    | '/api/console/system-settings'
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
     | '/settings/account/preferences'
     | '/settings/account/profile'
+    | '/settings/systems/debug'
     | '/s/$spaceSlug/'
     | '/api/auth/mfa/verify'
     | '/api/console/debug/tables'
@@ -996,6 +1021,7 @@ export interface RootRouteChildren {
   ApiConsolePagesRoute: typeof ApiConsolePagesRouteWithChildren
   ApiConsoleProfileRoute: typeof ApiConsoleProfileRouteWithChildren
   ApiConsoleSpacesRoute: typeof ApiConsoleSpacesRouteWithChildren
+  ApiConsoleSystemSettingsRoute: typeof ApiConsoleSystemSettingsRoute
   ApiConsoleUsersRoute: typeof ApiConsoleUsersRouteWithChildren
   ApiConsoleWorkspacesRoute: typeof ApiConsoleWorkspacesRouteWithChildren
   ApiGithubStatsRoute: typeof ApiGithubStatsRoute
@@ -1147,6 +1173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SSpaceSlugIndexRouteImport
       parentRoute: typeof SSpaceSlugRoute
     }
+    '/settings/systems/debug': {
+      id: '/settings/systems/debug'
+      path: '/systems/debug'
+      fullPath: '/settings/systems/debug'
+      preLoaderRoute: typeof SettingsSystemsDebugRouteImport
+      parentRoute: typeof SettingsRoute
+    }
     '/settings/account/profile': {
       id: '/settings/account/profile'
       path: '/account/profile'
@@ -1180,6 +1213,13 @@ declare module '@tanstack/react-router' {
       path: '/api/console/users'
       fullPath: '/api/console/users'
       preLoaderRoute: typeof ApiConsoleUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/system-settings': {
+      id: '/api/console/system-settings'
+      path: '/api/console/system-settings'
+      fullPath: '/api/console/system-settings'
+      preLoaderRoute: typeof ApiConsoleSystemSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/console/spaces': {
@@ -1575,6 +1615,7 @@ interface SettingsRouteChildren {
   SettingsWorkspaceRoute: typeof SettingsWorkspaceRoute
   SettingsAccountPreferencesRoute: typeof SettingsAccountPreferencesRoute
   SettingsAccountProfileRoute: typeof SettingsAccountProfileRoute
+  SettingsSystemsDebugRoute: typeof SettingsSystemsDebugRoute
 }
 
 const SettingsRouteChildren: SettingsRouteChildren = {
@@ -1584,6 +1625,7 @@ const SettingsRouteChildren: SettingsRouteChildren = {
   SettingsWorkspaceRoute: SettingsWorkspaceRoute,
   SettingsAccountPreferencesRoute: SettingsAccountPreferencesRoute,
   SettingsAccountProfileRoute: SettingsAccountProfileRoute,
+  SettingsSystemsDebugRoute: SettingsSystemsDebugRoute,
 }
 
 const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
@@ -1895,6 +1937,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsolePagesRoute: ApiConsolePagesRouteWithChildren,
   ApiConsoleProfileRoute: ApiConsoleProfileRouteWithChildren,
   ApiConsoleSpacesRoute: ApiConsoleSpacesRouteWithChildren,
+  ApiConsoleSystemSettingsRoute: ApiConsoleSystemSettingsRoute,
   ApiConsoleUsersRoute: ApiConsoleUsersRouteWithChildren,
   ApiConsoleWorkspacesRoute: ApiConsoleWorkspacesRouteWithChildren,
   ApiGithubStatsRoute: ApiGithubStatsRoute,

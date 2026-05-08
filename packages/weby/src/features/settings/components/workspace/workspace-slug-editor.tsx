@@ -1,7 +1,7 @@
 import { CheckIcon } from "@phosphor-icons/react";
 import { useState, useCallback } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { useUpdateWorkspace } from "@/features/settings/hooks/use-workspace-settings";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useUpdateWorkspace } from "#/features/settings/hooks/use-workspace-settings";
 
 interface WorkspaceSlugEditorProps {
   name: string;

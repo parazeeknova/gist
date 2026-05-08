@@ -1,7 +1,7 @@
 import { useEffect } from "react";
-import { useWorkspaces } from "@/features/console/hooks/use-workspaces";
-import { useSpaces } from "@/features/console/hooks/use-spaces";
-import { useConsoleStore } from "@/features/console/stores/console-store";
+import { useWorkspaces } from "#/features/console/hooks/use-workspaces";
+import { useSpaces } from "#/features/console/hooks/use-spaces";
+import { useConsoleStore } from "#/features/console/stores/console-store";
 
 export const useConsoleBootstrap = () => {
   const {

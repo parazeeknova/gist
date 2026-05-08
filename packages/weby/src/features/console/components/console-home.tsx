@@ -1,9 +1,9 @@
 import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { useCreateSpace, useSpaces } from "@/features/console/hooks/use-spaces";
+import { useAuth } from "#/features/auth/hooks/use-auth";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useCreateSpace, useSpaces } from "#/features/console/hooks/use-spaces";
 import { useConsoleContext } from "./console-context";
 import { QuickActions } from "./quick-actions";
 

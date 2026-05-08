@@ -1,8 +1,8 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { compressImage } from "@/shared/lib/image-compress";
-import { useUpdateSpace } from "@/features/console/hooks/use-spaces";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { compressImage } from "#/shared/lib/image-compress";
+import { useUpdateSpace } from "#/features/console/hooks/use-spaces";
 
 interface SpaceAvatarUploaderProps {
   avatarUrl: string;

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();

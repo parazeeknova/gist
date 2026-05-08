@@ -1,7 +1,7 @@
 import { CaretDownIcon, CheckIcon, EyeIcon, EyeSlashIcon, XIcon } from "@phosphor-icons/react";
 import { useState, useCallback } from "react";
-import { useChangePassword } from "@/features/settings/hooks/use-profile";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useChangePassword } from "#/features/settings/hooks/use-profile";
+import { useTheme } from "#/shared/hooks/use-theme";
 
 export const PasswordChanger = () => {
   const { isDarkMode } = useTheme();

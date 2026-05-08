@@ -11,11 +11,11 @@ import {
 } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import type { PageTreeItem, Space } from "@/shared/types";
-import { usePageTree } from "@/features/console/hooks/use-pages";
-import { useSpaces } from "@/features/console/hooks/use-spaces";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { useConsoleContext } from "@/features/console/components/console-context";
+import type { PageTreeItem, Space } from "#/shared/types";
+import { usePageTree } from "#/features/console/hooks/use-pages";
+import { useSpaces } from "#/features/console/hooks/use-spaces";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useConsoleContext } from "#/features/console/components/console-context";
 
 interface TreeNode {
   item: PageTreeItem;

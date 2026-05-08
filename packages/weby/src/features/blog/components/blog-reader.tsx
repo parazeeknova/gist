@@ -4,7 +4,7 @@ import { BlogFileTree } from "./blog-file-tree";
 import { BlogTableOfContents } from "./blog-table-of-contents";
 import { ReadonlyBlogEditor } from "./readonly-blog-editor";
 import type { TiptapHeading } from "./readonly-blog-editor";
-import type { BlogManifestSection, BlogPost } from "@/shared/types";
+import type { BlogManifestSection, BlogPost } from "#/shared/types";
 
 interface BlogReaderProps {
   post: BlogPost;

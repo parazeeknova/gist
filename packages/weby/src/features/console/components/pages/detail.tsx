@@ -1,12 +1,12 @@
 import { ClockCounterClockwiseIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
 import {
   useConsolePage,
   useDeletePage,
   usePublishPage,
   useUnpublishPage,
-} from "@/features/console/hooks/use-pages";
+} from "#/features/console/hooks/use-pages";
 import { PageEditor } from "./editor";
 import { PageHistory } from "./history";
 

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { GroupsSettings } from "@/features/settings/components/groups/groups-settings";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { GroupsSettings } from "#/features/settings/components/groups/groups-settings";
 
 const SettingsGroupsRouteComponent = () => {
   const { isDarkMode } = useTheme();

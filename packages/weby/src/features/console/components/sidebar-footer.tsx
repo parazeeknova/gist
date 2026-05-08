@@ -1,6 +1,7 @@
 import { DatabaseIcon, GearSixIcon, QuestionIcon } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useTheme } from "@/shared/hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useDebugRoutesEnabled } from "#/features/console/hooks/use-system-settings";
 
 interface SidebarFooterProps {
   isDebugRoute: boolean;
@@ -10,6 +11,7 @@ interface SidebarFooterProps {
 export const SidebarFooter = ({ isDebugRoute, isSettingsRoute }: SidebarFooterProps) => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
+  const debugRoutesEnabled = useDebugRoutesEnabled();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   return (
@@ -31,14 +33,18 @@ export const SidebarFooter = ({ isDebugRoute, isSettingsRoute }: SidebarFooterPr
         <QuestionIcon size={12} />
         help & feedback
       </button>
-      <button
-        className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${isDebugRoute ? t("text-text-dark", "text-text-light") : t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
-        onClick={() => navigate({ search: { table: undefined }, to: "/home/debug" })}
-        type="button"
-      >
-        <DatabaseIcon size={12} />
-        <span className={isDebugRoute ? "border-b" : ""}>debug & database</span>
-      </button>
+      {debugRoutesEnabled && (
+        <button
+          className={`flex w-full items-center gap-2 px-1 text-[11px] lowercase ${isDebugRoute ? t("text-text-dark", "text-text-light") : t("text-text-dark/40 hover:text-text-dark/70", "text-text-light/40 hover:text-text-light/70")}`}
+          onClick={() =>
+            navigate({ search: { tab: "database", table: undefined }, to: "/home/debug" })
+          }
+          type="button"
+        >
+          <DatabaseIcon size={12} />
+          <span className={isDebugRoute ? "border-b" : ""}>debug & database</span>
+        </button>
+      )}
       <p className={`px-1 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
         powered by{" "}
         <a

@@ -1,4 +1,4 @@
-import type { BlogManifestPost, BlogManifestSection } from "@/shared/types";
+import type { BlogManifestPost, BlogManifestSection } from "#/shared/types";
 
 interface BlogFileTreeProps {
   activeProjectTitle?: string;

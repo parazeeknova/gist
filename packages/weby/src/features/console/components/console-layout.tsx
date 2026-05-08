@@ -14,9 +14,9 @@ import { detectPlatform } from "@tanstack/hotkeys";
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useAuth } from "@/features/auth/hooks/use-auth";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { useSpaceBySlug } from "@/features/console/hooks/use-spaces";
+import { useAuth } from "#/features/auth/hooks/use-auth";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { useSpaceBySlug } from "#/features/console/hooks/use-spaces";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
@@ -24,9 +24,9 @@ import { FileTreeSidebar } from "./file-tree-sidebar";
 import { FloatingSidebar } from "./floating-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
 import { SidebarFooter } from "./sidebar-footer";
-import { SpaceSidebar } from "@/features/space/components/space-sidebar";
-import { useConsoleStore } from "@/features/console/stores/console-store";
-import { useConsoleBootstrap } from "@/features/console/hooks/use-console-bootstrap";
+import { SpaceSidebar } from "#/features/space/components/space-sidebar";
+import { useConsoleStore } from "#/features/console/stores/console-store";
+import { useConsoleBootstrap } from "#/features/console/hooks/use-console-bootstrap";
 
 const SIDEBAR_WIDTH = 280;
 
@@ -64,6 +64,7 @@ export const ConsoleLayout = () => {
 
   const isDebugRoute = routerState.location.pathname === "/home/debug";
   const isSettingsRoute = routerState.location.pathname.startsWith("/settings");
+  const isSettingsDebugRoute = routerState.location.pathname === "/settings/systems/debug";
   const isSpaceRoute = routerState.location.pathname.startsWith("/s/");
   const isProfileRoute = routerState.location.pathname === "/settings/account/profile";
   const isPreferencesRoute = routerState.location.pathname === "/settings/account/preferences";
@@ -73,6 +74,11 @@ export const ConsoleLayout = () => {
   const isGroupsRoute = routerState.location.pathname === "/settings/groups";
   const debugSelectedTable =
     ((routerState.location.search as Record<string, unknown> | undefined)?.table as string) ?? null;
+  const debugSelectedTab =
+    ((routerState.location.search as Record<string, unknown> | undefined)?.tab as
+      | "database"
+      | "storage"
+      | undefined) ?? "database";
 
   const isSpecialRoute = isDebugRoute || isSettingsRoute || isSpaceRoute;
 
@@ -199,8 +205,12 @@ export const ConsoleLayout = () => {
       <DebugSidebar
         onBack={handleDebugBack}
         onSearchChange={setDebugSearch}
-        onSelectTable={(table) => navigate({ search: { table }, to: "/home/debug" })}
+        onSelectTable={(table) =>
+          navigate({ search: { tab: "database", table }, to: "/home/debug" })
+        }
+        onSelectTab={(tab) => navigate({ search: { tab, table: undefined }, to: "/home/debug" })}
         searchQuery={debugSearch}
+        selectedTab={debugSelectedTab}
         selectedTable={debugSelectedTable}
       />
     );
@@ -208,6 +218,7 @@ export const ConsoleLayout = () => {
     sidebarContent = (
       <SettingsSidebar
         currentWorkspaceName={currentWorkspace?.name}
+        isDebugRoute={isSettingsDebugRoute}
         isGroupsRoute={isGroupsRoute}
         isMembersRoute={isMembersRoute}
         isPreferencesRoute={isPreferencesRoute}

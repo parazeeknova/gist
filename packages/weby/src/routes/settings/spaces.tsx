@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useTheme } from "@/shared/hooks/use-theme";
-import { SpacesSettings } from "@/features/settings/components/spaces/spaces-settings";
+import { useTheme } from "#/shared/hooks/use-theme";
+import { SpacesSettings } from "#/features/settings/components/spaces/spaces-settings";
 
 const SettingsSpacesRouteComponent = () => {
   const { isDarkMode } = useTheme();

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"verso/backy/repositories"
 	"verso/backy/shared/auth"
 	"verso/backy/shared/logger"
 )
@@ -96,6 +97,17 @@ func AdminRequired() gin.HandlerFunc {
 		claims := GetCurrentClaims(c)
 		if claims == nil || (claims.Role != "owner" && claims.Role != "admin") {
 			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
+			return
+		}
+		c.Next()
+	}
+}
+
+func DebugAPIRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		repo := repositories.NewSystemSettingsRepo()
+		if !repo.IsEnabled(c.Request.Context(), "debug_api") {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "debug API is disabled"})
 			return
 		}
 		c.Next()

@@ -7,9 +7,9 @@ import type {
   PageTreeItem,
   RestorePageInput,
   UpdatePageInput,
-} from "@/shared/types";
+} from "#/shared/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchProtected } from "@/features/auth/hooks/fetch-protected";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
 export const usePageTree = (spaceId: string) =>
   useQuery<PageTreeItem[]>({
