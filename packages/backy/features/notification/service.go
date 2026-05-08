@@ -175,6 +175,9 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 	case EventSpaceIconChanged:
 		name := s.metadataStr(event.Metadata, "name", "a space")
 		return "Space icon updated", fmt.Sprintf("The icon for space %q was changed.", name)
+	case EventSpaceHeaderImageChanged:
+		name := s.metadataStr(event.Metadata, "name", "a space")
+		return "Space header updated", fmt.Sprintf("The header image for space %q was changed.", name)
 	case EventGroupMemberAdded:
 		group := s.metadataStr(event.Metadata, "groupName", "a group")
 		return "Added to group", fmt.Sprintf("You were added to the group %q.", group)

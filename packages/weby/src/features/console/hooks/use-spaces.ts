@@ -65,9 +65,27 @@ export const useUpdateSpace = () => {
         headers: { "Content-Type": "application/json" },
         method: "PUT",
       }),
+    onMutate: async ({ id, input }) => {
+      await queryClient.cancelQueries({ queryKey: ["spaceBySlug"] });
+      const previous = queryClient.getQueriesData<Space>({ queryKey: ["spaceBySlug"] });
+      queryClient.setQueriesData<Space>({ queryKey: ["spaceBySlug"] }, (old) => {
+        if (!old) {
+          return old;
+        }
+        return { ...old, ...input };
+      });
+      queryClient.setQueriesData<Space>({ queryKey: ["space", id] }, (old) => {
+        if (!old) {
+          return old;
+        }
+        return { ...old, ...input };
+      });
+      return { previous };
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       queryClient.invalidateQueries({ queryKey: ["space", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["spaceBySlug"] });
     },
   });
 };

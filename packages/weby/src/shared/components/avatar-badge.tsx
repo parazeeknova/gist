@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 interface AvatarBadgeProps {
   className?: string;
   icon?: string | null;
+  initialsClass?: string;
   name: string;
 }
 
@@ -26,7 +27,7 @@ const loadAvatarImage = async (icon: string) => {
   return icon;
 };
 
-export const AvatarBadge = ({ className = "", icon, name }: AvatarBadgeProps) => {
+export const AvatarBadge = ({ className = "", icon, initialsClass, name }: AvatarBadgeProps) => {
   const baseClassName = `shrink-0 rounded-full object-cover ${className}`.trim();
   const imageQuery = useQuery({
     enabled: Boolean(icon),
@@ -37,6 +38,7 @@ export const AvatarBadge = ({ className = "", icon, name }: AvatarBadgeProps) =>
     staleTime: Infinity,
   });
   const altText = `${name.trim() || "avatar"} avatar`;
+  const initialsFontClass = initialsClass ?? "text-[0.4rem]";
 
   if (icon && imageQuery.data) {
     return <img alt={altText} className={baseClassName} src={imageQuery.data} />;
@@ -45,7 +47,7 @@ export const AvatarBadge = ({ className = "", icon, name }: AvatarBadgeProps) =>
   return (
     <span
       aria-label={altText}
-      className={`${baseClassName} inline-grid place-items-center text-[0.4rem] font-medium leading-none tracking-tight`.trim()}
+      className={`${baseClassName} inline-grid place-items-center ${initialsFontClass} font-medium leading-none tracking-tight`.trim()}
       role="img"
     >
       {getInitials(name)}

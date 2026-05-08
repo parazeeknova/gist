@@ -1,19 +1,31 @@
 import {
   CameraIcon,
   ClockCounterClockwiseIcon,
+  DotsThreeVerticalIcon,
+  ImageIcon,
   ListBulletsIcon,
+  PencilSimpleIcon,
   SquaresFourIcon,
   StarIcon,
+  TextAlignLeftIcon,
+  TrashIcon,
   UserIcon,
 } from "@phosphor-icons/react";
 import { useParams } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "#/shared/hooks/use-theme";
-import { useSpaceBySlug, useUpdateSpace } from "#/features/console/hooks/use-spaces";
+import {
+  useSpaceBySlug,
+  useSpaceMembers,
+  useUpdateSpace,
+} from "#/features/console/hooks/use-spaces";
+import { useAuth } from "#/features/auth/hooks/use-auth";
 import { usePageTree } from "#/features/console/hooks/use-pages";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
+import { SidebarTooltip } from "#/features/console/components/sidebar-tooltip";
+import { compressImage } from "#/shared/lib/image-compress";
 import { UnsplashPicker } from "./unsplash-picker";
-import type { PageTreeItem } from "#/shared/types";
+import type { PageTreeItem, SpaceMemberMixed } from "#/shared/types";
 
 type Tab = "recents" | "favorites" | "mine";
 type ViewMode = "list" | "grid";
@@ -278,13 +290,12 @@ const SpaceContentSection = ({
 };
 
 interface HeaderImageProps {
-  headerImage: string | undefined;
-  isDarkMode: boolean;
+  headerImage: string;
   onOpenPicker: () => void;
+  onRemove: () => void;
 }
 
-const HeaderImage = ({ headerImage, isDarkMode, onOpenPicker }: HeaderImageProps) => {
-  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+const HeaderImage = ({ headerImage, onOpenPicker, onRemove }: HeaderImageProps) => {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -293,24 +304,331 @@ const HeaderImage = ({ headerImage, isDarkMode, onOpenPicker }: HeaderImageProps
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {headerImage ? (
-        <img alt="space header" className="w-full h-40 object-cover" src={headerImage} />
-      ) : (
-        <div className={`w-full h-40 ${t("bg-white/3", "bg-black/3")}`} />
+      <img alt="space header" className="w-full h-40 object-cover" src={headerImage} />
+
+      {hovered && (
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center gap-2">
+          <button
+            className="flex items-center gap-1.5 px-2 h-7 text-[10px] lowercase border border-white/20 text-white/80 hover:bg-white/10"
+            onClick={onOpenPicker}
+            type="button"
+          >
+            <CameraIcon size={11} />
+            change cover
+          </button>
+          <button
+            className="flex items-center justify-center h-7 w-7 text-[10px] lowercase border border-white/20 text-white/80 hover:bg-white/10"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            type="button"
+          >
+            <TrashIcon size={11} />
+          </button>
+        </div>
       )}
-      <button
-        className={`absolute inset-0 flex items-center justify-center transition-opacity duration-200 ${hovered ? "opacity-100" : "opacity-0"} w-full`}
-        onClick={onOpenPicker}
-        type="button"
-      >
-        <span
-          className={`flex items-center gap-1.5 px-2 py-1 text-[10px] lowercase border ${headerImage ? t("border-white/20 text-white/80", "border-white/20 text-white/80") : t("border-border-dark text-text-dark/40 hover:text-text-dark/60", "border-border-light text-text-light/40 hover:text-text-light/60")}`}
-        >
-          <CameraIcon size={11} />
-          change cover
-        </span>
-      </button>
     </div>
+  );
+};
+
+interface SpaceHeadingProps {
+  createdAt: string | undefined;
+  description: string | undefined;
+  hasHeader: boolean;
+  icon: string | undefined;
+  isDarkMode: boolean;
+  members: SpaceMemberMixed[] | undefined;
+  name: string;
+  pageCount: number;
+  updatedAt: string | undefined;
+  onAvatarChange: (dataUrl: string) => void;
+  onEditDescription: (value: string) => void;
+  onEditHeader: () => void;
+  onEditName: (value: string) => void;
+}
+
+const SpaceHeading = ({
+  createdAt,
+  description,
+  hasHeader,
+  icon,
+  isDarkMode,
+  members,
+  name,
+  pageCount,
+  onAvatarChange,
+  updatedAt,
+  onEditHeader,
+  onEditDescription,
+  onEditName,
+}: SpaceHeadingProps) => {
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarHovered, setAvatarHovered] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const dataUrl = await compressImage(file);
+      onAvatarChange(dataUrl);
+    } catch {
+      // ignore
+    }
+    // Reset so the same file can be re-selected
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (editingName) {
+      nameInputRef.current?.focus();
+    }
+  }, [editingName]);
+
+  useEffect(() => {
+    if (editingDescription) {
+      descriptionInputRef.current?.focus();
+    }
+  }, [editingDescription]);
+
+  return (
+    <>
+      <div className={hasHeader ? "-mt-7 mb-1" : "pt-12 mb-1"}>
+        <div
+          className="relative inline-block group cursor-pointer"
+          onMouseEnter={() => setAvatarHovered(true)}
+          onMouseLeave={() => setAvatarHovered(false)}
+        >
+          <AvatarBadge
+            className={`relative z-10 w-16 h-16 border-2 ${t("border-[#171717] bg-white/10 text-text-dark/60", "border-[#e8e8e8] bg-black/5 text-text-light/60")}`}
+            icon={icon ?? null}
+            initialsClass="text-[0.75rem]"
+            name={name}
+          />
+          {avatarHovered && (
+            <button
+              className="absolute inset-0 z-20 flex items-center justify-center rounded-full bg-black/40 w-16 h-16"
+              onClick={() => fileInputRef.current?.click()}
+              type="button"
+            >
+              <CameraIcon className="text-white/80" size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        {editingName ? (
+          <div className="flex items-center gap-2">
+            <input
+              ref={nameInputRef}
+              className={`text-lg lowercase bg-transparent border-b outline-none ${t("border-border-dark text-text-dark", "border-border-light text-text-light")}`}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setEditingName(false);
+                }
+              }}
+              value={nameDraft}
+            />
+            <button
+              className={`text-[10px] lowercase px-1 py-0.5 ${t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
+              onClick={() => {
+                const next = nameDraft.trim();
+                if (next) {
+                  onEditName(next);
+                }
+                setEditingName(false);
+              }}
+              type="button"
+            >
+              save
+            </button>
+            <button
+              className={`text-[10px] lowercase px-2 py-0.5 ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
+              onClick={() => setEditingName(false)}
+              type="button"
+            >
+              cancel
+            </button>
+          </div>
+        ) : (
+          <h1 className={`text-lg lowercase ${t("text-text-dark", "text-text-light")}`}>{name}</h1>
+        )}
+        <div className="relative" ref={menuRef}>
+          <button
+            className={`p-0.5 ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
+            onClick={() => setMenuOpen((p) => !p)}
+            type="button"
+          >
+            <DotsThreeVerticalIcon size={14} />
+          </button>
+          {menuOpen && (
+            <div
+              className={`absolute right-0 top-full mt-1 border p-1.5 z-50 shadow-lg w-44 ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
+            >
+              <button
+                className={`flex w-full items-center gap-2 px-1.5 py-1 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:text-text-dark/80 hover:bg-white/5", "text-text-light/50 hover:text-text-light/80 hover:bg-black/3")}`}
+                onClick={() => {
+                  fileInputRef.current?.click();
+                  setMenuOpen(false);
+                }}
+                type="button"
+              >
+                <ImageIcon size={11} />
+                edit avatar
+              </button>
+              <button
+                className={`flex w-full items-center gap-2 px-1.5 py-1 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:text-text-dark/80 hover:bg-white/5", "text-text-light/50 hover:text-text-light/80 hover:bg-black/3")}`}
+                onClick={() => {
+                  onEditHeader();
+                  setMenuOpen(false);
+                }}
+                type="button"
+              >
+                <CameraIcon size={11} />
+                edit header photo
+              </button>
+              <button
+                className={`flex w-full items-center gap-2 px-1.5 py-1 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:text-text-dark/80 hover:bg-white/5", "text-text-light/50 hover:text-text-light/80 hover:bg-black/3")}`}
+                onClick={() => {
+                  setNameDraft(name);
+                  setEditingName(true);
+                  setMenuOpen(false);
+                }}
+                type="button"
+              >
+                <PencilSimpleIcon size={11} />
+                edit name
+              </button>
+              <button
+                className={`flex w-full items-center gap-2 px-1.5 py-1 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:text-text-dark/80 hover:bg-white/5", "text-text-light/50 hover:text-text-light/80 hover:bg-black/3")}`}
+                onClick={() => {
+                  setDescriptionDraft(description ?? "");
+                  setEditingDescription(true);
+                  setMenuOpen(false);
+                }}
+                type="button"
+              >
+                <TextAlignLeftIcon size={11} />
+                edit description
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {(() => {
+        if (editingDescription) {
+          return (
+            <div className="flex items-center gap-2">
+              <input
+                ref={descriptionInputRef}
+                className={`mt-1 text-[12px] lowercase bg-transparent border-b outline-none w-full ${t("border-border-dark text-text-dark/60", "border-border-light text-text-light/60")}`}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setEditingDescription(false);
+                  }
+                }}
+                value={descriptionDraft}
+              />
+              <button
+                className={`mt-1 shrink-0 text-[10px] lowercase px-1 py-0.5 ${t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
+                onClick={() => {
+                  const next = descriptionDraft.trim();
+                  onEditDescription(next);
+                  setEditingDescription(false);
+                }}
+                type="button"
+              >
+                save
+              </button>
+              <button
+                className={`mt-1 shrink-0 text-[10px] lowercase px-2 py-0.5 ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
+                onClick={() => setEditingDescription(false)}
+                type="button"
+              >
+                cancel
+              </button>
+            </div>
+          );
+        }
+        if (description) {
+          return (
+            <p
+              className={`mt-1 text-[12px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
+            >
+              {description}
+            </p>
+          );
+        }
+        return null;
+      })()}
+
+      <div
+        className={`mt-1.5 text-[10px] lowercase flex items-center gap-3 ${t("text-text-dark/20", "text-text-light/20")}`}
+      >
+        <span className="flex-1">
+          {pageCount} {pageCount === 1 ? "page" : "pages"}
+          {createdAt
+            ? ` · created ${new Date(createdAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}`
+            : ""}
+          {updatedAt
+            ? ` · updated ${new Date(updatedAt).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}`
+            : ""}
+        </span>
+        {members && members.length > 0 && (
+          <span className="flex items-center -space-x-1.5">
+            {members.slice(0, 5).map((m) => (
+              <SidebarTooltip key={m.id} label={m.name}>
+                <AvatarBadge
+                  className="w-5 h-5 border-2 border-current/5"
+                  icon={m.avatarUrl ?? null}
+                  initialsClass="text-[0.35rem]"
+                  name={m.name}
+                />
+              </SidebarTooltip>
+            ))}
+            {members.length > 5 && <span className="text-[9px] ml-0.5">+{members.length - 5}</span>}
+          </span>
+        )}
+      </div>
+
+      <input
+        ref={fileInputRef}
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileSelect}
+        type="file"
+      />
+    </>
   );
 };
 
@@ -318,9 +636,10 @@ export const SpaceOverview = () => {
   const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });
   const { data: space } = useSpaceBySlug(spaceSlug);
   const { data: treeItems, isPending: isTreePending } = usePageTree(space?.id ?? "");
+  const { data: members } = useSpaceMembers(space?.id ?? "");
+  const { data: user } = useAuth();
   const { isDarkMode } = useTheme();
   const updateSpace = useUpdateSpace();
-  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   const [activeTab, setActiveTab] = useState<Tab>("recents");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -348,20 +667,30 @@ export const SpaceOverview = () => {
     persistFavorites(space.id, next);
   };
 
-  const handleSelectHeaderImage = (imageUrl: string) => {
+  const doUpdate = (updates: {
+    icon?: string;
+    headerImage?: string;
+    name?: string;
+    slug?: string;
+    description?: string;
+  }) => {
     if (!space || !space.id) {
       return;
     }
     updateSpace.mutate({
       id: space.id,
       input: {
-        description: space.description,
-        headerImage: imageUrl,
-        icon: space.icon,
-        name: space.name,
-        slug: space.slug,
+        description: updates.description ?? space.description,
+        headerImage: updates.headerImage ?? space.headerImage,
+        icon: updates.icon ?? space.icon,
+        name: updates.name ?? space.name,
+        slug: updates.slug ?? space.slug,
       },
     });
+  };
+
+  const handlePickerSelect = (imageUrl: string) => {
+    doUpdate({ headerImage: imageUrl });
     setShowUnsplash(false);
   };
 
@@ -381,33 +710,50 @@ export const SpaceOverview = () => {
 
   const headerImage = space?.headerImage;
 
+  const visibleMembers = useMemo(() => {
+    const list = (members ?? []).filter((m) => m.memberType === "user");
+    if (user && space?.createdBy === user.id && !list.some((m) => m.userId === user.id)) {
+      list.unshift({
+        avatarUrl: user.avatar_url,
+        id: user.id,
+        joinedAt: "",
+        memberType: "user",
+        name: user.name,
+        role: "",
+        spaceId: space.id,
+      } as SpaceMemberMixed);
+    }
+    return list;
+  }, [members, user, space]);
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col min-h-full pb-16">
-      <HeaderImage
-        headerImage={headerImage}
-        isDarkMode={isDarkMode}
-        onOpenPicker={() => setShowUnsplash(true)}
-      />
-
-      <div className="px-4">
-        <div className="-mt-5 mb-1">
-          <AvatarBadge
-            className={`w-10 h-10 border-2 ${t("border-[#171717] bg-white/10 text-text-dark/60", "border-[#e8e8e8] bg-black/5 text-text-light/60")}`}
-            icon={space?.icon ?? null}
-            name={space?.name ?? spaceSlug}
+      {headerImage && (
+        <div className="pt-4">
+          <HeaderImage
+            headerImage={headerImage}
+            onOpenPicker={() => setShowUnsplash(true)}
+            onRemove={() => doUpdate({ headerImage: "" })}
           />
         </div>
+      )}
 
-        <h1 className={`text-lg lowercase ${t("text-text-dark", "text-text-light")}`}>
-          {space?.name || spaceSlug}
-        </h1>
-        {space?.description && (
-          <p
-            className={`mt-1 text-[12px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
-          >
-            {space.description}
-          </p>
-        )}
+      <div className="px-4">
+        <SpaceHeading
+          createdAt={space?.createdAt}
+          description={space?.description}
+          hasHeader={Boolean(headerImage)}
+          icon={space?.icon}
+          isDarkMode={isDarkMode}
+          members={visibleMembers}
+          name={space?.name || spaceSlug}
+          pageCount={pages.length}
+          updatedAt={space?.updatedAt}
+          onAvatarChange={(dataUrl) => doUpdate({ icon: dataUrl })}
+          onEditDescription={(v) => doUpdate({ description: v })}
+          onEditHeader={() => setShowUnsplash(true)}
+          onEditName={(v) => doUpdate({ name: v, slug: v.toLowerCase().replaceAll(/\s+/g, "-") })}
+        />
 
         <SpaceContentSection
           activeTab={activeTab}
@@ -423,7 +769,7 @@ export const SpaceOverview = () => {
       </div>
 
       {showUnsplash && (
-        <UnsplashPicker onClose={() => setShowUnsplash(false)} onSelect={handleSelectHeaderImage} />
+        <UnsplashPicker onClose={() => setShowUnsplash(false)} onSelect={handlePickerSelect} />
       )}
     </div>
   );

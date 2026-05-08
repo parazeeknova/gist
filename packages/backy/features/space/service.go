@@ -104,6 +104,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 	oldName := existing.Name
 	oldSlug := existing.Slug
 	oldIcon := existing.Icon
+	oldHeaderImage := existing.HeaderImage
 
 	existing.Name = name
 	existing.Slug = slug
@@ -118,6 +119,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 
 	nameOrSlugChanged := oldName != name || oldSlug != slug
 	iconChanged := oldIcon != icon
+	headerChanged := oldHeaderImage != headerImage
 
 	recipients, _ := s.workspaceMemberIDsForSpace(ctx, existing.WorkspaceID)
 	if iconChanged && !nameOrSlugChanged {
@@ -133,6 +135,18 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 	} else if nameOrSlugChanged {
 		s.notifier.Notify(ctx, notifeat.NotificationEvent{
 			Type:         notifeat.EventSpaceRenamed,
+			WorkspaceID:  existing.WorkspaceID,
+			ActorID:      userID,
+			RecipientIDs: recipients,
+			EntityType:   "space",
+			EntityID:     id,
+			Metadata:     map[string]string{"name": name},
+		})
+	}
+
+	if headerChanged && !nameOrSlugChanged {
+		s.notifier.Notify(ctx, notifeat.NotificationEvent{
+			Type:         notifeat.EventSpaceHeaderImageChanged,
 			WorkspaceID:  existing.WorkspaceID,
 			ActorID:      userID,
 			RecipientIDs: recipients,

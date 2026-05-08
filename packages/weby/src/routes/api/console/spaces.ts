@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createSpace, getSpaces } from "#/server/backy";
 
+interface SpacePayload {
+  description?: string;
+  icon?: string;
+  name: string;
+  slug: string;
+}
+
 export const Route = createFileRoute("/api/console/spaces")({
   server: {
     handlers: {
@@ -19,7 +26,7 @@ export const Route = createFileRoute("/api/console/spaces")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const body = await request.json();
+        const body = (await request.json()) as SpacePayload;
         const space = await createSpace(body, cookieHeader);
         return Response.json(space, { status: 201 });
       },

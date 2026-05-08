@@ -83,8 +83,10 @@ export const ReadmeViewer = ({
         summary.textContent = "kbd elements";
         summary.style.cssText =
           "cursor:pointer;font-size:0.85em;opacity:0.6;margin-bottom:0.75rem;user-select:none;";
-        details.append(summary);
-        details.append(center.cloneNode(true));
+        // oxlint-disable-next-line unicorn/prefer-dom-node-append
+        details.appendChild(summary);
+        // oxlint-disable-next-line unicorn/prefer-dom-node-append
+        details.appendChild(center.cloneNode(true));
         center.replaceWith(details);
       }
     }

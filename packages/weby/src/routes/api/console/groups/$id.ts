@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { updateGroup, deleteGroup } from "#/server/backy";
 
+interface GroupPayload {
+  description?: string;
+  name?: string;
+}
+
 export const Route = createFileRoute("/api/console/groups/$id")({
   server: {
     handlers: {
@@ -17,7 +22,7 @@ export const Route = createFileRoute("/api/console/groups/$id")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const body = await request.json();
+        const body = (await request.json()) as GroupPayload;
         const group = await updateGroup(params.id, body, cookieHeader);
         return Response.json(group);
       },

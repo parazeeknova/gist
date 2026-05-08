@@ -35,7 +35,9 @@ export const useMFASetup = () =>
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "setup failed" }));
+        const err = (await res.json().catch(() => ({ error: "setup failed" }))) as {
+          error?: string;
+        };
         throw new Error(err.error ?? "setup failed");
       }
       return res.json() as Promise<MFASetupResult>;
@@ -53,7 +55,9 @@ export const useMFAEnable = () => {
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "enable failed" }));
+        const err = (await res.json().catch(() => ({ error: "enable failed" }))) as {
+          error?: string;
+        };
         throw new Error(err.error ?? "enable failed");
       }
       return res.json() as Promise<MFABackupCodesResult>;
@@ -75,7 +79,9 @@ export const useMFADisable = () => {
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "disable failed" }));
+        const err = (await res.json().catch(() => ({ error: "disable failed" }))) as {
+          error?: string;
+        };
         throw new Error(err.error ?? "disable failed");
       }
       return null;
@@ -96,7 +102,9 @@ export const useMFABackupCodes = () =>
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "backup codes failed" }));
+        const err = (await res.json().catch(() => ({ error: "backup codes failed" }))) as {
+          error?: string;
+        };
         throw new Error(err.error ?? "backup codes failed");
       }
       return res.json() as Promise<MFABackupCodesResult>;
@@ -114,7 +122,9 @@ export const useMFAVerify = () => {
         method: "POST",
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "verification failed" }));
+        const err = (await res.json().catch(() => ({ error: "verification failed" }))) as {
+          error?: string;
+        };
         throw new Error(err.error ?? "verification failed");
       }
       return res.json();

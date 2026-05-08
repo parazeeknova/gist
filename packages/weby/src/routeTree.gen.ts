@@ -47,6 +47,7 @@ import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
 import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces/$id'
 import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users/$id'
+import { Route as ApiConsoleUnsplashSearchRouteImport } from './routes/api/console/unsplash/search'
 import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces/$id'
 import { Route as ApiConsolePushUnsubscribeRouteImport } from './routes/api/console/push/unsubscribe'
 import { Route as ApiConsolePushSubscribeRouteImport } from './routes/api/console/push/subscribe'
@@ -281,6 +282,12 @@ const ApiConsoleUsersIdRoute = ApiConsoleUsersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiConsoleUsersRoute,
 } as any)
+const ApiConsoleUnsplashSearchRoute =
+  ApiConsoleUnsplashSearchRouteImport.update({
+    id: '/api/console/unsplash/search',
+    path: '/api/console/unsplash/search',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiConsoleSpacesIdRoute = ApiConsoleSpacesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -571,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
   '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
+  '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
@@ -650,6 +658,7 @@ export interface FileRoutesByTo {
   '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
   '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
+  '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
@@ -732,6 +741,7 @@ export interface FileRoutesById {
   '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
   '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
+  '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
@@ -815,6 +825,7 @@ export interface FileRouteTypes {
     | '/api/console/push/subscribe'
     | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
+    | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
@@ -894,6 +905,7 @@ export interface FileRouteTypes {
     | '/api/console/push/subscribe'
     | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
+    | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
@@ -975,6 +987,7 @@ export interface FileRouteTypes {
     | '/api/console/push/subscribe'
     | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
+    | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
@@ -1036,6 +1049,7 @@ export interface RootRouteChildren {
   ApiConsolePushPublicKeyRoute: typeof ApiConsolePushPublicKeyRoute
   ApiConsolePushSubscribeRoute: typeof ApiConsolePushSubscribeRoute
   ApiConsolePushUnsubscribeRoute: typeof ApiConsolePushUnsubscribeRoute
+  ApiConsoleUnsplashSearchRoute: typeof ApiConsoleUnsplashSearchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1305,6 +1319,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/console/users/$id'
       preLoaderRoute: typeof ApiConsoleUsersIdRouteImport
       parentRoute: typeof ApiConsoleUsersRoute
+    }
+    '/api/console/unsplash/search': {
+      id: '/api/console/unsplash/search'
+      path: '/api/console/unsplash/search'
+      fullPath: '/api/console/unsplash/search'
+      preLoaderRoute: typeof ApiConsoleUnsplashSearchRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/console/spaces/$id': {
       id: '/api/console/spaces/$id'
@@ -1952,6 +1973,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsolePushPublicKeyRoute: ApiConsolePushPublicKeyRoute,
   ApiConsolePushSubscribeRoute: ApiConsolePushSubscribeRoute,
   ApiConsolePushUnsubscribeRoute: ApiConsolePushUnsubscribeRoute,
+  ApiConsoleUnsplashSearchRoute: ApiConsoleUnsplashSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
