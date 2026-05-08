@@ -46,6 +46,7 @@ type storageBucketObjects struct {
 	Bucket      string              `json:"bucket"`
 	ObjectCount int                 `json:"objectCount"`
 	Objects     []storageObjectItem `json:"objects"`
+	Truncated   bool                `json:"truncated"`
 }
 
 type storageObjectsResponse struct {
@@ -54,6 +55,8 @@ type storageObjectsResponse struct {
 	TotalBucketCount int                    `json:"totalBucketCount"`
 	TotalObjectCount int                    `json:"totalObjectCount"`
 }
+
+const maxStorageObjectKeys = 1000
 
 func buildStorageOrphanReport(ctx context.Context, pool *pgxpool.Pool) (storageOrphanReport, error) {
 	references, err := collectReferencedObjects(ctx, pool)
@@ -221,6 +224,12 @@ func buildStorageObjectsResponse(ctx context.Context) (storageObjectsResponse, e
 			return storageObjectsResponse{}, fmt.Errorf("list bucket %q: %w", bucket, err)
 		}
 
+		totalCount := len(keys)
+		truncated := totalCount > maxStorageObjectKeys
+		if truncated {
+			keys = keys[:maxStorageObjectKeys]
+		}
+
 		objects := make([]storageObjectItem, 0, len(keys))
 		for _, key := range keys {
 			objects = append(objects, storageObjectItem{
@@ -229,11 +238,12 @@ func buildStorageObjectsResponse(ctx context.Context) (storageObjectsResponse, e
 			})
 		}
 
-		response.TotalObjectCount += len(objects)
+		response.TotalObjectCount += totalCount
 		response.Buckets = append(response.Buckets, storageBucketObjects{
 			Bucket:      bucket,
-			ObjectCount: len(objects),
+			ObjectCount: totalCount,
 			Objects:     objects,
+			Truncated:   truncated,
 		})
 	}
 

@@ -18,7 +18,7 @@ const DebugRouteComponent = () => {
   const table = search.table ?? null;
 
   useEffect(() => {
-    if (!debugRoutesEnabled && debugRoutesEnabled !== undefined) {
+    if (!debugRoutesEnabled && debugRoutesEnabled !== null) {
       void navigate({ replace: true, to: "/settings/systems/debug" });
     }
   }, [debugRoutesEnabled, navigate]);

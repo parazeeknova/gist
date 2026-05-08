@@ -52,12 +52,21 @@ func (h *UserHandlers) UpdateUserRole(c *gin.Context) {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
 	}
+	userID := middleware.GetCurrentUserID(c)
 	targetID := c.Param("id")
+	if userID == targetID {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "cannot change your own role"})
+		return
+	}
 	var req struct {
 		Role string `json:"role"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || req.Role == "" {
 		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "role is required"})
+		return
+	}
+	if req.Role != "owner" && req.Role != "admin" && req.Role != "member" {
+		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "invalid role"})
 		return
 	}
 	if err := repositories.NewUserRepo().UpdateUserRole(c.Request.Context(), targetID, req.Role); err != nil {
@@ -73,12 +82,17 @@ func (h *UserHandlers) UpdateUserActive(c *gin.Context) {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
 	}
+	userID := middleware.GetCurrentUserID(c)
 	targetID := c.Param("id")
+	if userID == targetID {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "cannot change your own active status"})
+		return
+	}
 	var req struct {
-		IsActive *bool `json:"isActive"`
+		IsActive *bool `json:"is_active"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || req.IsActive == nil {
-		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "isActive is required"})
+		c.JSON(http.StatusBadRequest, auth.ErrorResponse{Error: "is_active is required"})
 		return
 	}
 	if err := repositories.NewUserRepo().UpdateUserActive(c.Request.Context(), targetID, *req.IsActive); err != nil {
@@ -94,7 +108,12 @@ func (h *UserHandlers) DeleteUser(c *gin.Context) {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
 		return
 	}
+	userID := middleware.GetCurrentUserID(c)
 	targetID := c.Param("id")
+	if userID == targetID {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "cannot delete your own account"})
+		return
+	}
 	if err := repositories.NewUserRepo().DeleteUser(c.Request.Context(), targetID); err != nil {
 		logger.Log.Error().Err(err).Str("user_id", targetID).Msg("delete user error")
 		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "failed to delete user"})

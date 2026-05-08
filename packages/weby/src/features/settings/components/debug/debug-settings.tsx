@@ -89,7 +89,7 @@ export const DebugSettings = () => {
       <div className={`mt-8 border ${t("border-border-dark", "border-border-light")} px-3 py-3`}>
         <span className={`text-[10px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
           these settings are only visible and configurable by the workspace owner. disabling "debug
-          routes" will hide the debug inspector page. disabling "debug api" will disable the backen
+          routes" will hide the debug inspector page. disabling "debug api" will disable the backend
           debug endpoints.
         </span>
       </div>

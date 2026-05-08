@@ -58,7 +58,7 @@ func extractToken(c *gin.Context) string {
 	if strings.HasPrefix(authHeader, "Bearer ") {
 		return strings.TrimPrefix(authHeader, "Bearer ")
 	}
-	cookie, err := c.Cookie("verso_access_token")
+	cookie, err := c.Cookie(auth.GetAccessTokenCookieName())
 	if err == nil && cookie != "" {
 		return cookie
 	}

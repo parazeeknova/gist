@@ -40,11 +40,17 @@ export const useUpdateSystemSetting = () => {
 };
 
 export const useDebugRoutesEnabled = () => {
-  const { data: settings } = useSystemSettings();
+  const { data: settings, isPending } = useSystemSettings();
+  if (isPending) {
+    return null;
+  }
   return settings?.find((s) => s.key === "debug_routes")?.value ?? false;
 };
 
 export const useDebugApiEnabled = () => {
-  const { data: settings } = useSystemSettings();
+  const { data: settings, isPending } = useSystemSettings();
+  if (isPending) {
+    return null;
+  }
   return settings?.find((s) => s.key === "debug_api")?.value ?? false;
 };

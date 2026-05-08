@@ -332,26 +332,30 @@ func main() {
 				pushHandlers.RegisterRoutes(console)
 			}
 
-			// System settings (owner-only)
-			systemSettingsHandlers := ssfeat.NewSystemSettingsHandlers()
-			systemSettings := console.Group("/system-settings")
-			systemSettings.Use(middleware.OwnerRequired())
-			{
-				systemSettings.GET("", systemSettingsHandlers.GetSettings)
-				systemSettings.PATCH("", systemSettingsHandlers.UpdateSetting)
+			// System settings (owner-only, requires DB)
+			if dbAvailable {
+				systemSettingsHandlers := ssfeat.NewSystemSettingsHandlers()
+				systemSettings := console.Group("/system-settings")
+				systemSettings.Use(middleware.OwnerRequired())
+				{
+					systemSettings.GET("", systemSettingsHandlers.GetSettings)
+					systemSettings.PATCH("", systemSettingsHandlers.UpdateSetting)
+				}
 			}
 
-			// Debug (owner-only, gated by system_setting debug_api)
-			debug := console.Group("/debug")
-			debug.Use(middleware.OwnerRequired())
-			debug.Use(middleware.DebugAPIRequired())
-			{
-				debug.GET("/tables", debugHandlers.GetDebugTables)
-				debug.GET("/tables/:tableName", debugHandlers.GetDebugTableData)
-				debug.DELETE("/tables/:tableName", debugHandlers.DeleteDebugTableData)
-				debug.POST("/tables/:tableName/rows", debugHandlers.DeleteDebugTableRows)
-				debug.GET("/storage/orphans", debugHandlers.GetStorageOrphanReport)
-				debug.GET("/storage/objects", debugHandlers.GetStorageObjects)
+			// Debug (owner-only, gated by system_setting debug_api, requires DB)
+			if dbAvailable {
+				debug := console.Group("/debug")
+				debug.Use(middleware.OwnerRequired())
+				debug.Use(middleware.DebugAPIRequired())
+				{
+					debug.GET("/tables", debugHandlers.GetDebugTables)
+					debug.GET("/tables/:tableName", debugHandlers.GetDebugTableData)
+					debug.DELETE("/tables/:tableName", debugHandlers.DeleteDebugTableData)
+					debug.POST("/tables/:tableName/rows", debugHandlers.DeleteDebugTableRows)
+					debug.GET("/storage/orphans", debugHandlers.GetStorageOrphanReport)
+					debug.GET("/storage/objects", debugHandlers.GetStorageObjects)
+				}
 			}
 
 			// Users (admin+ only)
