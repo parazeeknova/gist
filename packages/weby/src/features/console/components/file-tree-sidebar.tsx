@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { usePageTree } from "#/features/console/hooks/use-pages";
-import { useSpaces } from "#/features/console/hooks/use-spaces";
+import { useSpaces, useFavoritedSpaces } from "#/features/console/hooks/use-spaces";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "./console-context";
 
@@ -169,6 +169,7 @@ export const FileTreeSidebar = () => {
   const { isDarkMode } = useTheme();
   const { selectedWorkspaceId, selectedSpaceId } = useConsoleContext();
   const { data: spaces, isPending, isError } = useSpaces(selectedWorkspaceId);
+  const { data: favSpaces } = useFavoritedSpaces();
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
@@ -229,10 +230,40 @@ export const FileTreeSidebar = () => {
         >
           favorites
         </p>
+        {(() => {
+          if (!favSpaces || favSpaces.length === 0) {
+            return (
+              <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
+                no favorites yet
+              </p>
+            );
+          }
+          return (
+            <div className="space-y-0.5">
+              {favSpaces.map((s) => (
+                <a
+                  className={`flex items-center gap-2 px-1 py-1 text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                  href={`/s/${s.slug}`}
+                  key={s.id}
+                >
+                  <AvatarBadge
+                    className="w-4 h-4"
+                    icon={s.icon || null}
+                    initialsClass="text-[0.25rem]"
+                    name={s.name}
+                  />
+                  <span className="flex-1 truncate">{s.name}</span>
+                  <span
+                    className={`shrink-0 text-[8px] px-1 py-0.5 border lowercase ${t("border-border-dark text-text-dark/25", "border-border-light text-text-light/25")}`}
+                  >
+                    space
+                  </span>
+                </a>
+              ))}
+            </div>
+          );
+        })()}
       </div>
-      <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
-        no favorites yet
-      </p>
     </>
   );
 };

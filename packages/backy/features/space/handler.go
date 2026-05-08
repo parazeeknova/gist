@@ -18,10 +18,15 @@ import (
 type SpaceHandlers struct {
 	workspaceService *wsfeat.WorkspaceService
 	spaceService     *SpaceService
+	favRepo          *repositories.SpaceFavoriteRepo
 }
 
 func NewSpaceHandlers(svc *SpaceService, wsSvc *wsfeat.WorkspaceService) *SpaceHandlers {
 	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc}
+}
+
+func NewSpaceHandlersWithFav(svc *SpaceService, wsSvc *wsfeat.WorkspaceService, favRepo *repositories.SpaceFavoriteRepo) *SpaceHandlers {
+	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc, favRepo: favRepo}
 }
 
 // --- Space Handlers ---
@@ -474,4 +479,81 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 	}
 
 	c.DataFromReader(http.StatusOK, resp.ContentLength, "application/json", resp.Body, nil)
+}
+
+// ToggleFavorite handles POST /api/console/spaces/:id/favorite — toggles favorite status.
+func (h *SpaceHandlers) ToggleFavorite(c *gin.Context) {
+	if h.favRepo == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "favorites not available"})
+		return
+	}
+	userID := middleware.GetCurrentUserID(c)
+	spaceID := c.Param("id")
+
+	isFav, err := h.favRepo.IsFavorited(c.Request.Context(), userID, spaceID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("check space favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		return
+	}
+
+	if isFav {
+		if err := h.favRepo.Remove(c.Request.Context(), userID, spaceID); err != nil {
+			logger.Log.Error().Err(err).Msg("remove space favorite error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove favorite"})
+			return
+		}
+	} else {
+		if err := h.favRepo.Add(c.Request.Context(), userID, spaceID); err != nil {
+			logger.Log.Error().Err(err).Msg("add space favorite error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add favorite"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": !isFav})
+}
+
+// IsFavorited handles GET /api/console/spaces/:id/favorited.
+func (h *SpaceHandlers) IsFavorited(c *gin.Context) {
+	if h.favRepo == nil {
+		c.JSON(http.StatusOK, gin.H{"favorited": false})
+		return
+	}
+	userID := middleware.GetCurrentUserID(c)
+	spaceID := c.Param("id")
+
+	isFav, err := h.favRepo.IsFavorited(c.Request.Context(), userID, spaceID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("check space favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": isFav})
+}
+
+// GetFavoritedSpaces handles GET /api/console/spaces/favorites.
+func (h *SpaceHandlers) GetFavoritedSpaces(c *gin.Context) {
+	if h.favRepo == nil || h.spaceService == nil {
+		c.JSON(http.StatusOK, []models.Space{})
+		return
+	}
+	userID := middleware.GetCurrentUserID(c)
+
+	ids, err := h.favRepo.List(c.Request.Context(), userID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("list space favorites error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list favorites"})
+		return
+	}
+
+	spaces, err := h.spaceService.ListFavoritedSpaces(c.Request.Context(), ids)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("list favorited spaces error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list favorited spaces"})
+		return
+	}
+
+	c.JSON(http.StatusOK, spaces)
 }

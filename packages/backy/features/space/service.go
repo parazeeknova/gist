@@ -200,6 +200,22 @@ func (s *SpaceService) ListSpaces(ctx context.Context, workspaceID string) ([]mo
 	return spaces, nil
 }
 
+// ListFavoritedSpaces returns spaces by their IDs.
+func (s *SpaceService) ListFavoritedSpaces(ctx context.Context, ids []string) ([]models.Space, error) {
+	var spaces []models.Space
+	for _, id := range ids {
+		space, err := s.spaceRepo.GetByID(ctx, id)
+		if err != nil {
+			continue
+		}
+		spaces = append(spaces, space)
+	}
+	if spaces == nil {
+		spaces = []models.Space{}
+	}
+	return spaces, nil
+}
+
 // GetSpaceByID returns a space by ID.
 func (s *SpaceService) GetSpaceByID(ctx context.Context, id string) (models.Space, error) {
 	space, err := s.spaceRepo.GetByID(ctx, id)

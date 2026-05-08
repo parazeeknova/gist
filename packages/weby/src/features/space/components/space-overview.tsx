@@ -15,8 +15,10 @@ import { useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "#/shared/hooks/use-theme";
 import {
+  useIsSpaceFavorited,
   useSpaceBySlug,
   useSpaceMembers,
+  useToggleSpaceFavorite,
   useUpdateSpace,
 } from "#/features/console/hooks/use-spaces";
 import { useAuth } from "#/features/auth/hooks/use-auth";
@@ -340,7 +342,9 @@ interface SpaceHeadingProps {
   isDarkMode: boolean;
   members: SpaceMemberMixed[] | undefined;
   name: string;
+  onToggleFav: () => void;
   pageCount: number;
+  starred: boolean;
   updatedAt: string | undefined;
   onAvatarChange: (dataUrl: string) => void;
   onEditDescription: (value: string) => void;
@@ -362,6 +366,8 @@ const SpaceHeading = ({
   onEditHeader,
   onEditDescription,
   onEditName,
+  onToggleFav,
+  starred,
 }: SpaceHeadingProps) => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -482,6 +488,13 @@ const SpaceHeading = ({
           <h1 className={`text-lg lowercase ${t("text-text-dark", "text-text-light")}`}>{name}</h1>
         )}
         <div className="relative" ref={menuRef}>
+          <button
+            className={`p-0.5 ${starred ? t("text-yellow-400 hover:text-yellow-300", "text-yellow-500 hover:text-yellow-400") : t("text-text-dark/20 hover:text-yellow-400", "text-text-light/20 hover:text-yellow-500")}`}
+            onClick={onToggleFav}
+            type="button"
+          >
+            <StarIcon size={13} weight={starred ? "fill" : "regular"} />
+          </button>
           <button
             className={`p-0.5 ${t("text-text-dark/30 hover:text-text-dark/60", "text-text-light/30 hover:text-text-light/60")}`}
             onClick={() => setMenuOpen((p) => !p)}
@@ -632,12 +645,15 @@ const SpaceHeading = ({
   );
 };
 
+// eslint-disable-next-line complexity
 export const SpaceOverview = () => {
   const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });
   const { data: space } = useSpaceBySlug(spaceSlug);
   const { data: treeItems, isPending: isTreePending } = usePageTree(space?.id ?? "");
   const { data: members } = useSpaceMembers(space?.id ?? "");
   const { data: user } = useAuth();
+  const toggleSpaceFav = useToggleSpaceFavorite();
+  const { data: favData } = useIsSpaceFavorited(space?.id ?? "");
   const { isDarkMode } = useTheme();
   const updateSpace = useUpdateSpace();
 
@@ -689,19 +705,12 @@ export const SpaceOverview = () => {
     });
   };
 
-  const handlePickerSelect = (imageUrl: string) => {
-    doUpdate({ headerImage: imageUrl });
-    setShowUnsplash(false);
-  };
-
   const pages = useMemo(() => (treeItems ? [...treeItems] : []), [treeItems]);
 
-  const filteredPages = useMemo(() => {
-    if (activeTab === "favorites") {
-      return pages.filter((p) => favorites.has(p.id));
-    }
-    return pages;
-  }, [pages, activeTab, favorites]);
+  const filteredPages = useMemo(
+    () => (activeTab === "favorites" ? pages.filter((p) => favorites.has(p.id)) : pages),
+    [pages, activeTab, favorites],
+  );
 
   const groupedPages = useMemo(() => {
     const sortBy = activeTab === "recents" ? "updatedAt" : "createdAt";
@@ -753,6 +762,8 @@ export const SpaceOverview = () => {
           onEditDescription={(v) => doUpdate({ description: v })}
           onEditHeader={() => setShowUnsplash(true)}
           onEditName={(v) => doUpdate({ name: v, slug: v.toLowerCase().replaceAll(/\s+/g, "-") })}
+          onToggleFav={() => toggleSpaceFav.mutate(space?.id ?? "")}
+          starred={favData?.favorited ?? false}
         />
 
         <SpaceContentSection
@@ -769,7 +780,13 @@ export const SpaceOverview = () => {
       </div>
 
       {showUnsplash && (
-        <UnsplashPicker onClose={() => setShowUnsplash(false)} onSelect={handlePickerSelect} />
+        <UnsplashPicker
+          onClose={() => setShowUnsplash(false)}
+          onSelect={(url) => {
+            doUpdate({ headerImage: url });
+            setShowUnsplash(false);
+          }}
+        />
       )}
     </div>
   );

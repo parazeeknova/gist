@@ -198,9 +198,39 @@ export const useRemoveSpaceGroup = () => {
       fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
         method: "DELETE",
       }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
     },
   });
 };
+
+export const useToggleSpaceFavorite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (spaceId: string) =>
+      fetchProtected<{ favorited: boolean }>(`/api/console/spaces/${spaceId}/favorite`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaceFavorites"] });
+    },
+  });
+};
+
+export const useIsSpaceFavorited = (spaceId: string) =>
+  useQuery<{ favorited: boolean }>({
+    enabled: spaceId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<{ favorited: boolean }>(`/api/console/spaces/${spaceId}/favorited`, {
+        signal,
+      }),
+    queryKey: ["spaceFavorites", spaceId],
+    staleTime: 30 * 1000,
+  });
+
+export const useFavoritedSpaces = () =>
+  useQuery<Space[]>({
+    queryFn: ({ signal }) => fetchProtected<Space[]>("/api/console/spaces/favorites", { signal }),
+    queryKey: ["spaceFavorites"],
+    staleTime: 30 * 1000,
+  });
