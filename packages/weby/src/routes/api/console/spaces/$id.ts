@@ -2,11 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { deleteSpace, updateSpace } from "#/server/backy";
 
 interface SpacePayload {
+  defaultRole?: string;
   description?: string;
   headerImage?: string;
   icon?: string;
   name: string;
   slug: string;
+  visibility?: string;
 }
 
 export const Route = createFileRoute("/api/console/spaces/$id")({

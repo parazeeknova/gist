@@ -58,6 +58,8 @@ export const useUpdateSpace = () => {
         icon?: string;
         description?: string;
         headerImage?: string;
+        visibility?: string;
+        defaultRole?: string;
       };
     }) =>
       fetchProtected<Space>(`/api/console/spaces/${id}`, {

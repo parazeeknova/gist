@@ -31,6 +31,7 @@ import { Route as SSpaceSlugIndexRouteImport } from './routes/s/$spaceSlug/index
 import { Route as SettingsSystemsDebugRouteImport } from './routes/settings/systems/debug'
 import { Route as SettingsAccountProfileRouteImport } from './routes/settings/account/profile'
 import { Route as SettingsAccountPreferencesRouteImport } from './routes/settings/account/preferences'
+import { Route as SSpaceSlugSettingsRouteImport } from './routes/s/$spaceSlug/settings'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
 import { Route as ApiConsoleWorkspacesRouteImport } from './routes/api/console/workspaces'
 import { Route as ApiConsoleUsersRouteImport } from './routes/api/console/users'
@@ -201,6 +202,11 @@ const SettingsAccountPreferencesRoute =
     path: '/account/preferences',
     getParentRoute: () => SettingsRoute,
   } as any)
+const SSpaceSlugSettingsRoute = SSpaceSlugSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => SSpaceSlugRoute,
+} as any)
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   id: '/api/github/stats',
   path: '/api/github/stats',
@@ -553,6 +559,7 @@ export interface FileRoutesByFullPath {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/s/$spaceSlug/settings': typeof SSpaceSlugSettingsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/settings/systems/debug': typeof SettingsSystemsDebugRoute
@@ -633,6 +640,7 @@ export interface FileRoutesByTo {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/s/$spaceSlug/settings': typeof SSpaceSlugSettingsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/settings/systems/debug': typeof SettingsSystemsDebugRoute
@@ -716,6 +724,7 @@ export interface FileRoutesById {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/s/$spaceSlug/settings': typeof SSpaceSlugSettingsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/settings/systems/debug': typeof SettingsSystemsDebugRoute
@@ -800,6 +809,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/s/$spaceSlug/settings'
     | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/settings/systems/debug'
@@ -880,6 +890,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/s/$spaceSlug/settings'
     | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/settings/systems/debug'
@@ -962,6 +973,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/s/$spaceSlug/settings'
     | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/settings/systems/debug'
@@ -1207,6 +1219,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/account/preferences'
       preLoaderRoute: typeof SettingsAccountPreferencesRouteImport
       parentRoute: typeof SettingsRoute
+    }
+    '/s/$spaceSlug/settings': {
+      id: '/s/$spaceSlug/settings'
+      path: '/settings'
+      fullPath: '/s/$spaceSlug/settings'
+      preLoaderRoute: typeof SSpaceSlugSettingsRouteImport
+      parentRoute: typeof SSpaceSlugRoute
     }
     '/api/github/stats': {
       id: '/api/github/stats'
@@ -1666,10 +1685,12 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
 )
 
 interface SSpaceSlugRouteChildren {
+  SSpaceSlugSettingsRoute: typeof SSpaceSlugSettingsRoute
   SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
 }
 
 const SSpaceSlugRouteChildren: SSpaceSlugRouteChildren = {
+  SSpaceSlugSettingsRoute: SSpaceSlugSettingsRoute,
   SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
 }
 

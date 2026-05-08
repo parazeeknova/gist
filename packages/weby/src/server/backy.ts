@@ -312,7 +312,15 @@ export const createSpace = (
 
 export const updateSpace = (
   id: string,
-  input: { name: string; slug: string; icon?: string; description?: string; headerImage?: string },
+  input: {
+    name: string;
+    slug: string;
+    icon?: string;
+    description?: string;
+    headerImage?: string;
+    visibility?: string;
+    defaultRole?: string;
+  },
   cookieHeader?: string | null,
 ) =>
   fetchBacky<Space>(`console/spaces/${id}`, {

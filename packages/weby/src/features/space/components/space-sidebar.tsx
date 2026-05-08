@@ -111,6 +111,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const { location } = routerState;
   const { data: treeItems, isPending } = usePageTree(space.id);
   const isOverview = location.pathname === `/s/${space.slug}`;
+  const isSettings = location.pathname === `/s/${space.slug}/settings`;
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const pageTree = treeItems ? buildPageTree(treeItems) : [];
@@ -163,10 +164,15 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           search
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-          onClick={() =>
-            navigate({ search: { workspace: space.workspaceId }, to: "/settings/spaces" })
-          }
+          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${
+            isSettings
+              ? t("bg-white/10 text-text-dark", "bg-black/10 text-text-light")
+              : t(
+                  "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
+                  "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
+                )
+          }`}
+          onClick={() => navigate({ to: `/s/${space.slug}/settings` })}
           type="button"
         >
           <GearSixIcon size={12} />

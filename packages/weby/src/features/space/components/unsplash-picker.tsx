@@ -1,6 +1,6 @@
 import { SpinnerIcon, XIcon } from "@phosphor-icons/react";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 import { useTheme } from "#/shared/hooks/use-theme";
 
@@ -21,10 +21,15 @@ interface UnsplashPickerProps {
   onSelect: (imageUrl: string) => void;
 }
 
-const searchUnsplash = async (q: string): Promise<UnsplashPhoto[]> => {
-  const params = new URLSearchParams({ page: "1", per_page: "20", q });
+const searchUnsplash = async (
+  q: string,
+  page: string,
+  signal?: AbortSignal,
+): Promise<UnsplashPhoto[]> => {
+  const params = new URLSearchParams({ page, per_page: "20", q });
   const data = await fetchProtected<UnsplashSearchResponse>(
     `/api/console/unsplash/search?${params.toString()}`,
+    { signal },
   );
   return data.results ?? [];
 };
@@ -35,33 +40,69 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
   const [query, setQuery] = useState("");
   const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const doSearch = useCallback(async (q: string, p: string, append: boolean) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const isLoadMore = append;
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+    setError("");
+    try {
+      const results = await searchUnsplash(q, p, controller.signal);
+      setPhotos((prev) => (append ? [...prev, ...results] : results));
+      setHasMore(results.length === 20);
+      // oxlint-disable-next-line unicorn/catch-error-name
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setError("failed to search unsplash");
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, []);
 
   const debouncedSearch = useDebouncedCallback(
-    async (q: string) => {
+    (q: string) => {
       const trimmed = q.trim();
       if (!trimmed) {
         setPhotos([]);
+        setPage(1);
+        setHasMore(false);
         return;
       }
-      setLoading(true);
-      setError("");
-      try {
-        const results = await searchUnsplash(trimmed);
-        setPhotos(results);
-      } catch {
-        setError("failed to search unsplash");
-      } finally {
-        setLoading(false);
-      }
+      setPage(1);
+      doSearch(trimmed, "1", false);
     },
-    { wait: 400 },
+    { wait: 600 },
   );
 
   const handleInputChange = (value: string) => {
     setQuery(value);
     debouncedSearch(value);
   };
+
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    doSearch(query.trim() || "nature", String(nextPage), true);
+  };
+
+  // Load default images on mount
+  useEffect(() => {
+    doSearch("nature", "1", false);
+  }, [doSearch]);
 
   const renderContent = () => {
     if (loading) {
@@ -84,32 +125,46 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
       );
     }
     return (
-      <div className="grid grid-cols-3 gap-2">
-        {photos.map((photo) => (
-          <button
-            className={`relative overflow-hidden rounded border cursor-pointer group ${t("border-border-dark hover:border-white/20", "border-border-light hover:border-black/20")}`}
-            key={photo.id}
-            onClick={() => onSelect(photo.urls.regular)}
-            type="button"
-          >
-            <img
-              alt={photo.alt_description ?? "unsplash photo"}
-              className="w-full aspect-video object-cover"
-              loading="lazy"
-              src={photo.urls.small}
-            />
-            <div
-              className={`absolute inset-0 flex items-end p-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${t("bg-gradient-to-t from-black/60 to-transparent", "bg-gradient-to-t from-black/40 to-transparent")}`}
+      <>
+        <div className="grid grid-cols-3 gap-2">
+          {photos.map((photo) => (
+            <button
+              className={`relative overflow-hidden border cursor-pointer group ${t("border-border-dark hover:border-white/20", "border-border-light hover:border-black/20")}`}
+              key={photo.id}
+              onClick={() => onSelect(photo.urls.regular)}
+              type="button"
             >
-              <span
-                className={`text-[9px] lowercase truncate ${t("text-white/80", "text-white/80")}`}
+              <img
+                alt={photo.alt_description ?? "unsplash photo"}
+                className="w-full aspect-video object-cover"
+                loading="lazy"
+                src={photo.urls.small}
+              />
+              <div
+                className={`absolute inset-0 flex items-end p-1.5 opacity-0 group-hover:opacity-100 transition-opacity ${t("bg-linear-to-t from-black/60 to-transparent", "bg-linear-to-t from-black/40 to-transparent")}`}
               >
-                {photo.user.name}
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
+                <span
+                  className={`text-[9px] lowercase truncate ${t("text-white/80", "text-white/80")}`}
+                >
+                  {photo.user.name}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+        {hasMore && (
+          <div className="flex justify-center mt-3">
+            <button
+              className={`text-[11px] lowercase px-3 py-1.5 border ${loadingMore ? t("text-text-dark/20 border-border-dark", "text-text-light/20 border-border-light") : t("text-text-dark/40 border-border-dark hover:text-text-dark hover:bg-white/5", "text-text-light/40 border-border-light hover:text-text-light hover:bg-black/3")}`}
+              disabled={loadingMore}
+              onClick={handleLoadMore}
+              type="button"
+            >
+              {loadingMore ? "loading..." : "load more"}
+            </button>
+          </div>
+        )}
+      </>
     );
   };
 
@@ -130,7 +185,7 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
         type="button"
       />
       <div
-        className={`relative z-10 mx-4 flex max-h-[80vh] w-full max-w-2xl flex-col rounded border p-4 ${t("border-border-dark bg-[#1a1a1a]", "border-border-light bg-white")}`}
+        className={`relative z-10 mx-4 flex max-h-[80vh] w-full max-w-2xl flex-col border p-4 ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
       >
         <div className="flex items-center justify-between mb-3">
           <span className={`text-[11px] lowercase ${t("text-text-dark/60", "text-text-light/60")}`}>
