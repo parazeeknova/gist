@@ -282,7 +282,7 @@ const SpaceBreadcrumb = ({
           <AvatarBadge
             className={`w-3.5 h-3.5 ${t("bg-white/10 text-text-dark/50", "bg-black/5 text-text-light/50")}`}
             icon={selectedWorkspace?.icon}
-            name={selectedWorkspace?.name ?? workspaceName}
+            name={selectedWorkspace?.name ?? "..."}
           />
           {selectedWorkspace?.name ?? "..."}
           <CaretDownIcon size={10} />

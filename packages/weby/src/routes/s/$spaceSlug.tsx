@@ -30,7 +30,7 @@ const SpaceConsole = function SpaceConsole() {
     document.title = space?.name ? `verso — ${space.name}` : `verso — ${spaceSlug}`;
 
     return () => {
-      document.title = "verso — space";
+      document.title = "verso — console";
     };
   }, [space?.name, spaceSlug]);
 
