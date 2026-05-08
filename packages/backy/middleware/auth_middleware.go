@@ -1,42 +1,39 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/auth"
-	"verso/backy/logger"
-	"verso/backy/services"
+	"verso/backy/repositories"
+	"verso/backy/shared/auth"
+	"verso/backy/shared/logger"
 )
 
+type SessionValidator interface {
+	ValidateSession(ctx context.Context, sessionID string) (bool, error)
+}
+
 const (
-	// ContextKeyClaims is the gin context key for AccessTokenClaims.
-	ContextKeyClaims = "auth_claims"
-	// ContextKeyUserID is the gin context key for the authenticated user ID.
-	ContextKeyUserID = "auth_user_id"
-	// ContextKeyIsOwner is the gin context key for whether the user is an owner.
+	ContextKeyClaims  = "auth_claims"
+	ContextKeyUserID  = "auth_user_id"
 	ContextKeyIsOwner = "auth_is_owner"
 )
 
-// AuthRequired is middleware that requires a valid access token (via cookie or Authorization header).
-// It also validates that the session bound to the token is still active.
-func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
+func AuthRequired(authService SessionValidator) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenString := extractToken(c)
 		if tokenString == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "authentication required"})
 			return
 		}
-
 		claims, err := auth.ValidateAccessToken(tokenString)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "invalid or expired token"})
 			return
 		}
-
-		// Verify the bound session is still active (not revoked, not expired)
 		if claims.SessionID != "" {
 			active, checkErr := authService.ValidateSession(c.Request.Context(), claims.SessionID)
 			if checkErr != nil {
@@ -49,7 +46,6 @@ func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
 				return
 			}
 		}
-
 		c.Set(ContextKeyClaims, claims)
 		c.Set(ContextKeyUserID, claims.UserID)
 		c.Set(ContextKeyIsOwner, claims.IsOwner)
@@ -58,27 +54,37 @@ func AuthRequired(authService *services.AuthService) gin.HandlerFunc {
 }
 
 func extractToken(c *gin.Context) string {
-	// First, try the Authorization header (Bearer token)
 	authHeader := c.GetHeader("Authorization")
 	if strings.HasPrefix(authHeader, "Bearer ") {
 		return strings.TrimPrefix(authHeader, "Bearer ")
 	}
-
-	// Fall back to cookie
-	token, err := c.Cookie(auth.GetAccessTokenCookieName())
-	if err == nil && token != "" {
-		return token
+	cookie, err := c.Cookie(auth.GetAccessTokenCookieName())
+	if err == nil && cookie != "" {
+		return cookie
 	}
-
 	return ""
 }
 
-// OwnerRequired is middleware that requires the authenticated user to be an owner.
-// Must be used after AuthRequired.
+func GetCurrentUserID(c *gin.Context) string {
+	id, _ := c.Get(ContextKeyUserID)
+	if id == nil {
+		return ""
+	}
+	return id.(string)
+}
+
+func GetCurrentClaims(c *gin.Context) *auth.AccessTokenClaims {
+	claims, _ := c.Get(ContextKeyClaims)
+	if claims == nil {
+		return nil
+	}
+	return claims.(*auth.AccessTokenClaims)
+}
+
 func OwnerRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		isOwner, ok := c.Get(ContextKeyIsOwner)
-		if !ok || !isOwner.(bool) {
+		claims := GetCurrentClaims(c)
+		if claims == nil || !claims.IsOwner {
 			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "owner access required"})
 			return
 		}
@@ -86,37 +92,24 @@ func OwnerRequired() gin.HandlerFunc {
 	}
 }
 
-// AdminRequired is middleware that requires the authenticated user to be an owner or admin.
-// Must be used after AuthRequired.
 func AdminRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		claims, ok := c.Get(ContextKeyClaims)
-		if !ok {
+		claims := GetCurrentClaims(c)
+		if claims == nil || (claims.Role != "owner" && claims.Role != "admin") {
 			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
 			return
 		}
-		ac, ok := claims.(*auth.AccessTokenClaims)
-		if !ok {
-			c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
-			return
-		}
-		if ac.Role == "owner" || ac.Role == "admin" {
-			c.Next()
-			return
-		}
-		c.AbortWithStatusJSON(http.StatusForbidden, auth.ErrorResponse{Error: "admin access required"})
+		c.Next()
 	}
 }
 
-// GetCurrentUserID extracts the authenticated user ID from the gin context.
-func GetCurrentUserID(c *gin.Context) string {
-	userID, _ := c.Get(ContextKeyUserID)
-	if userID == nil {
-		return ""
+func DebugAPIRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		repo := repositories.NewSystemSettingsRepo()
+		if !repo.IsEnabled(c.Request.Context(), "debug_api") {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "debug API is disabled"})
+			return
+		}
+		c.Next()
 	}
-	value, ok := userID.(string)
-	if !ok {
-		return ""
-	}
-	return value
 }

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LandingPage } from "../components/landing/landing";
+import { LandingPage } from "#/features/landing/components/landing";
 
 const AboutPage = () => <LandingPage />;
 

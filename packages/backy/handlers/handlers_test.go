@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"verso/backy/models"
+	"verso/backy/database/models"
 )
 
 func setupRouter() (*gin.Engine, *Handlers) {

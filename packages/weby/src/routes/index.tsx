@@ -1,21 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { GitHubActivity } from "../components/github/calendar";
-import { GitHubStats } from "../components/github/stats";
-import { ExperienceSection, ProfileSection, SocialLinks } from "../components/landing/sections";
-import { ScrollContainer } from "../components/landing/scroll-container";
-import { ReadmeViewer } from "../components/landing/readme-viewer";
-import { MobileProjectList, ProjectList } from "../components/landing/projects";
-import { BlogReaderPanel } from "../components/blog/blog-reader-panel";
-import { LoginPopup } from "../components/login-popup";
+import { GitHubActivity } from "#/features/github/components/calendar";
+import { GitHubStats } from "#/features/github/components/stats";
+import {
+  ExperienceSection,
+  ProfileSection,
+  SocialLinks,
+} from "#/features/landing/components/sections";
+import { ScrollContainer } from "#/features/landing/components/scroll-container";
+import { ReadmeViewer } from "#/features/landing/components/readme-viewer";
+import { MobileProjectList, ProjectList } from "#/features/landing/components/projects";
+import { BlogReaderPanel } from "#/features/blog/components/blog-reader-panel";
+import { LoginPopup } from "#/features/auth/components/login-popup";
 import {
   useBlogManifest,
   useExperience,
   useIsFetchingData,
   useProfile,
   useProjects,
-} from "../hooks/use-data";
+} from "#/features/landing/hooks/use-data";
 
 const useIsMobile = (): boolean => {
   const getSnapshot = useCallback(() => {

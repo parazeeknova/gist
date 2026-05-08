@@ -9,7 +9,7 @@ export default defineConfig({
   },
   test: {
     coverage: {
-      exclude: ["src/**/*.d.ts", "src/**/*.test.{ts,tsx}", "src/test/**"],
+      exclude: ["src/**/*.d.ts", "src/**/*.test.{ts,tsx}", "src/shared/test/**"],
       include: ["src/**/*.{ts,tsx}"],
       provider: "v8",
       reporter: ["text", "json", "html"],
@@ -18,6 +18,6 @@ export default defineConfig({
     exclude: ["node_modules", "dist", "**/*.d.ts"],
     globals: true,
     include: ["src/**/*.test.{ts,tsx}"],
-    setupFiles: ["./src/test/setup.ts"],
+    setupFiles: ["./src/shared/test/setup.ts"],
   },
 });

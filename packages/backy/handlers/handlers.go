@@ -10,28 +10,33 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/sync/singleflight"
 
-	"verso/backy/cache"
-	"verso/backy/logger"
+	"verso/backy/database/models"
+	ghfeat "verso/backy/features/github"
+	groupfeat "verso/backy/features/group"
+	notifeat "verso/backy/features/notification"
+	pagefeat "verso/backy/features/page"
+	spacefeat "verso/backy/features/space"
+	wsfeat "verso/backy/features/workspace"
 	"verso/backy/middleware"
-	"verso/backy/models"
 	"verso/backy/repositories"
-	"verso/backy/services"
+	"verso/backy/shared/cache"
+	"verso/backy/shared/logger"
 	"verso/backy/store"
 )
 
 // Handlers holds all HTTP handlers
 type Handlers struct {
-	githubService *services.GitHubService
+	githubService *ghfeat.GitHubService
 	statsCache    *cache.StatsCache
 	config        Config
 	statsGroup    singleflight.Group
 
 	// Optional DB-backed services; if nil, falls back to file-based store
-	pageService      *services.PageService
-	spaceService     *services.SpaceService
-	workspaceService *services.WorkspaceService
-	groupService     *services.GroupService
-	notifier         services.Notifier
+	pageService      *pagefeat.PageService
+	spaceService     *spacefeat.SpaceService
+	workspaceService *wsfeat.WorkspaceService
+	groupService     *groupfeat.GroupService
+	notifier         notifeat.Notifier
 }
 
 // Config holds application configuration
@@ -41,22 +46,23 @@ type Config struct {
 }
 
 // New creates a new handlers instance
+
 func New(cfg Config) *Handlers {
 	return &Handlers{
-		githubService: services.NewGitHubService(10 * time.Minute),
+		githubService: ghfeat.NewGitHubService(10 * time.Minute),
 		statsCache:    cache.NewStatsCache(10 * time.Minute),
 		config:        cfg,
-		notifier:      services.NoopNotifier(),
+		notifier:      notifeat.NoopNotifier(),
 	}
 }
 
 // SetNotifier sets the notification service on the handlers.
-func (h *Handlers) SetNotifier(n services.Notifier) {
+func (h *Handlers) SetNotifier(n notifeat.Notifier) {
 	h.notifier = n
 }
 
 // NewWithDB creates a new handlers instance with database-backed services.
-func NewWithDB(cfg Config, pageService *services.PageService, spaceService *services.SpaceService, workspaceService *services.WorkspaceService, groupService *services.GroupService) *Handlers {
+func NewWithDB(cfg Config, pageService *pagefeat.PageService, spaceService *spacefeat.SpaceService, workspaceService *wsfeat.WorkspaceService, groupService *groupfeat.GroupService) *Handlers {
 	h := New(cfg)
 	h.pageService = pageService
 	h.spaceService = spaceService
@@ -102,7 +108,7 @@ func (h *Handlers) GetBlogPost(c *gin.Context) {
 
 	post, err := h.pageService.GetBlogPost(c.Request.Context(), slug)
 	if err != nil {
-		if errors.Is(err, services.ErrBlogPostNotFound) {
+		if errors.Is(err, pagefeat.ErrBlogPostNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "blog post not found"})
 			return
 		}
@@ -222,7 +228,7 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 
 	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
@@ -293,7 +299,7 @@ func (h *Handlers) CreateConsolePage(c *gin.Context) {
 	}
 
 	if err := h.pageService.CreatePage(c.Request.Context(), page); err != nil {
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -342,7 +348,7 @@ func (h *Handlers) UpdateConsolePage(c *gin.Context) {
 		return
 	}
 
-	input := services.UpdatePageInput{
+	input := pagefeat.UpdatePageInput{
 		Title:       req.Title,
 		Icon:        req.Icon,
 		CoverPhoto:  req.CoverPhoto,
@@ -352,11 +358,11 @@ func (h *Handlers) UpdateConsolePage(c *gin.Context) {
 
 	page, err := h.pageService.UpdatePage(c.Request.Context(), id, userID, input)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -392,11 +398,11 @@ func (h *Handlers) DeleteConsolePage(c *gin.Context) {
 	userID := middleware.GetCurrentUserID(c)
 
 	if err := h.pageService.DeletePage(c.Request.Context(), id, userID); err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -420,11 +426,11 @@ func (h *Handlers) PublishConsolePage(c *gin.Context) {
 
 	page, err := h.pageService.PublishPage(c.Request.Context(), id, userID)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -452,11 +458,11 @@ func (h *Handlers) UnpublishConsolePage(c *gin.Context) {
 
 	page, err := h.pageService.UnpublishPage(c.Request.Context(), id, userID)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -519,7 +525,7 @@ func (h *Handlers) GetConsolePageChildren(c *gin.Context) {
 
 	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
@@ -571,11 +577,11 @@ func (h *Handlers) MoveConsolePage(c *gin.Context) {
 
 	page, err := h.pageService.MovePage(c.Request.Context(), id, req.ParentPageID, req.Position, userID)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}
@@ -606,7 +612,7 @@ func (h *Handlers) GetConsolePageHistory(c *gin.Context) {
 
 	page, err := h.pageService.GetPageByID(c.Request.Context(), id)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
@@ -672,7 +678,7 @@ func (h *Handlers) GetConsolePageHistoryEntry(c *gin.Context) {
 
 	page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
@@ -689,7 +695,7 @@ func (h *Handlers) GetConsolePageHistoryEntry(c *gin.Context) {
 	historyID := c.Param("historyId")
 	entry, err := h.pageService.GetHistoryEntry(c.Request.Context(), historyID)
 	if err != nil {
-		if errors.Is(err, repositories.ErrPageHistoryNotFound) || errors.Is(err, services.ErrHistoryNotFound) {
+		if errors.Is(err, repositories.ErrPageHistoryNotFound) || errors.Is(err, pagefeat.ErrHistoryNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "history entry not found"})
 			return
 		}
@@ -730,11 +736,11 @@ func (h *Handlers) RestoreConsolePage(c *gin.Context) {
 
 	page, err := h.pageService.RestorePage(c.Request.Context(), pageID, req.HistoryID, userID)
 	if err != nil {
-		if errors.Is(err, services.ErrPageNotFound) {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 			return
 		}
-		if errors.Is(err, services.ErrPagePermissionDenied) {
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
 			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 			return
 		}

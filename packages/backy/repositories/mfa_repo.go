@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"verso/backy/database"
-	"verso/backy/models"
+	"verso/backy/database/models"
 )
 
 // MFARepo handles database operations for user MFA.

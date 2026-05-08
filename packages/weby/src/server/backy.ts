@@ -23,8 +23,8 @@ import type {
   Stats,
   UpdatePageInput,
   Workspace,
-} from "#/types";
-import { logger } from "#/lib/logger";
+} from "#/shared/types";
+import { logger } from "#/shared/lib/logger";
 
 const getBackyOrigin = (): string => {
   const origin = process.env.BACKY_ORIGIN;
@@ -292,6 +292,11 @@ export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | n
   });
 };
 
+export const getSpaceBySlug = (slug: string, cookieHeader?: string | null) =>
+  fetchBacky<Space>(`console/spaces/by-slug/${encodeURIComponent(slug)}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
 export const createSpace = (
   input: { name: string; slug: string; icon?: string; description?: string },
   cookieHeader?: string | null,
@@ -407,7 +412,52 @@ export const deleteWorkspace = (id: string, cookieHeader?: string | null) =>
 
 // Debug functions
 export const getDebugTables = (cookieHeader?: string | null) =>
-  fetchBacky<string[]>("console/debug/tables", {
+  fetchBacky<{ tables: string[] }>("console/debug/tables", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export interface DebugStorageOrphanBucketReport {
+  bucket: string;
+  orphanObjectCount: number;
+  orphanSample: string[];
+  referencedCount: number;
+  totalObjectCount: number;
+}
+
+export interface DebugStorageOrphanReport {
+  buckets: DebugStorageOrphanBucketReport[];
+  generatedAtUtc: string;
+  totalBuckets: number;
+  totalObjectCount: number;
+  totalOrphanCount: number;
+  totalReferenceSet: number;
+}
+
+export interface DebugStorageObjectItem {
+  bucket: string;
+  key: string;
+}
+
+export interface DebugStorageBucketObjects {
+  bucket: string;
+  objectCount: number;
+  objects: DebugStorageObjectItem[];
+}
+
+export interface DebugStorageObjectsResponse {
+  buckets: DebugStorageBucketObjects[];
+  generatedAtUtc: string;
+  totalBucketCount: number;
+  totalObjectCount: number;
+}
+
+export const getDebugStorageOrphans = (cookieHeader?: string | null) =>
+  fetchBacky<DebugStorageOrphanReport>("console/debug/storage/orphans", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getDebugStorageObjects = (cookieHeader?: string | null) =>
+  fetchBacky<DebugStorageObjectsResponse>("console/debug/storage/objects", {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
@@ -634,4 +684,27 @@ export const unsubscribePush = (endpoint: string, cookieHeader?: string | null) 
       "Content-Type": "application/json",
     },
     method: "DELETE",
+  });
+
+// System settings functions
+export interface SystemSettingItem {
+  key: string;
+  updatedAt: string;
+  updatedBy?: string;
+  value: boolean;
+}
+
+export const getSystemSettings = (cookieHeader?: string | null) =>
+  fetchBacky<{ settings: SystemSettingItem[] }>("console/system-settings", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const updateSystemSetting = (key: string, value: boolean, cookieHeader?: string | null) =>
+  fetchBacky<{ status: string }>("console/system-settings", {
+    body: JSON.stringify({ key, value }),
+    headers: {
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      "Content-Type": "application/json",
+    },
+    method: "PATCH",
   });

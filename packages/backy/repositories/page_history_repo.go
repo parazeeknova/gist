@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"verso/backy/models"
+	"verso/backy/database/models"
 )
 
 var ErrPageHistoryNotFound = errors.New("page history not found")

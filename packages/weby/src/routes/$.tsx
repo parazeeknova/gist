@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { gsap } from "gsap";
 import { useEffect, useRef, useState } from "react";
-import { useTheme } from "../hooks/use-theme";
+import { useTheme } from "#/shared/hooks/use-theme";
 
 const NotFound = () => {
   const navigate = useNavigate();
