@@ -52,7 +52,13 @@ export const useUpdateSpace = () => {
       input,
     }: {
       id: string;
-      input: { name: string; slug: string; icon?: string; description?: string };
+      input: {
+        name: string;
+        slug: string;
+        icon?: string;
+        description?: string;
+        headerImage?: string;
+      };
     }) =>
       fetchProtected<Space>(`/api/console/spaces/${id}`, {
         body: JSON.stringify(input),

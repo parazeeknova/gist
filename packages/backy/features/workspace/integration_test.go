@@ -470,7 +470,7 @@ func TestPageService_AdminCanManageMembersSettingsPages(t *testing.T) {
 	}
 
 	// Admin can update space settings.
-	_, err := db.spaceSvc.UpdateSpace(ctx, s.ID, "Updated Space", s.Slug, s.Icon, "new desc", adminID)
+	_, err := db.spaceSvc.UpdateSpace(ctx, s.ID, "Updated Space", s.Slug, s.Icon, "new desc", "", adminID)
 	if err != nil {
 		t.Fatalf("admin update space: %v", err)
 	}

@@ -30,7 +30,7 @@ func NewSpaceRepo() *SpaceRepo {
 // GetByID fetches a space by its primary key with member count.
 func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error) {
 	query := `
-		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.header_image, s.workspace_id, s.created_by,
 		       s.visibility, s.default_role, s.settings,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
@@ -44,7 +44,7 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.HeaderImage, &s.WorkspaceID, &s.CreatedBy,
 		&s.Visibility, &s.DefaultRole, &s.Settings,
 		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
@@ -61,7 +61,7 @@ func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error
 // GetBySlug fetches a space by its slug with member count.
 func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, error) {
 	query := `
-		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.header_image, s.workspace_id, s.created_by,
 		       s.visibility, s.default_role, s.settings,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
@@ -75,7 +75,7 @@ func (r *SpaceRepo) GetBySlug(ctx context.Context, slug string) (models.Space, e
 
 	var s models.Space
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
-		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
+		&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.HeaderImage, &s.WorkspaceID, &s.CreatedBy,
 		&s.Visibility, &s.DefaultRole, &s.Settings,
 		&s.MemberCount,
 		&s.CreatedAt, &s.UpdatedAt,
@@ -108,7 +108,7 @@ func (r *SpaceRepo) GetDefaultSpaceID(ctx context.Context) (string, error) {
 // ListAll returns all spaces for a workspace ordered by name with member counts.
 func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.Space, error) {
 	query := `
-		SELECT s.id, s.name, s.slug, s.icon, s.description, s.workspace_id, s.created_by,
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.header_image, s.workspace_id, s.created_by,
 		       s.visibility, s.default_role, s.settings,
 		       COALESCE(m.member_count, 0),
 		       s.created_at::text, s.updated_at::text
@@ -130,7 +130,7 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 	var spaces []models.Space
 	for rows.Next() {
 		var s models.Space
-		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.WorkspaceID, &s.CreatedBy,
+		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.HeaderImage, &s.WorkspaceID, &s.CreatedBy,
 			&s.Visibility, &s.DefaultRole, &s.Settings,
 			&s.MemberCount, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scanning space row: %w", err)
@@ -150,10 +150,10 @@ func (r *SpaceRepo) ListAll(ctx context.Context, workspaceID string) ([]models.S
 // Insert creates a new space row.
 func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 	query := `
-		INSERT INTO spaces (id, name, slug, icon, description, workspace_id, created_by, visibility, default_role, settings, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now())`
+		INSERT INTO spaces (id, name, slug, icon, description, header_image, workspace_id, created_by, visibility, default_role, settings, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())`
 
-	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.WorkspaceID, s.CreatedBy, s.Visibility, s.DefaultRole, s.Settings)
+	_, err := r.pool.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.HeaderImage, s.WorkspaceID, s.CreatedBy, s.Visibility, s.DefaultRole, s.Settings)
 	if err != nil {
 		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
 	}
@@ -163,10 +163,10 @@ func (r *SpaceRepo) Insert(ctx context.Context, s models.Space) error {
 // InsertTx creates a new space row within a transaction.
 func (r *SpaceRepo) InsertTx(ctx context.Context, tx pgx.Tx, s models.Space) error {
 	query := `
-		INSERT INTO spaces (id, name, slug, icon, description, workspace_id, created_by, visibility, default_role, settings, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, now(), now())`
+		INSERT INTO spaces (id, name, slug, icon, description, header_image, workspace_id, created_by, visibility, default_role, settings, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())`
 
-	_, err := tx.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.WorkspaceID, s.CreatedBy, s.Visibility, s.DefaultRole, s.Settings)
+	_, err := tx.Exec(ctx, query, s.ID, s.Name, s.Slug, s.Icon, s.Description, s.HeaderImage, s.WorkspaceID, s.CreatedBy, s.Visibility, s.DefaultRole, s.Settings)
 	if err != nil {
 		return fmt.Errorf("inserting space %q: %w", s.Slug, err)
 	}
@@ -176,10 +176,10 @@ func (r *SpaceRepo) InsertTx(ctx context.Context, tx pgx.Tx, s models.Space) err
 // Update modifies an existing space row.
 func (r *SpaceRepo) Update(ctx context.Context, s models.Space) error {
 	query := `
-		UPDATE spaces SET name = $1, slug = $2, icon = $3, description = $4, visibility = $5, default_role = $6, settings = $7, updated_at = now()
-		WHERE id = $8 AND deleted_at IS NULL`
+		UPDATE spaces SET name = $1, slug = $2, icon = $3, description = $4, header_image = $5, visibility = $6, default_role = $7, settings = $8, updated_at = now()
+		WHERE id = $9 AND deleted_at IS NULL`
 
-	tag, err := r.pool.Exec(ctx, query, s.Name, s.Slug, s.Icon, s.Description, s.Visibility, s.DefaultRole, s.Settings, s.ID)
+	tag, err := r.pool.Exec(ctx, query, s.Name, s.Slug, s.Icon, s.Description, s.HeaderImage, s.Visibility, s.DefaultRole, s.Settings, s.ID)
 	if err != nil {
 		return fmt.Errorf("updating space %q: %w", s.ID, err)
 	}

@@ -2,6 +2,7 @@ import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "#/features/auth/hooks/use-auth";
+import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useCreateSpace, useSpaces } from "#/features/console/hooks/use-spaces";
 import { useConsoleContext } from "./console-context";
@@ -45,15 +46,6 @@ const MOCK_DOCS = [
   { id: "5", modified: "2026-05-03", space: "design", title: "typography reference" },
   { id: "6", modified: "2026-05-01", space: "personal", title: "weekly standup template" },
 ];
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .map((word) => word[0])
-    .filter(Boolean)
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
 
 export const ConsoleHome = () => {
   const { data: user } = useAuth();
@@ -198,19 +190,11 @@ export const ConsoleHome = () => {
             >
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                  {s.icon ? (
-                    <img
-                      alt=""
-                      className="w-5 h-5 shrink-0 rounded-full object-cover"
-                      src={s.icon}
-                    />
-                  ) : (
-                    <div
-                      className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[8px] font-medium ${t("bg-white/10 text-text-dark/70", "bg-black/10 text-text-light/70")}`}
-                    >
-                      {getInitials(s.name)}
-                    </div>
-                  )}
+                  <AvatarBadge
+                    className={`w-5 h-5 ${t("bg-white/10 text-text-dark/70", "bg-black/10 text-text-light/70")}`}
+                    icon={s.icon}
+                    name={s.name}
+                  />
                   <p
                     className={`text-[13px] truncate ${t("text-text-dark/70", "text-text-light/70")}`}
                   >

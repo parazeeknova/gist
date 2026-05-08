@@ -3,6 +3,7 @@ package space
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -135,6 +136,7 @@ type UpdateSpaceRequest struct {
 	Slug        string `json:"slug" binding:"required"`
 	Icon        string `json:"icon"`
 	Description string `json:"description"`
+	HeaderImage string `json:"headerImage"`
 }
 
 // UpdateSpace handles PUT /api/console/spaces/:id.
@@ -153,7 +155,7 @@ func (h *SpaceHandlers) UpdateSpace(c *gin.Context) {
 		return
 	}
 
-	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, req.Description, userID)
+	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, req.Description, req.HeaderImage, userID)
 	if err != nil {
 		if errors.Is(err, repositories.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
@@ -424,4 +426,52 @@ func (h *SpaceHandlers) RemoveSpaceGroup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "removed"})
+}
+
+// SearchUnsplash handles GET /api/console/unsplash/search.
+func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
+	accessKey := os.Getenv("UNSPLASH_ACCESS_KEY")
+	if accessKey == "" {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "unsplash not configured"})
+		return
+	}
+
+	query := strings.TrimSpace(c.Query("q"))
+	if query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "query parameter 'q' is required"})
+		return
+	}
+
+	page := c.DefaultQuery("page", "1")
+	perPage := c.DefaultQuery("per_page", "20")
+
+	unsplashURL := "https://api.unsplash.com/search/photos?query=" + query +
+		"&page=" + page +
+		"&per_page=" + perPage +
+		"&orientation=landscape"
+
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", unsplashURL, nil)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("unsplash request creation error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create unsplash request"})
+		return
+	}
+	req.Header.Set("Authorization", "Client-ID "+accessKey)
+	req.Header.Set("Accept-Version", "v1")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("unsplash api request error")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "unsplash api unavailable"})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logger.Log.Error().Int("status", resp.StatusCode).Msg("unsplash api error")
+		c.JSON(http.StatusBadGateway, gin.H{"error": "unsplash api error"})
+		return
+	}
+
+	c.DataFromReader(http.StatusOK, resp.ContentLength, "application/json", resp.Body, nil)
 }

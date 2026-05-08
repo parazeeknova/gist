@@ -1,6 +1,7 @@
 import { CaretDownIcon, CaretRightIcon, FileIcon, FolderIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
+import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { usePageTree } from "#/features/console/hooks/use-pages";
 import { useSpaces } from "#/features/console/hooks/use-spaces";
 import { useTheme } from "#/shared/hooks/use-theme";
@@ -119,13 +120,11 @@ const SpaceTreeNode = ({ space, defaultExpanded }: SpaceTreeNodeProps) => {
         type="button"
       >
         {expanded ? <CaretDownIcon size={10} /> : <CaretRightIcon size={10} />}
-        {space.icon ? (
-          <img
-            alt=""
-            className="w-3.5 h-3.5 shrink-0 rounded-full object-cover mx-0.5"
-            src={space.icon}
-          />
-        ) : null}
+        <AvatarBadge
+          className={`mx-0.5 h-3.5 w-3.5 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+          icon={space.icon}
+          name={space.name}
+        />
         <span className="truncate">{space.name}</span>
       </button>
       {expanded && (

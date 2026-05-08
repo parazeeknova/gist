@@ -292,6 +292,9 @@ func main() {
 			console.PUT("/spaces/:id/groups/:groupId", spaceHandlers.UpdateSpaceGroupRole)
 			console.DELETE("/spaces/:id/groups/:groupId", spaceHandlers.RemoveSpaceGroup)
 
+			// Unsplash proxy
+			console.GET("/unsplash/search", spaceHandlers.SearchUnsplash)
+
 			// Groups
 			console.GET("/workspaces/:workspaceId/groups", groupHandlers.GetGroups)
 			console.POST("/workspaces/:workspaceId/groups", groupHandlers.CreateGroup)

@@ -8,6 +8,7 @@ const mockSpace = {
   createdBy: "user-1",
   defaultRole: "writer",
   description: "test description",
+  headerImage: "",
   icon: "",
   id: "space-1",
   memberCount: 0,

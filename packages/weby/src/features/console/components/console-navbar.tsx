@@ -4,6 +4,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useDebouncedState } from "@tanstack/react-pacer";
 import { useEffect, useRef, useState } from "react";
 import type { Stats } from "#/shared/types";
+import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { useAuth, useAuthActions } from "#/features/auth/hooks/use-auth";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useSpaceBySlug, useSpaces } from "#/features/console/hooks/use-spaces";
@@ -27,14 +28,6 @@ interface ConsoleNavbarProps {
   sidebarOpen: boolean;
 }
 
-const getInitials = (text: string) =>
-  text
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
 interface ProfileDropdownProps {
   isDarkMode: boolean;
   logout: () => void;
@@ -45,7 +38,6 @@ interface ProfileDropdownProps {
     | { avatar_url: string; email: string; isOwner: boolean; name: string; username: string }
     | null
     | undefined;
-  workspaceInitials: string;
   workspaceName: string;
 }
 
@@ -56,13 +48,11 @@ const ProfileDropdown = ({
   selectedWorkspace,
   stats,
   user,
-  workspaceInitials,
   workspaceName,
 }: ProfileDropdownProps) => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const userInitials = getInitials(user?.name || user?.username || "?");
 
   useEffect(() => {
     if (!dropdownOpen) {
@@ -98,15 +88,11 @@ const ProfileDropdown = ({
         onClick={() => setDropdownOpen((o) => !o)}
         type="button"
       >
-        {selectedWorkspace?.icon ? (
-          <img alt="" className="w-4 h-4 rounded-full object-cover" src={selectedWorkspace.icon} />
-        ) : (
-          <span
-            className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
-          >
-            {workspaceInitials}
-          </span>
-        )}
+        <AvatarBadge
+          className={`w-4 h-4 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+          icon={selectedWorkspace?.icon}
+          name={selectedWorkspace?.name ?? workspaceName}
+        />
         {workspaceName}
       </button>
 
@@ -144,19 +130,11 @@ const ProfileDropdown = ({
               className={`border-y my-1 px-3 pb-2 pt-1.5 ${t("border-border-dark", "border-border-light")}`}
             >
               <div className="flex items-center gap-2">
-                {user?.avatar_url ? (
-                  <img
-                    alt=""
-                    className="w-6 h-6 rounded-full object-cover shrink-0"
-                    src={user.avatar_url}
-                  />
-                ) : (
-                  <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
-                  >
-                    {userInitials}
-                  </span>
-                )}
+                <AvatarBadge
+                  className={`w-6 h-6 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+                  icon={user?.avatar_url}
+                  name={user?.name || user?.username || "?"}
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center min-w-0">
@@ -284,8 +262,6 @@ const SpaceBreadcrumb = ({
     return () => document.removeEventListener("mousedown", h);
   }, [spMenuOpen]);
 
-  const wsInit = getInitials(selectedWorkspace?.name ?? "?");
-
   return (
     <div className="flex items-center gap-1">
       <a
@@ -303,19 +279,11 @@ const SpaceBreadcrumb = ({
           onClick={() => setWsMenuOpen((o) => !o)}
           type="button"
         >
-          {selectedWorkspace?.icon ? (
-            <img
-              alt=""
-              className="w-3.5 h-3.5 rounded-full object-cover"
-              src={selectedWorkspace.icon}
-            />
-          ) : (
-            <span
-              className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-medium ${t("bg-white/10 text-text-dark/50", "bg-black/5 text-text-light/50")}`}
-            >
-              {wsInit}
-            </span>
-          )}
+          <AvatarBadge
+            className={`w-3.5 h-3.5 ${t("bg-white/10 text-text-dark/50", "bg-black/5 text-text-light/50")}`}
+            icon={selectedWorkspace?.icon}
+            name={selectedWorkspace?.name ?? workspaceName}
+          />
           {selectedWorkspace?.name ?? "..."}
           <CaretDownIcon size={10} />
         </button>
@@ -332,13 +300,11 @@ const SpaceBreadcrumb = ({
                 }}
                 type="button"
               >
-                {w.icon ? (
-                  <img
-                    alt=""
-                    className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
-                    src={w.icon}
-                  />
-                ) : null}
+                <AvatarBadge
+                  className={`mx-0.5 h-3.5 w-3.5 ${t("bg-white/10 text-text-dark/50", "bg-black/5 text-text-light/50")}`}
+                  icon={w.icon}
+                  name={w.name}
+                />
                 <span className="truncate">{w.name}</span>
               </button>
             ))}
@@ -354,9 +320,11 @@ const SpaceBreadcrumb = ({
           onClick={() => setSpMenuOpen((o) => !o)}
           type="button"
         >
-          {currentSpace?.icon ? (
-            <img alt="" className="w-3.5 h-3.5 rounded-full object-cover" src={currentSpace.icon} />
-          ) : null}
+          <AvatarBadge
+            className={`w-3.5 h-3.5 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+            icon={currentSpace?.icon}
+            name={currentSpace?.name ?? spaceSlug}
+          />
           <span className="truncate max-w-25">{currentSpace?.name ?? spaceSlug}</span>
           <CaretDownIcon size={10} />
         </button>
@@ -374,13 +342,11 @@ const SpaceBreadcrumb = ({
                 }}
                 type="button"
               >
-                {s.icon ? (
-                  <img
-                    alt=""
-                    className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
-                    src={s.icon}
-                  />
-                ) : null}
+                <AvatarBadge
+                  className={`mx-0.5 h-3.5 w-3.5 ${t("bg-white/10 text-text-dark/60", "bg-black/5 text-text-light/60")}`}
+                  icon={s.icon}
+                  name={s.name}
+                />
                 <span className="truncate">{s.name}</span>
               </button>
             ))}
@@ -402,7 +368,6 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
 
   const selectedWorkspace = workspaces?.find((w) => w.id === selectedWorkspaceId);
   const workspaceName = selectedWorkspace?.name ?? user?.username ?? "...";
-  const workspaceInitials = getInitials(workspaceName);
   const isSpaceRoute = routerState.location.pathname.startsWith("/s/");
   const spaceSlug = isSpaceRoute
     ? routerState.location.pathname.replace("/s/", "").split("/")[0]
@@ -504,7 +469,6 @@ export const ConsoleNavbar = ({ onToggleSidebar, sidebarOpen }: ConsoleNavbarPro
           selectedWorkspace={selectedWorkspace}
           stats={stats}
           user={user}
-          workspaceInitials={workspaceInitials}
           workspaceName={workspaceName}
         />
       </div>

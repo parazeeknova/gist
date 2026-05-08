@@ -9,11 +9,10 @@ import {
   PlusIcon,
   SquaresFourIcon,
 } from "@phosphor-icons/react";
-import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
 import { usePageTree } from "#/features/console/hooks/use-pages";
-import { useSpaces } from "#/features/console/hooks/use-spaces";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "#/features/console/components/console-context";
 
@@ -108,27 +107,13 @@ interface SpaceSidebarProps {
 export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
-  const { selectedWorkspaceId } = useConsoleContext();
-  const { data: spaces } = useSpaces(selectedWorkspaceId);
+  const routerState = useRouterState();
+  const { location } = routerState;
   const { data: treeItems, isPending } = usePageTree(space.id);
-  const [showSpaceMenu, setShowSpaceMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const isOverview = location.pathname === `/s/${space.slug}`;
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const pageTree = treeItems ? buildPageTree(treeItems) : [];
-
-  useEffect(() => {
-    if (!showSpaceMenu) {
-      return;
-    }
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowSpaceMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showSpaceMenu]);
 
   return (
     <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">
@@ -143,48 +128,9 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           <ArrowLeftIcon size={12} />
           back
         </button>
-        <div className="relative" ref={menuRef}>
-          <button
-            className={`flex items-center gap-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/60", "text-text-light/40 hover:text-text-light/60")}`}
-            onClick={() => setShowSpaceMenu((prev) => !prev)}
-            type="button"
-          >
-            {space.icon ? (
-              <img
-                alt=""
-                className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
-                src={space.icon}
-              />
-            ) : null}
-            <span className="truncate max-w-30">{space.name}</span>
-            <CaretDownIcon size={10} />
-          </button>
-          {showSpaceMenu && (
-            <div
-              className={`absolute right-0 top-full mt-1 border p-1.5 z-50 shadow-lg w-44 max-h-48 overflow-y-auto ${t("border-border-dark bg-text-light", "border-border-light bg-[#e0e0e0]")}`}
-            >
-              {spaces?.map((s) => (
-                <button
-                  className={`flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-[11px] lowercase ${s.id === space.id ? t("text-text-dark", "text-text-light") : t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
-                  key={s.id}
-                  onClick={() => {
-                    setShowSpaceMenu(false);
-                    navigate({ to: `/s/${s.slug}` });
-                  }}
-                  type="button"
-                >
-                  {s.icon ? (
-                    <img
-                      alt=""
-                      className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
-                      src={s.icon}
-                    />
-                  ) : null}
-                  <span className="truncate">{s.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-1 text-[11px] text-text-dark/40 lowercase">
+          <span className="truncate max-w-30 uppercase font-bold">{space.name}</span> -
+          <span className="truncate max-w-20">{space.description}</span>
         </div>
       </div>
 
@@ -195,7 +141,14 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           space
         </p>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${
+            isOverview
+              ? t("bg-white/10 text-text-dark", "bg-black/10 text-text-light")
+              : t(
+                  "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
+                  "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
+                )
+          }`}
           onClick={() => navigate({ to: `/s/${space.slug}` })}
           type="button"
         >

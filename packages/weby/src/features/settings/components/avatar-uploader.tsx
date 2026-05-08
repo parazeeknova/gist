@@ -1,5 +1,6 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "#/features/auth/hooks/use-auth";
 import { useUpdateProfile } from "#/features/settings/hooks/use-profile";
 import { useTheme } from "#/shared/hooks/use-theme";
@@ -20,6 +21,7 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const updateProfile = useUpdateProfile();
 
   const handleFileUpload = useCallback(
@@ -49,6 +51,7 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
             },
             onSuccess: () => {
               setIsUploading(false);
+              void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
             },
           },
         );
@@ -59,15 +62,22 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
 
       setShowMenu(false);
     },
-    [name, user?.name, onAvatarChange, updateProfile],
+    [name, user?.name, onAvatarChange, queryClient, updateProfile],
   );
 
   const handleRemove = useCallback(() => {
     setUploadError("");
     onAvatarChange("");
-    updateProfile.mutate({ avatar_url: "", name: name.trim() || user?.name || "" });
+    updateProfile.mutate(
+      { avatar_url: "", name: name.trim() || user?.name || "" },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
+        },
+      },
+    );
     setShowMenu(false);
-  }, [name, user?.name, onAvatarChange, updateProfile]);
+  }, [name, user?.name, onAvatarChange, queryClient, updateProfile]);
 
   const initials = (user?.name || user?.username || "?")
     .split(" ")

@@ -88,7 +88,7 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 }
 
 // UpdateSpace updates an existing space. Requires admin role.
-func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, description, userID string) (models.Space, error) {
+func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, description, headerImage, userID string) (models.Space, error) {
 	if err := s.RequireAdmin(ctx, id, userID); err != nil {
 		return models.Space{}, err
 	}
@@ -109,6 +109,7 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 	existing.Slug = slug
 	existing.Icon = icon
 	existing.Description = description
+	existing.HeaderImage = headerImage
 	existing.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 
 	if err := s.spaceRepo.Update(ctx, existing); err != nil {

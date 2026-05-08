@@ -175,6 +175,7 @@ type Space struct {
 	Slug        string `json:"slug"`
 	Icon        string `json:"icon"`
 	Description string `json:"description"`
+	HeaderImage string `json:"headerImage"`
 	WorkspaceID string `json:"workspaceId"`
 	CreatedBy   string `json:"createdBy,omitempty"`
 	Visibility  string `json:"visibility"`
