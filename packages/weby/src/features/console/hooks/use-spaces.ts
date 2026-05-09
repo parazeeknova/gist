@@ -11,6 +11,7 @@ export const useSpaces = (workspaceId: string) =>
         { signal },
       ),
     queryKey: ["spaces", workspaceId],
+    refetchOnMount: true,
     staleTime: 60 * 1000,
   });
 
@@ -20,6 +21,7 @@ export const useSpaceBySlug = (slug: string) =>
     queryFn: ({ signal }) =>
       fetchProtected<Space>(`/api/console/spaces/by-slug/${encodeURIComponent(slug)}`, { signal }),
     queryKey: ["spaceBySlug", slug],
+    refetchOnMount: true,
     staleTime: 60 * 1000,
   });
 

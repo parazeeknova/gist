@@ -11,15 +11,38 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
+type PageTreeItemResponse = Omit<PageTreeItem, "parentPageId"> & {
+  parentPageId?: string | null;
+};
+
+const normalizeParentPageId = (parentPageId: string | null | undefined): string | null => {
+  if (parentPageId === null || parentPageId === undefined) {
+    return null;
+  }
+  const trimmedParentPageId = parentPageId.trim();
+  return trimmedParentPageId.length > 0 ? trimmedParentPageId : null;
+};
+
+const normalizePageTreeItems = (items: PageTreeItemResponse[]): PageTreeItem[] =>
+  items.map((item) => ({
+    ...item,
+    parentPageId: normalizeParentPageId(item.parentPageId),
+  }));
+
 export const usePageTree = (spaceId: string) =>
   useQuery<PageTreeItem[]>({
-    queryFn: ({ signal }) =>
-      fetchProtected<PageTreeItem[]>(
+    queryFn: ({ signal }) => {
+      if (!spaceId) {
+        return Promise.resolve([]);
+      }
+      return fetchProtected<PageTreeItemResponse[]>(
         `/api/console/pages/tree?spaceId=${encodeURIComponent(spaceId)}`,
         { signal },
-      ),
+      ).then(normalizePageTreeItems);
+    },
     queryKey: ["pageTree", spaceId],
-    staleTime: 30 * 1000,
+    refetchOnMount: true,
+    staleTime: 10 * 1000,
   });
 
 export const usePageChildren = (parentId: string | null) =>
@@ -45,6 +68,7 @@ export const useConsolePages = () =>
   useQuery<ConsolePage[]>({
     queryFn: ({ signal }) => fetchProtected<ConsolePage[]>("/api/console/pages", { signal }),
     queryKey: ["consolePages"],
+    refetchOnMount: true,
     staleTime: 30 * 1000,
   });
 
@@ -57,9 +81,11 @@ export const useCreatePage = () => {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["pageTree", variables.spaceId] });
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+      queryClient.refetchQueries({ queryKey: ["pageTree", variables.spaceId] });
+      queryClient.refetchQueries({ queryKey: ["consolePages"] });
     },
   });
 };
@@ -77,6 +103,8 @@ export const useUpdatePage = () => {
       queryClient.invalidateQueries({ queryKey: ["consolePage", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+      queryClient.refetchQueries({ queryKey: ["pageTree"] });
+      queryClient.refetchQueries({ queryKey: ["consolePages"] });
     },
   });
 };
@@ -92,6 +120,8 @@ export const useDeletePage = () => {
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
       queryClient.removeQueries({ queryKey: ["consolePage"] });
+      queryClient.refetchQueries({ queryKey: ["pageTree"] });
+      queryClient.refetchQueries({ queryKey: ["consolePages"] });
     },
   });
 };

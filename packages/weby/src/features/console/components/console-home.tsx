@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "#/features/auth/hooks/use-auth";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { useTheme } from "#/shared/hooks/use-theme";
+import { useConsolePages } from "#/features/console/hooks/use-pages";
 import { useCreateSpace, useSpaces } from "#/features/console/hooks/use-spaces";
 import { useConsoleContext } from "./console-context";
 import { QuickActions } from "./quick-actions";
@@ -38,21 +39,13 @@ const createSubMessages = [
   "a space for everything",
 ];
 
-const MOCK_DOCS = [
-  { id: "1", modified: "2026-05-07", space: "engineering", title: "api design notes" },
-  { id: "2", modified: "2026-05-06", space: "engineering", title: "sprint retro — may" },
-  { id: "3", modified: "2026-05-05", space: "design", title: "color palette v3" },
-  { id: "4", modified: "2026-05-04", space: "personal", title: "reading list" },
-  { id: "5", modified: "2026-05-03", space: "design", title: "typography reference" },
-  { id: "6", modified: "2026-05-01", space: "personal", title: "weekly standup template" },
-];
-
 export const ConsoleHome = () => {
   const { data: user } = useAuth();
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const { selectedWorkspaceId } = useConsoleContext();
   const { data: spaces } = useSpaces(selectedWorkspaceId);
+  const { data: allPages, isPending: allPagesPending } = useConsolePages();
   const createSpace = useCreateSpace();
   const [showCreateSpace, setShowCreateSpace] = useState(false);
   const [newName, setNewName] = useState("");
@@ -341,38 +334,54 @@ export const ConsoleHome = () => {
         id="recent-docs-section"
       >
         <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
-          my docs
+          my recent pages
         </p>
 
         <div className="mt-3 space-y-0.5">
-          {MOCK_DOCS.map((doc) => (
-            <div
-              key={doc.id}
-              className={`grid grid-cols-[1fr_120px_100px] gap-2 items-center px-2 py-1.5 lowercase transition-colors ${t(
-                "hover:bg-white/5",
-                "hover:bg-black/3",
-              )}`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
+          {(() => {
+            if (allPagesPending) {
+              return (
+                <p className={`text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
+                  loading...
+                </p>
+              );
+            }
+            const recent = (allPages ?? [])
+              .filter((p) => !p.slugId.includes("/"))
+              .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              .slice(0, 5);
+            if (recent.length === 0) {
+              return (
+                <p className={`text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
+                  no pages yet
+                </p>
+              );
+            }
+            return recent.map((page) => (
+              <div
+                key={page.id}
+                className={`flex items-center gap-2 px-2 py-1.5 lowercase ${t(
+                  "hover:bg-white/5",
+                  "hover:bg-black/3",
+                )}`}
+              >
                 <FileTextIcon className={t("text-text-dark/25", "text-text-light/25")} size={14} />
                 <span
-                  className={`truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
+                  className={`flex-1 truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
                 >
-                  {doc.title}
+                  {page.title}
+                </span>
+                <span
+                  className={`shrink-0 text-[10px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
+                >
+                  {new Date(page.updatedAt).toLocaleDateString("en-US", {
+                    day: "numeric",
+                    month: "short",
+                  })}
                 </span>
               </div>
-              <span
-                className={`truncate text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
-              >
-                {doc.space}
-              </span>
-              <span
-                className={`text-right text-[10px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
-              >
-                {doc.modified}
-              </span>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
       </div>
       <p
