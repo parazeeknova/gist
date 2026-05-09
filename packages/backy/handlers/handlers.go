@@ -177,14 +177,15 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 
 // ConsolePageSummary is the lightweight response for the console page list.
 type ConsolePageSummary struct {
-	ID          string `json:"id"`
-	SlugID      string `json:"slugId"`
-	Title       string `json:"title"`
-	Icon        string `json:"icon"`
-	IsPublished bool   `json:"isPublished"`
-	SpaceID     string `json:"spaceId"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID           string  `json:"id"`
+	SlugID       string  `json:"slugId"`
+	Title        string  `json:"title"`
+	Icon         string  `json:"icon"`
+	IsPublished  bool    `json:"isPublished"`
+	SpaceID      string  `json:"spaceId"`
+	ParentPageID *string `json:"parentPageId"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    string  `json:"updatedAt"`
 }
 
 // GetConsolePages returns pages for the console scoped to spaces the user belongs to.
@@ -205,14 +206,15 @@ func (h *Handlers) GetConsolePages(c *gin.Context) {
 	summaries := make([]ConsolePageSummary, 0, len(pages))
 	for _, p := range pages {
 		summaries = append(summaries, ConsolePageSummary{
-			ID:          p.ID,
-			SlugID:      p.SlugID,
-			Title:       p.Title,
-			Icon:        p.Icon,
-			IsPublished: p.IsPublished,
-			SpaceID:     p.SpaceID,
-			CreatedAt:   p.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:   p.UpdatedAt.Format(time.RFC3339),
+			ID:           p.ID,
+			SlugID:       p.SlugID,
+			Title:        p.Title,
+			Icon:         p.Icon,
+			IsPublished:  p.IsPublished,
+			SpaceID:      p.SpaceID,
+			ParentPageID: p.ParentPageID,
+			CreatedAt:    p.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:    p.UpdatedAt.Format(time.RFC3339),
 		})
 	}
 

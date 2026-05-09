@@ -5,8 +5,10 @@ import {
   CaretRightIcon,
   CheckIcon,
   DotsThreeCircleVerticalIcon,
+  FilePlusIcon,
   FileTextIcon,
   FolderIcon,
+  FolderPlusIcon,
   GearSixIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
@@ -21,6 +23,7 @@ import type { PageTreeItem, Space } from "#/shared/types";
 import {
   useCreatePage,
   useDeletePage,
+  useMovePage,
   usePageTree,
   useUpdatePage,
 } from "#/features/console/hooks/use-pages";
@@ -95,12 +98,13 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   const updatePage = useUpdatePage();
   const deletePage = useDeletePage();
   const createPage = useCreatePage();
+  const movePage = useMovePage();
   const { data: favData } = useIsPageFavorited(node.item.id);
   const toggleFav = useTogglePageFavorite();
   const isFaved = favData?.favorited ?? false;
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
-  const hasChildren = node.children.length > 0 || isCreatingChild;
+  const hasChildren = node.children.length > 0 || isCreatingChild || node.item.icon === "folder";
   const isSelected = selectedPageId === node.item.id;
 
   useEffect(() => {
@@ -193,10 +197,30 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
     }
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", node.item.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (hasChildren) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData("text/plain");
+    if (draggedId && draggedId !== node.item.id) {
+      movePage.mutate({ id: draggedId, input: { parentPageId: node.item.id } });
+    }
+  };
+
   return (
     <li>
       <div
-        className={`flex group w-full items-center gap-1 py-0.5 text-[11px] lowercase ${t(
+        className={`flex group w-full items-center gap-1 py-0.5 text-[11px] lowercase cursor-default ${t(
           isSelected
             ? "bg-white/10 text-text-dark"
             : "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
@@ -210,6 +234,10 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
           setContextMenu(null);
           setShowDeleteConfirm(false);
         }}
+        draggable
+        onDragOver={handleDragOver}
+        onDragStart={handleDragStart}
+        onDrop={handleDrop}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         {hasChildren ? (
@@ -255,7 +283,13 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
         ) : (
           <button
             className="flex-1 text-left truncate"
-            onClick={() => setSelectedPageId(node.item.id)}
+            onClick={() => {
+              if (hasChildren) {
+                setExpanded((prev) => !prev);
+              } else {
+                setSelectedPageId(node.item.id);
+              }
+            }}
             type="button"
           >
             {node.item.title}
@@ -264,30 +298,31 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
 
         {isHovered && !isRenaming && (
           <div className="flex items-center gap-0.5 shrink-0 pr-0.5">
-            <button
-              className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
-              onClick={() => toggleFav.mutate(node.item.id)}
-              type="button"
-            >
-              <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
-            </button>
-            {node.children.length > 0 && (
+            {hasChildren ? (
               <button
-                className="cursor-pointer opacity-60 hover:opacity-100"
+                className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsCreatingChild(true);
                   setExpanded(true);
                 }}
-                title="Add child page"
+                title="New child page"
                 type="button"
               >
                 <PlusIcon size={10} />
               </button>
-            )}
-            <div className="relative" ref={menuRef}>
+            ) : (
               <button
-                className="cursor-pointer opacity-60 hover:opacity-100"
+                className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
+                onClick={() => toggleFav.mutate(node.item.id)}
+                type="button"
+              >
+                <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
+              </button>
+            )}
+            <div className="flex items-center" ref={menuRef}>
+              <button
+                className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
                 onClick={handleDotsClick}
                 type="button"
               >
@@ -387,43 +422,20 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const isOverview = location.pathname === `/s/${space.slug}`;
   const isSettings = location.pathname === `/s/${space.slug}/settings`;
 
-  const [isCreatingRoot, setIsCreatingRoot] = useState(false);
-  const [newRootTitle, setNewRootTitle] = useState("");
-  const createInputRef = useRef<HTMLInputElement>(null);
-
   const createPage = useCreatePage();
+
+  const handleCreatePage = () => {
+    const timestamp = Date.now().toString().slice(-6);
+    const title = "untitled page";
+    createPage.mutate({
+      slugId: `untitled-page-${timestamp}`,
+      spaceId: space.id,
+      title,
+    });
+  };
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const pageTree = treeItems ? buildPageTree(treeItems) : [];
-
-  useEffect(() => {
-    if (isCreatingRoot && createInputRef.current) {
-      createInputRef.current.focus();
-    }
-  }, [isCreatingRoot]);
-
-  const submitCreateRoot = () => {
-    const trimmed = newRootTitle.trim();
-    if (!trimmed) {
-      setIsCreatingRoot(false);
-      return;
-    }
-    createPage.mutate({
-      slugId: toSlug(trimmed),
-      spaceId: space.id,
-      title: trimmed,
-    });
-    setNewRootTitle("");
-    setIsCreatingRoot(false);
-  };
-
-  const handleRootKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      submitCreateRoot();
-    } else if (e.key === "Escape") {
-      setIsCreatingRoot(false);
-    }
-  };
 
   return (
     <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">
@@ -488,51 +500,50 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           space settings
         </button>
 
-        {isCreatingRoot ? (
-          <div className="flex items-center gap-1 px-1 py-1">
-            <FileTextIcon className="shrink-0" size={10} />
-            <input
-              ref={createInputRef}
-              className={`flex-1 bg-transparent outline-none text-[11px] lowercase border-b border-dashed ${t("border-white/20 text-text-dark", "border-black/20 text-text-light")}`}
-              onBlur={submitCreateRoot}
-              onChange={(e) => setNewRootTitle(e.target.value)}
-              onKeyDown={handleRootKeyDown}
-              placeholder="page title..."
-              value={newRootTitle}
-            />
-            <button
-              className="shrink-0 cursor-pointer opacity-60 hover:opacity-100"
-              onClick={submitCreateRoot}
-              type="button"
-            >
-              <CheckIcon size={12} />
-            </button>
-            <button
-              className="shrink-0 cursor-pointer opacity-60 hover:opacity-100"
-              onClick={() => setIsCreatingRoot(false)}
-              type="button"
-            >
-              <XIcon size={12} />
-            </button>
-          </div>
-        ) : (
-          <button
-            className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-            onClick={() => setIsCreatingRoot(true)}
-            type="button"
-          >
-            <PlusIcon size={12} />
-            new page
-          </button>
-        )}
+        <button
+          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+          onClick={handleCreatePage}
+          type="button"
+        >
+          <PlusIcon size={12} />
+          new page
+        </button>
       </div>
 
       <div className="mt-4 flex-1 flex flex-col min-h-0">
-        <p
-          className={`px-1 mb-1 text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
-        >
-          pages
-        </p>
+        <div className="flex items-center justify-between px-1 mb-1">
+          <p
+            className={`text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
+          >
+            pages
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              className={`cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/50", "text-text-light/25 hover:text-text-light/50")}`}
+              onClick={handleCreatePage}
+              title="New page"
+              type="button"
+            >
+              <FilePlusIcon size={12} />
+            </button>
+            <button
+              className={`cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/50", "text-text-light/25 hover:text-text-light/50")}`}
+              onClick={() => {
+                const timestamp = Date.now().toString().slice(-6);
+                createPage.mutate({
+                  icon: "folder",
+                  slugId: `new-folder-${timestamp}`,
+                  spaceId: space.id,
+                  title: "new folder",
+                });
+              }}
+              title="New folder"
+              type="button"
+            >
+              <FolderPlusIcon size={12} />
+            </button>
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto">
           {(() => {
             if (isPending) {
@@ -542,7 +553,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
                 </p>
               );
             }
-            if (pageTree.length === 0 && !isCreatingRoot) {
+            if (pageTree.length === 0) {
               return (
                 <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
                   no pages yet

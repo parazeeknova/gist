@@ -126,10 +126,10 @@ export const QuickActions = () => {
         />
 
         <ActionTile
-          description="browse your docs"
+          description="browse your library"
           icon={FileTextIcon}
           isDarkMode={isDarkMode}
-          label="my docs"
+          label="library"
           onClick={() => {
             const el = document.querySelector("#recent-docs-section");
             el?.scrollIntoView({ behavior: "smooth" });

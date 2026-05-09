@@ -79,6 +79,7 @@ interface SpaceContentSectionProps {
   groupedPages: [string, PageTreeItem[]][];
   isDarkMode: boolean;
   isPending: boolean;
+  treeItems: PageTreeItem[] | undefined;
   viewMode: ViewMode;
   onSetActiveTab: (tab: Tab) => void;
   onSetViewMode: (mode: ViewMode) => void;
@@ -91,6 +92,7 @@ const SpaceContentSection = ({
   groupedPages,
   isDarkMode,
   isPending,
+  treeItems,
   viewMode,
   onSetActiveTab,
   onSetViewMode,
@@ -221,10 +223,54 @@ const SpaceContentSection = ({
                             >
                               {page.title}
                             </span>
+                            {page.parentPageId &&
+                              (() => {
+                                const parent = treeItems?.find(
+                                  (item) => item.id === page.parentPageId,
+                                );
+                                if (!parent) {
+                                  return null;
+                                }
+                                return (
+                                  <span
+                                    className={`shrink-0 text-[10px] lowercase truncate max-w-24 ${t("text-text-dark/25", "text-text-light/25")}`}
+                                  >
+                                    {parent.title}
+                                  </span>
+                                );
+                              })()}
+                            <span className="flex-1" />
+                            <span
+                              className={`shrink-0 text-[10px] lowercase ${t("text-text-dark/25", "text-text-light/25")}`}
+                            >
+                              {(() => {
+                                const d = new Date(page.updatedAt);
+                                const now = new Date();
+                                const diff = Math.floor((now.getTime() - d.getTime()) / 1000 / 60);
+                                if (diff < 1) {
+                                  return "just now";
+                                }
+                                if (diff < 60) {
+                                  return `${diff}m ago`;
+                                }
+                                const hours = Math.floor(diff / 60);
+                                if (hours < 24) {
+                                  return `${hours}h ago`;
+                                }
+                                const days = Math.floor(hours / 24);
+                                if (days < 7) {
+                                  return `${days}d ago`;
+                                }
+                                return d.toLocaleDateString("en-US", {
+                                  day: "numeric",
+                                  month: "short",
+                                });
+                              })()}
+                            </span>
                             <span
                               className={`shrink-0 text-[10px] ${t("text-text-dark/25", "text-text-light/25")}`}
                             >
-                              {new Date(page.updatedAt).toISOString().slice(0, 10)}
+                              {new Date(page.createdAt).toISOString().slice(0, 10)}
                             </span>
                           </div>
                         );
@@ -672,7 +718,10 @@ export const SpaceOverview = () => {
     });
   };
 
-  const pages = useMemo(() => (treeItems ? [...treeItems] : []), [treeItems]);
+  const pages = useMemo(
+    () => (treeItems ? treeItems.filter((p) => p.icon !== "folder") : []),
+    [treeItems],
+  );
 
   const filteredPages = useMemo(
     () =>
@@ -740,6 +789,7 @@ export const SpaceOverview = () => {
           groupedPages={groupedPages}
           isDarkMode={isDarkMode}
           isPending={isTreePending}
+          treeItems={treeItems}
           viewMode={viewMode}
           onSetActiveTab={setActiveTab}
           onSetViewMode={setViewMode}

@@ -97,6 +97,7 @@ export interface ConsolePage {
   icon: string;
   isPublished: boolean;
   spaceId: string;
+  parentPageId: string | null;
   createdAt: string;
   updatedAt: string;
 }

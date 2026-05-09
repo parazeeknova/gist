@@ -193,6 +193,9 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 		return "Page updated", fmt.Sprintf("The page %q was updated.", name)
 	case EventPageCreated:
 		name := s.metadataStr(event.Metadata, "name", "a page")
+		if event.Metadata["isFolder"] == "true" {
+			return "Folder created", fmt.Sprintf("A new folder %q was created.", name)
+		}
 		return "Page created", fmt.Sprintf("A new page %q was created.", name)
 	case EventWorkspaceMemberAdded:
 		wsName := s.metadataStr(event.Metadata, "name", "a workspace")

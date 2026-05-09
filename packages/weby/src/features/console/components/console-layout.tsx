@@ -325,7 +325,7 @@ export const ConsoleLayout = () => {
               );
             }
             const recent = (allPages ?? [])
-              .filter((p) => !p.slugId.includes("/"))
+              .filter((p) => !p.slugId.includes("/") && p.icon !== "folder")
               .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
               .slice(0, 5);
             if (recent.length === 0) {

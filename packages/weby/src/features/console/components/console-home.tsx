@@ -354,7 +354,7 @@ export const ConsoleHome = () => {
               );
             }
             const recent = (allPages ?? [])
-              .filter((p) => !p.slugId.includes("/"))
+              .filter((p) => !p.slugId.includes("/") && p.icon !== "folder")
               .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
               .slice(0, 5);
             if (recent.length === 0) {
@@ -364,35 +364,44 @@ export const ConsoleHome = () => {
                 </p>
               );
             }
-            return recent.map((page) => (
-              <div
-                key={page.id}
-                className={`flex items-center gap-2 px-2 py-1.5 lowercase ${t(
-                  "hover:bg-white/5",
-                  "hover:bg-black/3",
-                )}`}
-              >
-                <FileTextIcon className={t("text-text-dark/25", "text-text-light/25")} size={14} />
-                <span
-                  className={`flex-1 truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
+            return recent.map((page) => {
+              const parentTitle = page.parentPageId
+                ? (allPages ?? []).find((p) => p.id === page.parentPageId)?.title
+                : undefined;
+              return (
+                <div
+                  key={page.id}
+                  className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 py-1.5 lowercase ${t("hover:bg-white/5", "hover:bg-black/3")}`}
                 >
-                  {page.title}
-                </span>
-                <span
-                  className={`shrink-0 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}
-                >
-                  {spaceById.get(page.spaceId) || "—"}
-                </span>
-                <span
-                  className={`shrink-0 text-[10px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
-                >
-                  {new Date(page.updatedAt).toLocaleDateString("en-US", {
-                    day: "numeric",
-                    month: "short",
-                  })}
-                </span>
-              </div>
-            ));
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileTextIcon
+                      className={t("text-text-dark/25", "text-text-light/25")}
+                      size={14}
+                    />
+                    <span
+                      className={`truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
+                    >
+                      {page.title}
+                    </span>
+                  </div>
+                  <span
+                    className={`shrink-0 text-[10px] lowercase truncate max-w-32 text-center ${t("text-text-dark/20", "text-text-light/20")}`}
+                  >
+                    {parentTitle
+                      ? `${parentTitle} / ${spaceById.get(page.spaceId) || "—"}`
+                      : spaceById.get(page.spaceId) || "—"}
+                  </span>
+                  <span
+                    className={`shrink-0 text-[10px] font-mono text-right ${t("text-text-dark/25", "text-text-light/25")}`}
+                  >
+                    {new Date(page.updatedAt).toLocaleDateString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </div>
+              );
+            });
           })()}
         </div>
       </div>

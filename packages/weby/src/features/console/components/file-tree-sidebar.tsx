@@ -6,12 +6,18 @@ import {
   FileTextIcon,
   FolderIcon,
   PencilSimpleIcon,
+  PlusIcon,
   TrashIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
-import { useDeletePage, usePageTree, useUpdatePage } from "#/features/console/hooks/use-pages";
+import {
+  useDeletePage,
+  useMovePage,
+  usePageTree,
+  useUpdatePage,
+} from "#/features/console/hooks/use-pages";
 import {
   useFavoritedPages,
   useIsPageFavorited,
@@ -76,9 +82,10 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
 
   const updatePage = useUpdatePage();
   const deletePage = useDeletePage();
+  const movePage = useMovePage();
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
-  const hasChildren = node.children.length > 0;
+  const hasChildren = node.children.length > 0 || node.item.icon === "folder";
   const isSelected = selectedPageId === node.item.id;
 
   useEffect(() => {
@@ -141,6 +148,26 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
     setShowDeleteConfirm(false);
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", node.item.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (hasChildren) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData("text/plain");
+    if (draggedId && draggedId !== node.item.id) {
+      movePage.mutate({ id: draggedId, input: { parentPageId: node.item.id } });
+    }
+  };
+
   return (
     <li>
       <div
@@ -157,6 +184,10 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
           setIsHovered(false);
           closeMenu();
         }}
+        draggable
+        onDragOver={handleDragOver}
+        onDragStart={handleDragStart}
+        onDrop={handleDrop}
         style={{ paddingLeft: `${depth * 12 + 12}px` }}
       >
         {hasChildren ? (
@@ -202,7 +233,13 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
         ) : (
           <button
             className="flex-1 text-left truncate"
-            onClick={() => setSelectedPageId(node.item.id)}
+            onClick={() => {
+              if (hasChildren) {
+                setExpanded((prev) => !prev);
+              } else {
+                setSelectedPageId(node.item.id);
+              }
+            }}
             type="button"
           >
             {node.item.title}
@@ -211,13 +248,24 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
 
         {isHovered && !isRenaming && (
           <div className="flex items-center gap-0.5 shrink-0 pr-0.5">
-            <button
-              className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
-              onClick={() => toggleFav.mutate(node.item.id)}
-              type="button"
-            >
-              <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
-            </button>
+            {hasChildren ? (
+              <button
+                className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
+                onClick={() => setSelectedPageId(node.item.id)}
+                title="Open folder"
+                type="button"
+              >
+                <PlusIcon size={10} />
+              </button>
+            ) : (
+              <button
+                className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
+                onClick={() => toggleFav.mutate(node.item.id)}
+                type="button"
+              >
+                <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
+              </button>
+            )}
             <div className="flex items-center" ref={menuRef}>
               <button
                 className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
