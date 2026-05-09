@@ -96,6 +96,7 @@ export interface ConsolePage {
   title: string;
   icon: string;
   isPublished: boolean;
+  spaceId: string;
   createdAt: string;
   updatedAt: string;
 }

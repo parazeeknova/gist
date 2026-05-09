@@ -1,4 +1,5 @@
 import {
+  BookmarkSimpleIcon,
   CameraIcon,
   ClockCounterClockwiseIcon,
   DotsThreeVerticalIcon,
@@ -23,6 +24,10 @@ import {
 } from "#/features/console/hooks/use-spaces";
 import { useAuth } from "#/features/auth/hooks/use-auth";
 import { usePageTree } from "#/features/console/hooks/use-pages";
+import {
+  useFavoritedPages,
+  useTogglePageFavorite,
+} from "#/features/console/hooks/use-page-favorites";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { SidebarTooltip } from "#/features/console/components/sidebar-tooltip";
 import { compressImage } from "#/shared/lib/image-compress";
@@ -31,28 +36,6 @@ import type { PageTreeItem, SpaceMemberMixed } from "#/shared/types";
 
 type Tab = "recents" | "favorites" | "mine";
 type ViewMode = "list" | "grid";
-
-const favoritesKey = (spaceId: string) => `verso:space:${spaceId}:favorites`;
-
-const readFavorites = (spaceId: string): Set<string> => {
-  try {
-    const raw = localStorage.getItem(favoritesKey(spaceId));
-    if (raw) {
-      return new Set(JSON.parse(raw) as string[]);
-    }
-  } catch {
-    // ignore
-  }
-  return new Set();
-};
-
-const persistFavorites = (spaceId: string, ids: Set<string>) => {
-  try {
-    localStorage.setItem(favoritesKey(spaceId), JSON.stringify([...ids]));
-  } catch {
-    // ignore
-  }
-};
 
 const groupByDate = (
   items: PageTreeItem[],
@@ -92,7 +75,7 @@ const formatDateHeading = (dateStr: string): string => {
 
 interface SpaceContentSectionProps {
   activeTab: Tab;
-  favorites: Set<string>;
+  favorites: string[];
   groupedPages: [string, PageTreeItem[]][];
   isDarkMode: boolean;
   isPending: boolean;
@@ -122,7 +105,7 @@ const SpaceContentSection = ({
           {(
             [
               ["recents", ClockCounterClockwiseIcon] as const,
-              ["favorites", StarIcon] as const,
+              ["favorites", BookmarkSimpleIcon] as const,
               ["mine", UserIcon] as const,
             ] as const
           ).map(([tab, Icon]) => (
@@ -219,7 +202,7 @@ const SpaceContentSection = ({
                   {viewMode === "list" ? (
                     <div className="space-y-0.5">
                       {items.map((page) => {
-                        const isFav = favorites.has(page.id);
+                        const isFav = favorites.includes(page.id);
                         return (
                           <div
                             className={`flex items-center gap-3 rounded px-2 py-1.5 ${t("hover:bg-white/5", "hover:bg-black/3")}`}
@@ -231,7 +214,7 @@ const SpaceContentSection = ({
                               onClick={() => onToggleFavorite(page.id)}
                               type="button"
                             >
-                              <StarIcon size={13} weight={isFav ? "fill" : "regular"} />
+                              <BookmarkSimpleIcon size={13} weight={isFav ? "fill" : "regular"} />
                             </button>
                             <span
                               className={`min-w-0 flex-1 truncate text-[13px] lowercase ${t("text-text-dark/60", "text-text-light/60")}`}
@@ -250,7 +233,7 @@ const SpaceContentSection = ({
                   ) : (
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {items.map((page) => {
-                        const isFav = favorites.has(page.id);
+                        const isFav = favorites.includes(page.id);
                         return (
                           <div
                             className={`flex flex-col gap-1 rounded border p-3 ${t("border-border-dark hover:bg-white/5", "border-border-light hover:bg-black/3")}`}
@@ -268,7 +251,7 @@ const SpaceContentSection = ({
                                 onClick={() => onToggleFavorite(page.id)}
                                 type="button"
                               >
-                                <StarIcon size={11} weight={isFav ? "fill" : "regular"} />
+                                <BookmarkSimpleIcon size={11} weight={isFav ? "fill" : "regular"} />
                               </button>
                             </div>
                             <span
@@ -654,33 +637,17 @@ export const SpaceOverview = () => {
   const { data: user } = useAuth();
   const toggleSpaceFav = useToggleSpaceFavorite();
   const { data: favData } = useIsSpaceFavorited(space?.id ?? "");
+  const { data: favPageIds } = useFavoritedPages();
+  const togglePageFav = useTogglePageFavorite();
   const { isDarkMode } = useTheme();
   const updateSpace = useUpdateSpace();
 
   const [activeTab, setActiveTab] = useState<Tab>("recents");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [favorites, setFavorites] = useState<Set<string>>(() => readFavorites(space?.id ?? ""));
   const [showUnsplash, setShowUnsplash] = useState(false);
 
-  // Sync favorites when space changes
-  const [lastSpaceId, setLastSpaceId] = useState(space?.id ?? "");
-  if (space?.id && space.id !== lastSpaceId) {
-    setLastSpaceId(space.id);
-    setFavorites(readFavorites(space.id));
-  }
-
   const toggleFavorite = (pageId: string) => {
-    if (!space?.id) {
-      return;
-    }
-    const next = new Set(favorites);
-    if (next.has(pageId)) {
-      next.delete(pageId);
-    } else {
-      next.add(pageId);
-    }
-    setFavorites(next);
-    persistFavorites(space.id, next);
+    togglePageFav.mutate(pageId);
   };
 
   const doUpdate = (updates: {
@@ -708,8 +675,9 @@ export const SpaceOverview = () => {
   const pages = useMemo(() => (treeItems ? [...treeItems] : []), [treeItems]);
 
   const filteredPages = useMemo(
-    () => (activeTab === "favorites" ? pages.filter((p) => favorites.has(p.id)) : pages),
-    [pages, activeTab, favorites],
+    () =>
+      activeTab === "favorites" ? pages.filter((p) => (favPageIds ?? []).includes(p.id)) : pages,
+    [pages, activeTab, favPageIds],
   );
 
   const groupedPages = useMemo(() => {
@@ -768,7 +736,7 @@ export const SpaceOverview = () => {
 
         <SpaceContentSection
           activeTab={activeTab}
-          favorites={favorites}
+          favorites={favPageIds ?? []}
           groupedPages={groupedPages}
           isDarkMode={isDarkMode}
           isPending={isTreePending}

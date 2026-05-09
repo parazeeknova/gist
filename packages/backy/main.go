@@ -112,6 +112,7 @@ func main() {
 	var groupService *gfeat.GroupService
 	var pageService *pfeat.PageService
 	var favRepo *repositories.SpaceFavoriteRepo
+	var pageFavRepo *repositories.PageFavoriteRepo
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
@@ -120,6 +121,7 @@ func main() {
 		workspaceRepo := repositories.NewWorkspaceRepo()
 		groupRepo := repositories.NewGroupRepo()
 		favRepo = repositories.NewSpaceFavoriteRepo()
+		pageFavRepo = repositories.NewPageFavoriteRepo()
 		pageService = pfeat.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
 		spaceService = sfeat.NewSpaceService(spaceRepo, pageRepo, groupRepo)
 		workspaceService = wsfeat.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
@@ -142,6 +144,7 @@ func main() {
 
 		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService, groupService)
 		h.SetNotifier(notificationService)
+		h.SetPageFavoriteRepo(pageFavRepo)
 	} else {
 		h = handlers.New(cfg)
 	}
@@ -331,6 +334,11 @@ func main() {
 			console.GET("/pages/:id/history", h.GetConsolePageHistory)
 			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
 			console.POST("/pages/:id/restore", h.RestoreConsolePage)
+
+			// Page favorites
+			console.POST("/pages/:id/favorite", h.TogglePageFavorite)
+			console.GET("/pages/:id/favorited", h.IsPageFavorited)
+			console.GET("/pages/favorites", h.GetFavoritedPages)
 
 			// Notifications
 			if notifHandlers != nil {

@@ -36,6 +36,7 @@ type Handlers struct {
 	spaceService     *spacefeat.SpaceService
 	workspaceService *wsfeat.WorkspaceService
 	groupService     *groupfeat.GroupService
+	pageFavoriteRepo *repositories.PageFavoriteRepo
 	notifier         notifeat.Notifier
 }
 
@@ -181,6 +182,7 @@ type ConsolePageSummary struct {
 	Title       string `json:"title"`
 	Icon        string `json:"icon"`
 	IsPublished bool   `json:"isPublished"`
+	SpaceID     string `json:"spaceId"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
 }
@@ -208,6 +210,7 @@ func (h *Handlers) GetConsolePages(c *gin.Context) {
 			Title:       p.Title,
 			Icon:        p.Icon,
 			IsPublished: p.IsPublished,
+			SpaceID:     p.SpaceID,
 			CreatedAt:   p.CreatedAt.Format(time.RFC3339),
 			UpdatedAt:   p.UpdatedAt.Format(time.RFC3339),
 		})
@@ -253,6 +256,7 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		"position":     page.Position,
 		"isPublished":  page.IsPublished,
 		"parentPageId": page.ParentPageID,
+		"spaceId":      page.SpaceID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
 	})
@@ -794,4 +798,81 @@ func (h *Handlers) GetStats(c *gin.Context) {
 		"posts":   posts,
 		"readmes": readmes,
 	})
+}
+
+// SetPageFavoriteRepo sets the page favorite repository on the handlers.
+func (h *Handlers) SetPageFavoriteRepo(r *repositories.PageFavoriteRepo) {
+	h.pageFavoriteRepo = r
+}
+
+// TogglePageFavorite handles POST /api/console/pages/:id/favorite — toggles favorite status.
+func (h *Handlers) TogglePageFavorite(c *gin.Context) {
+	if h.pageFavoriteRepo == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "favorites not available"})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	isFav, err := h.pageFavoriteRepo.IsFavorited(c.Request.Context(), userID, pageID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("check page favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		return
+	}
+
+	if isFav {
+		if err := h.pageFavoriteRepo.Remove(c.Request.Context(), userID, pageID); err != nil {
+			logger.Log.Error().Err(err).Msg("remove page favorite error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove favorite"})
+			return
+		}
+	} else {
+		if err := h.pageFavoriteRepo.Add(c.Request.Context(), userID, pageID); err != nil {
+			logger.Log.Error().Err(err).Msg("add page favorite error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add favorite"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": !isFav})
+}
+
+// IsPageFavorited handles GET /api/console/pages/:id/favorited.
+func (h *Handlers) IsPageFavorited(c *gin.Context) {
+	if h.pageFavoriteRepo == nil {
+		c.JSON(http.StatusOK, gin.H{"favorited": false})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	isFav, err := h.pageFavoriteRepo.IsFavorited(c.Request.Context(), userID, pageID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("check page favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": isFav})
+}
+
+// GetFavoritedPages handles GET /api/console/pages/favorites.
+func (h *Handlers) GetFavoritedPages(c *gin.Context) {
+	if h.pageFavoriteRepo == nil {
+		c.JSON(http.StatusOK, []string{})
+		return
+	}
+
+	userID := middleware.GetCurrentUserID(c)
+	ids, err := h.pageFavoriteRepo.List(c.Request.Context(), userID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("list page favorites error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list favorites"})
+		return
+	}
+
+	c.JSON(http.StatusOK, ids)
 }

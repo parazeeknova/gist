@@ -1,8 +1,23 @@
-import { CaretDownIcon, CaretRightIcon, FileIcon, FolderIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import {
+  BookmarkSimpleIcon,
+  CaretDownIcon,
+  CaretRightIcon,
+  DotsThreeCircleVerticalIcon,
+  FileTextIcon,
+  FolderIcon,
+  PencilSimpleIcon,
+  TrashIcon,
+} from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
-import { usePageTree } from "#/features/console/hooks/use-pages";
+import { useDeletePage, usePageTree, useUpdatePage } from "#/features/console/hooks/use-pages";
+import {
+  useFavoritedPages,
+  useIsPageFavorited,
+  useTogglePageFavorite,
+} from "#/features/console/hooks/use-page-favorites";
+import { useQueries } from "@tanstack/react-query";
 import { useSpaces, useFavoritedSpaces } from "#/features/console/hooks/use-spaces";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "./console-context";
@@ -45,15 +60,91 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
   const { selectedPageId, setSelectedPageId } = useConsoleContext();
   const [expanded, setExpanded] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { data: favData } = useIsPageFavorited(node.item.id);
+  const toggleFav = useTogglePageFavorite();
+  const isFaved = favData?.favorited ?? false;
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const updatePage = useUpdatePage();
+  const deletePage = useDeletePage();
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const hasChildren = node.children.length > 0;
   const isSelected = selectedPageId === node.item.id;
 
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  useEffect(() => {
+    if (isRenaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [isRenaming]);
+
+  const handleDotsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setMenuPos({ x: rect.right, y: rect.bottom + 2 });
+    setMenuOpen((prev) => !prev);
+  };
+
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setShowDeleteConfirm(false);
+  };
+
+  const startRename = () => {
+    setRenameTitle(node.item.title);
+    setIsRenaming(true);
+    closeMenu();
+  };
+
+  const submitRename = () => {
+    const trimmed = renameTitle.trim();
+    if (!trimmed || trimmed === node.item.title) {
+      setIsRenaming(false);
+      return;
+    }
+    updatePage.mutate({ id: node.item.id, input: { title: trimmed } });
+    setIsRenaming(false);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      submitRename();
+    } else if (e.key === "Escape") {
+      setIsRenaming(false);
+    }
+  };
+
+  const submitDelete = () => {
+    deletePage.mutate(node.item.id);
+    setMenuOpen(false);
+    setShowDeleteConfirm(false);
+  };
+
   return (
     <li>
       <div
-        className={`flex w-full items-center gap-1 py-0.5 text-[11px] lowercase ${t(
+        className={`flex group w-full items-center gap-1 py-0.5 text-[11px] lowercase ${t(
           isSelected
             ? "bg-white/10 text-text-dark"
             : "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
@@ -61,7 +152,12 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
             ? "bg-black/10 text-text-light"
             : "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
         )}`}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          closeMenu();
+        }}
+        style={{ paddingLeft: `${depth * 12 + 12}px` }}
       >
         {hasChildren ? (
           <>
@@ -75,15 +171,96 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
             <FolderIcon className="shrink-0" size={10} />
           </>
         ) : (
-          <FileIcon className="shrink-0" size={10} />
+          <FileTextIcon className="shrink-0" size={10} />
         )}
-        <button
-          className="flex-1 text-left truncate"
-          onClick={() => setSelectedPageId(node.item.id)}
-          type="button"
-        >
-          {node.item.title}
-        </button>
+
+        {isRenaming ? (
+          <div className="flex-1 flex items-center gap-1">
+            <input
+              ref={renameInputRef}
+              className={`flex-1 bg-transparent outline-none text-[11px] lowercase border-b ${t("border-white/20 text-text-dark", "border-black/20 text-text-light")}`}
+              onBlur={submitRename}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              onKeyDown={handleRenameKeyDown}
+              value={renameTitle}
+            />
+            <button
+              className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
+              onClick={submitRename}
+              type="button"
+            >
+              save
+            </button>
+            <button
+              className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/60", "text-text-light/25 hover:text-text-light/60")}`}
+              onClick={() => setIsRenaming(false)}
+              type="button"
+            >
+              cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            className="flex-1 text-left truncate"
+            onClick={() => setSelectedPageId(node.item.id)}
+            type="button"
+          >
+            {node.item.title}
+          </button>
+        )}
+
+        {isHovered && !isRenaming && (
+          <div className="flex items-center gap-0.5 shrink-0 pr-0.5">
+            <button
+              className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
+              onClick={() => toggleFav.mutate(node.item.id)}
+              type="button"
+            >
+              <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
+            </button>
+            <div className="flex items-center" ref={menuRef}>
+              <button
+                className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
+                onClick={handleDotsClick}
+                type="button"
+              >
+                <DotsThreeCircleVerticalIcon size={10} />
+              </button>
+              {menuOpen && menuPos && (
+                <div
+                  className={`fixed z-9999 py-1 w-32 text-[11px] lowercase shadow-lg ${t(
+                    "bg-neutral-800 border border-white/10 text-text-dark",
+                    "bg-white border border-black/10 text-text-light",
+                  )}`}
+                  style={{ left: `${menuPos.x - 128}px`, top: `${menuPos.y}px` }}
+                >
+                  <button
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${t("hover:bg-white/10", "hover:bg-black/5")}`}
+                    onClick={startRename}
+                    type="button"
+                  >
+                    <PencilSimpleIcon size={10} />
+                    rename
+                  </button>
+                  <button
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${showDeleteConfirm ? "text-red-400" : t("hover:bg-white/10", "hover:bg-black/5")}`}
+                    onClick={() => {
+                      if (showDeleteConfirm) {
+                        submitDelete();
+                      } else {
+                        setShowDeleteConfirm(true);
+                      }
+                    }}
+                    type="button"
+                  >
+                    <TrashIcon size={10} />
+                    {showDeleteConfirm ? "confirm?" : "delete"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       {expanded && hasChildren && (
         <ul>
@@ -165,11 +342,126 @@ const SpaceTreeNode = ({ space, defaultExpanded }: SpaceTreeNodeProps) => {
   );
 };
 
+interface FavoritedPagesListProps {
+  favPageIds: string[];
+  favSpaces: Space[];
+}
+
+interface FavPageDetail {
+  id: string;
+  title: string;
+  spaceId: string;
+}
+
+const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) => {
+  const { isDarkMode } = useTheme();
+  const { setSelectedPageId } = useConsoleContext();
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+
+  const pageQueries = useQueries({
+    queries: favPageIds.map((pageId) => ({
+      queryFn: async () => {
+        const res = await fetch(`/api/console/pages/${pageId}`, { credentials: "include" });
+        if (!res.ok) {
+          return;
+        }
+        return (await res.json()) as FavPageDetail;
+      },
+      queryKey: ["consolePage", pageId],
+      staleTime: 60 * 1000,
+    })),
+  });
+
+  const pages = pageQueries.map((q) => q.data).filter((p): p is FavPageDetail => p !== undefined);
+
+  const favSpaceIds = new Set(favSpaces.map((s) => s.id));
+  const pagesBySpace = new Map<string, FavPageDetail[]>();
+  const ungrouped: FavPageDetail[] = [];
+
+  for (const page of pages) {
+    if (favSpaceIds.has(page.spaceId)) {
+      const list = pagesBySpace.get(page.spaceId);
+      if (list) {
+        list.push(page);
+      } else {
+        pagesBySpace.set(page.spaceId, [page]);
+      }
+    } else {
+      ungrouped.push(page);
+    }
+  }
+
+  return (
+    <>
+      {favSpaces.map((space) => {
+        const spacePages = pagesBySpace.get(space.id);
+        return (
+          <div key={space.id}>
+            <a
+              className={`flex items-center gap-2 px-1 py-1 text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+              href={`/s/${space.slug}`}
+            >
+              <AvatarBadge
+                className="w-4 h-4"
+                icon={space.icon || null}
+                initialsClass="text-[0.25rem]"
+                name={space.name}
+              />
+              <span className="flex-1 truncate">{space.name}</span>
+              <span
+                className={`shrink-0 text-[8px] px-1 py-0.5 lowercase ${t("text-text-dark/25", "text-text-light/25")}`}
+              >
+                space
+              </span>
+            </a>
+            {(spacePages ?? []).map((page, i, arr) => (
+              <button
+                className={`flex items-center gap-1 pl-6 pr-1 py-0.5 text-[11px] lowercase w-full text-left ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+                key={page.id}
+                onClick={() => setSelectedPageId(page.id)}
+                type="button"
+              >
+                <span className={`shrink-0 ${t("text-text-dark/20", "text-text-light/20")}`}>
+                  {i === arr.length - 1 ? "\u2514" : "\u251C"}
+                </span>
+                <FileTextIcon size={10} />
+                <span className="flex-1 truncate">{page.title}</span>
+                <span
+                  className={`shrink-0 text-[8px] px-1 py-0.5 lowercase ${t("text-text-dark/25", "text-text-light/25")}`}
+                >
+                  page
+                </span>
+              </button>
+            ))}
+          </div>
+        );
+      })}
+      {ungrouped.map((page) => (
+        <button
+          className={`flex items-center gap-2 px-1 py-0.5 text-[11px] lowercase w-full text-left ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+          key={page.id}
+          onClick={() => setSelectedPageId(page.id)}
+          type="button"
+        >
+          <FileTextIcon size={10} />
+          <span className="flex-1 truncate">{page.title}</span>
+          <span
+            className={`shrink-0 text-[8px] px-1 py-0.5 lowercase ${t("text-text-dark/25", "text-text-light/25")}`}
+          >
+            page
+          </span>
+        </button>
+      ))}
+    </>
+  );
+};
+
 export const FileTreeSidebar = () => {
   const { isDarkMode } = useTheme();
   const { selectedWorkspaceId, selectedSpaceId } = useConsoleContext();
   const { data: spaces, isPending, isError } = useSpaces(selectedWorkspaceId);
   const { data: favSpaces } = useFavoritedSpaces();
+  const { data: favPageIds } = useFavoritedPages();
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
@@ -231,7 +523,10 @@ export const FileTreeSidebar = () => {
           favorites
         </p>
         {(() => {
-          if (!favSpaces || favSpaces.length === 0) {
+          const hasFavs =
+            (favSpaces !== undefined && favSpaces.length > 0) ||
+            (favPageIds !== undefined && favPageIds.length > 0);
+          if (!hasFavs) {
             return (
               <p className={`px-1 text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
                 no favorites yet
@@ -240,26 +535,7 @@ export const FileTreeSidebar = () => {
           }
           return (
             <div className="space-y-0.5">
-              {favSpaces.map((s) => (
-                <a
-                  className={`flex items-center gap-2 px-1 py-1 text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-                  href={`/s/${s.slug}`}
-                  key={s.id}
-                >
-                  <AvatarBadge
-                    className="w-4 h-4"
-                    icon={s.icon || null}
-                    initialsClass="text-[0.25rem]"
-                    name={s.name}
-                  />
-                  <span className="flex-1 truncate">{s.name}</span>
-                  <span
-                    className={`shrink-0 text-[8px] px-1 py-0.5 border lowercase ${t("border-border-dark text-text-dark/25", "border-border-light text-text-light/25")}`}
-                  >
-                    space
-                  </span>
-                </a>
-              ))}
+              <FavoritedPagesList favPageIds={favPageIds ?? []} favSpaces={favSpaces ?? []} />
             </div>
           );
         })()}

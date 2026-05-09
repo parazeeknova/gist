@@ -45,6 +45,13 @@ export const ConsoleHome = () => {
   const navigate = useNavigate();
   const { selectedWorkspaceId } = useConsoleContext();
   const { data: spaces } = useSpaces(selectedWorkspaceId);
+  const spaceById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of spaces ?? []) {
+      map.set(s.id, s.name);
+    }
+    return map;
+  }, [spaces]);
   const { data: allPages, isPending: allPagesPending } = useConsolePages();
   const createSpace = useCreateSpace();
   const [showCreateSpace, setShowCreateSpace] = useState(false);
@@ -334,7 +341,7 @@ export const ConsoleHome = () => {
         id="recent-docs-section"
       >
         <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
-          my recent pages
+          my pages
         </p>
 
         <div className="mt-3 space-y-0.5">
@@ -370,6 +377,11 @@ export const ConsoleHome = () => {
                   className={`flex-1 truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
                 >
                   {page.title}
+                </span>
+                <span
+                  className={`shrink-0 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}
+                >
+                  {spaceById.get(page.spaceId) || "—"}
                 </span>
                 <span
                   className={`shrink-0 text-[10px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}

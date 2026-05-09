@@ -1,18 +1,18 @@
 import {
   ArrowLeftIcon,
+  BookmarkSimpleIcon,
   CaretDownIcon,
   CaretRightIcon,
-  FileIcon,
+  CheckIcon,
+  DotsThreeCircleVerticalIcon,
+  FileTextIcon,
   FolderIcon,
   GearSixIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   SquaresFourIcon,
-  DotsThreeVerticalIcon,
-  StarIcon,
-  PencilSimpleIcon,
   TrashIcon,
-  CheckIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
@@ -24,6 +24,10 @@ import {
   usePageTree,
   useUpdatePage,
 } from "#/features/console/hooks/use-pages";
+import {
+  useIsPageFavorited,
+  useTogglePageFavorite,
+} from "#/features/console/hooks/use-page-favorites";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "#/features/console/components/console-context";
 
@@ -71,6 +75,7 @@ interface PageNodeProps {
   spaceId: string;
 }
 
+// oxlint-disable-next-line complexity
 const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
   const { selectedPageId, setSelectedPageId } = useConsoleContext();
@@ -90,6 +95,9 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   const updatePage = useUpdatePage();
   const deletePage = useDeletePage();
   const createPage = useCreatePage();
+  const { data: favData } = useIsPageFavorited(node.item.id);
+  const toggleFav = useTogglePageFavorite();
+  const isFaved = favData?.favorited ?? false;
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const hasChildren = node.children.length > 0 || isCreatingChild;
@@ -199,9 +207,8 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => {
           setIsHovered(false);
-          if (!contextMenu) {
-            // keep menu if open
-          }
+          setContextMenu(null);
+          setShowDeleteConfirm(false);
         }}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
@@ -217,18 +224,34 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
             <FolderIcon className="shrink-0" size={10} />
           </>
         ) : (
-          <FileIcon className="shrink-0" size={10} />
+          <FileTextIcon className="shrink-0" size={10} />
         )}
 
         {isRenaming ? (
-          <input
-            ref={renameInputRef}
-            className={`flex-1 bg-transparent outline-none text-[11px] lowercase border-b ${t("border-white/20 text-text-dark", "border-black/20 text-text-light")}`}
-            onBlur={submitRename}
-            onChange={(e) => setRenameTitle(e.target.value)}
-            onKeyDown={handleRenameKeyDown}
-            value={renameTitle}
-          />
+          <div className="flex-1 flex items-center gap-1">
+            <input
+              ref={renameInputRef}
+              className={`flex-1 bg-transparent outline-none text-[11px] lowercase border-b ${t("border-white/20 text-text-dark", "border-black/20 text-text-light")}`}
+              onBlur={submitRename}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              onKeyDown={handleRenameKeyDown}
+              value={renameTitle}
+            />
+            <button
+              className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
+              onClick={submitRename}
+              type="button"
+            >
+              save
+            </button>
+            <button
+              className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/60", "text-text-light/25 hover:text-text-light/60")}`}
+              onClick={() => setIsRenaming(false)}
+              type="button"
+            >
+              cancel
+            </button>
+          </div>
         ) : (
           <button
             className="flex-1 text-left truncate"
@@ -241,8 +264,12 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
 
         {isHovered && !isRenaming && (
           <div className="flex items-center gap-0.5 shrink-0 pr-0.5">
-            <button className="cursor-pointer opacity-60 hover:opacity-100" type="button">
-              <StarIcon size={10} />
+            <button
+              className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
+              onClick={() => toggleFav.mutate(node.item.id)}
+              type="button"
+            >
+              <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
             </button>
             {node.children.length > 0 && (
               <button
@@ -264,65 +291,38 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
                 onClick={handleDotsClick}
                 type="button"
               >
-                <DotsThreeVerticalIcon size={10} />
+                <DotsThreeCircleVerticalIcon size={10} />
               </button>
               {contextMenu && contextMenu.pageId === node.item.id && (
                 <div
-                  className={`absolute z-50 left-1/2 -translate-x-1/2 mt-1 py-1 w-32 text-[11px] lowercase shadow-lg ${
-                    showDeleteConfirm
-                      ? ""
-                      : t(
-                          "bg-neutral-800 border border-white/10 text-text-dark",
-                          "bg-white border border-black/10 text-text-light",
-                        )
-                  }`}
-                  style={{ top: "100%" }}
+                  className={`fixed z-50 py-1 w-32 text-[11px] lowercase shadow-lg ${t(
+                    "bg-neutral-800 border border-white/10 text-text-dark",
+                    "bg-white border border-black/10 text-text-light",
+                  )}`}
+                  style={{ left: `${contextMenu.x - 64}px`, top: `${contextMenu.y}px` }}
                 >
-                  {showDeleteConfirm ? (
-                    <div className="px-2 py-1 flex flex-col gap-1">
-                      <p className={t("text-text-dark/70", "text-text-light/70")}>
-                        delete &quot;{contextMenu.title}&quot;?
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <button
-                          className={`px-1.5 py-0.5 cursor-pointer ${t("bg-red-600 hover:bg-red-500 text-white", "bg-red-500 hover:bg-red-400 text-white")}`}
-                          onClick={submitDelete}
-                          type="button"
-                        >
-                          delete
-                        </button>
-                        <button
-                          className={`px-1.5 py-0.5 cursor-pointer ${t("hover:bg-white/10", "hover:bg-black/5")}`}
-                          onClick={() => {
-                            setShowDeleteConfirm(false);
-                            setContextMenu(null);
-                          }}
-                          type="button"
-                        >
-                          cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${t("hover:bg-white/10", "hover:bg-black/5")}`}
-                        onClick={startRename}
-                        type="button"
-                      >
-                        <PencilSimpleIcon size={10} />
-                        rename
-                      </button>
-                      <button
-                        className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${t("hover:bg-white/10", "hover:bg-black/5")}`}
-                        onClick={() => setShowDeleteConfirm(true)}
-                        type="button"
-                      >
-                        <TrashIcon size={10} />
-                        delete
-                      </button>
-                    </>
-                  )}
+                  <button
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${t("hover:bg-white/10", "hover:bg-black/5")}`}
+                    onClick={startRename}
+                    type="button"
+                  >
+                    <PencilSimpleIcon size={10} />
+                    rename
+                  </button>
+                  <button
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${showDeleteConfirm ? "text-red-400" : t("hover:bg-white/10", "hover:bg-black/5")}`}
+                    onClick={() => {
+                      if (showDeleteConfirm) {
+                        submitDelete();
+                      } else {
+                        setShowDeleteConfirm(true);
+                      }
+                    }}
+                    type="button"
+                  >
+                    <TrashIcon size={10} />
+                    {showDeleteConfirm ? "confirm?" : "delete"}
+                  </button>
                 </div>
               )}
             </div>
@@ -341,7 +341,7 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
                 className={`flex items-center gap-1 py-0.5 text-[11px] lowercase ${t("text-text-dark/50", "text-text-light/50")}`}
                 style={{ paddingLeft: `${(depth + 1) * 12 + 4}px` }}
               >
-                <FileIcon className="shrink-0" size={10} />
+                <FileTextIcon className="shrink-0" size={10} />
                 <input
                   ref={childInputRef}
                   className="flex-1 bg-transparent outline-none text-[11px] lowercase border-b border-dashed border-text-dark/20"
@@ -490,7 +490,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
 
         {isCreatingRoot ? (
           <div className="flex items-center gap-1 px-1 py-1">
-            <FileIcon className="shrink-0" size={10} />
+            <FileTextIcon className="shrink-0" size={10} />
             <input
               ref={createInputRef}
               className={`flex-1 bg-transparent outline-none text-[11px] lowercase border-b border-dashed ${t("border-white/20 text-text-dark", "border-black/20 text-text-light")}`}
