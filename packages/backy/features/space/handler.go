@@ -2,6 +2,7 @@ package space
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -470,7 +471,11 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{"error": "unsplash api unavailable"})
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+			logger.Log.Error().Err(err).Msg("failed to close response body")
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Log.Error().Int("status", resp.StatusCode).Msg("unsplash api error")
