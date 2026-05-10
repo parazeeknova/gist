@@ -29,7 +29,7 @@ const normalizePageTreeItems = (items: PageTreeItemResponse[]): PageTreeItem[] =
     parentPageId: normalizeParentPageId(item.parentPageId),
   }));
 
-export const usePageTree = (spaceId: string) =>
+export const usePageTree = (spaceId?: string) =>
   useQuery<PageTreeItem[]>({
     queryFn: ({ signal }) => {
       if (!spaceId) {

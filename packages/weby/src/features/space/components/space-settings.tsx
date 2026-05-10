@@ -715,7 +715,9 @@ export const SpaceSettings = () => {
     const payload: Record<string, string> = {};
     if (n && n !== space.name) {
       payload.name = n;
-      payload.slug = slug;
+      if (slug) {
+        payload.slug = slug;
+      }
     }
     if (d !== space.description) {
       payload.description = d;
@@ -767,7 +769,9 @@ export const SpaceSettings = () => {
   const uMembers = (members ?? []).filter((m) => m.memberType === "user");
   const gMembers = (members ?? []).filter((m) => m.memberType === "group");
 
-  return (
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
+
+  return space ? (
     <SettingsView
       avGroups={avGroups}
       avUsers={avUsers}
@@ -797,5 +801,11 @@ export const SpaceSettings = () => {
       spaceSlug={spaceSlug}
       uMembers={uMembers}
     />
+  ) : (
+    <div className="flex items-center justify-center pt-32">
+      <p className={`text-[13px] lowercase ${t("text-text-dark/25", "text-text-light/25")}`}>
+        loading...
+      </p>
+    </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
 
-const parseErrorMessage = (parsed: unknown): string => {
+const parseErrorMessage = (parsed: unknown, fallback = "operation failed"): string => {
   if (
     typeof parsed === "object" &&
     parsed !== null &&
@@ -9,7 +9,7 @@ const parseErrorMessage = (parsed: unknown): string => {
   ) {
     return (parsed as { error: string }).error;
   }
-  return "setup failed";
+  return fallback;
 };
 
 export interface MFAStatus {
@@ -47,7 +47,7 @@ export const useMFASetup = () =>
       });
       if (!res.ok) {
         const parsed = await res.json().catch(() => null);
-        throw new Error(parseErrorMessage(parsed));
+        throw new Error(parseErrorMessage(parsed, "setup failed"));
       }
       return res.json() as Promise<MFASetupResult>;
     },
@@ -65,7 +65,7 @@ export const useMFAEnable = () => {
       });
       if (!res.ok) {
         const parsed = await res.json().catch(() => null);
-        throw new Error(parseErrorMessage(parsed));
+        throw new Error(parseErrorMessage(parsed, "enable failed"));
       }
       return res.json() as Promise<MFABackupCodesResult>;
     },
@@ -87,7 +87,7 @@ export const useMFADisable = () => {
       });
       if (!res.ok) {
         const parsed = await res.json().catch(() => null);
-        throw new Error(parseErrorMessage(parsed));
+        throw new Error(parseErrorMessage(parsed, "disable failed"));
       }
       return null;
     },
@@ -108,7 +108,7 @@ export const useMFABackupCodes = () =>
       });
       if (!res.ok) {
         const parsed = await res.json().catch(() => null);
-        throw new Error(parseErrorMessage(parsed));
+        throw new Error(parseErrorMessage(parsed, "backup failed"));
       }
       return res.json() as Promise<MFABackupCodesResult>;
     },
@@ -126,7 +126,7 @@ export const useMFAVerify = () => {
       });
       if (!res.ok) {
         const parsed = await res.json().catch(() => null);
-        throw new Error(parseErrorMessage(parsed));
+        throw new Error(parseErrorMessage(parsed, "verify failed"));
       }
       return res.json();
     },

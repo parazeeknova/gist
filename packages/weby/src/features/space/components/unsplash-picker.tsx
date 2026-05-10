@@ -118,6 +118,49 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  // Focus trap
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    return () => {
+      previousFocusRef.current?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) {
+      return;
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") {
+        return;
+      }
+      const focusable = dialog.querySelectorAll<HTMLElement>(
+        'input, button, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) {
+        return;
+      }
+      const [first] = focusable;
+      // oxlint-disable-next-line unicorn/prefer-at
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -203,6 +246,7 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
       />
       <div
         className={`relative z-10 mx-4 flex max-h-[80vh] w-full max-w-2xl flex-col border p-4 ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
+        ref={dialogRef}
       >
         <div className="flex items-center justify-between mb-3">
           <span className={`text-[11px] lowercase ${t("text-text-dark/60", "text-text-light/60")}`}>

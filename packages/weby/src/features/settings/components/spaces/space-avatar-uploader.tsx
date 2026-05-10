@@ -48,6 +48,7 @@ export const SpaceAvatarUploader = ({
 
       try {
         const url = await compressImage(file, 400, 400, 0.8);
+        const prevAvatar = avatarUrl;
         onAvatarChange(url);
         updateSpace.mutate(
           {
@@ -61,6 +62,7 @@ export const SpaceAvatarUploader = ({
           },
           {
             onError: (err: Error) => {
+              onAvatarChange(prevAvatar);
               setUploadError(err.message || "failed to upload avatar");
               setIsUploading(false);
             },
@@ -77,7 +79,7 @@ export const SpaceAvatarUploader = ({
 
       setShowMenu(false);
     },
-    [name, slug, description, spaceId, onAvatarChange, queryClient, updateSpace],
+    [name, slug, description, spaceId, avatarUrl, onAvatarChange, queryClient, updateSpace],
   );
 
   const handleRemove = useCallback(() => {

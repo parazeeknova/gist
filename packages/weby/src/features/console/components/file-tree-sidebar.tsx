@@ -58,12 +58,29 @@ const buildPageTree = (items: PageTreeItem[]): TreeNode[] => {
   return build(null);
 };
 
+const isDescendant = (items: PageTreeItem[], ancestorId: string, descendantId: string): boolean => {
+  const parentMap = new Map(items.map((i) => [i.id, i.parentPageId]));
+  let current: string | null | undefined = descendantId;
+  while (current) {
+    const parent = parentMap.get(current);
+    if (parent === ancestorId) {
+      return true;
+    }
+    if (!parent) {
+      return false;
+    }
+    current = parent;
+  }
+  return false;
+};
+
 interface PageNodeProps {
   node: TreeNode;
   depth: number;
+  treeItems: PageTreeItem[];
 }
 
-const PageNode = ({ node, depth }: PageNodeProps) => {
+const PageNode = ({ node, depth, treeItems }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
   const { selectedPageId, setSelectedPageId } = useConsoleContext();
   const [expanded, setExpanded] = useState(true);
@@ -175,7 +192,11 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const draggedId = e.dataTransfer.getData("text/plain");
-    if (draggedId && draggedId !== node.item.id) {
+    if (
+      draggedId &&
+      draggedId !== node.item.id &&
+      !isDescendant(treeItems, draggedId, node.item.id)
+    ) {
       movePage.mutate({ id: draggedId, input: { parentPageId: node.item.id } });
     }
   };
@@ -325,7 +346,7 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
       {expanded && hasChildren && (
         <ul>
           {node.children.map((child) => (
-            <PageNode depth={depth + 1} key={child.item.id} node={child} />
+            <PageNode depth={depth + 1} key={child.item.id} node={child} treeItems={treeItems} />
           ))}
         </ul>
       )}
@@ -391,7 +412,7 @@ const SpaceTreeNode = ({ space, defaultExpanded }: SpaceTreeNodeProps) => {
             return (
               <ul>
                 {pageTree.map((node) => (
-                  <PageNode depth={0} key={node.item.id} node={node} />
+                  <PageNode depth={0} key={node.item.id} node={node} treeItems={treeItems} />
                 ))}
               </ul>
             );

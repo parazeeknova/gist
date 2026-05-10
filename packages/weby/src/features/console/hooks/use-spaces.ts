@@ -70,20 +70,24 @@ export const useUpdateSpace = () => {
         method: "PUT",
       }),
     onError: (_err, _variables, context) => {
-      const ctx = context as { previous?: { space: Space; spaceBySlug: Space } } | undefined;
+      const ctx = context as
+        | { previous?: { slug: string; space: Space; spaceBySlug: Space } }
+        | undefined;
       if (ctx?.previous) {
-        queryClient.setQueryData(["spaceBySlug"], ctx.previous.spaceBySlug);
+        queryClient.setQueryData(["spaceBySlug", ctx.previous.slug], ctx.previous.spaceBySlug);
         queryClient.setQueryData(["space", _variables.id], ctx.previous.space);
       }
     },
     onMutate: async ({ id, input }) => {
-      await queryClient.cancelQueries({ queryKey: ["spaceBySlug"] });
+      const { slug } = input;
+      await queryClient.cancelQueries({ queryKey: ["spaceBySlug", slug] });
       await queryClient.cancelQueries({ queryKey: ["space", id] });
       const previous = {
+        slug,
         space: queryClient.getQueryData<Space>(["space", id]),
-        spaceBySlug: queryClient.getQueryData<Space>(["spaceBySlug"]),
+        spaceBySlug: queryClient.getQueryData<Space>(["spaceBySlug", slug]),
       };
-      queryClient.setQueryData<Space>(["spaceBySlug"], (old) => {
+      queryClient.setQueryData<Space>(["spaceBySlug", slug], (old) => {
         if (!old) {
           return old;
         }
@@ -211,7 +215,8 @@ export const useRemoveSpaceGroup = () => {
       fetchProtected<{ status: string }>(`/api/console/spaces/${spaceId}/groups/${groupId}`, {
         method: "DELETE",
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["spaceMembers", variables.spaceId] });
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
     },
   });

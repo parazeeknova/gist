@@ -45,8 +45,8 @@ func (r *SpaceRepo) ListByIDs(ctx context.Context, ids []string) ([]models.Space
 			FROM space_members
 			GROUP BY space_id
 		) m ON m.space_id = s.id
-		WHERE s.id = ANY($1::text[]) AND s.deleted_at IS NULL
-		ORDER BY array_position($1::text[], s.id)`
+		WHERE s.id = ANY($1::uuid[]) AND s.deleted_at IS NULL
+		ORDER BY array_position($1::uuid[], s.id)`
 
 	rows, err := r.pool.Query(ctx, query, ids)
 	if err != nil {

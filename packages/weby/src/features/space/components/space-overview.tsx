@@ -12,7 +12,7 @@ import {
   TrashIcon,
   UserIcon,
 } from "@phosphor-icons/react";
-import { useParams } from "@tanstack/react-router";
+import { useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "#/shared/hooks/use-theme";
 import {
@@ -32,6 +32,7 @@ import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { SidebarTooltip } from "#/features/console/components/sidebar-tooltip";
 import { compressImage } from "#/shared/lib/image-compress";
 import { UnsplashPicker } from "./unsplash-picker";
+import { useConsoleContext } from "#/features/console/components/console-context";
 import type { PageTreeItem, SpaceMemberMixed } from "#/shared/types";
 
 type Tab = "recents" | "favorites" | "mine";
@@ -81,6 +82,7 @@ interface SpaceContentSectionProps {
   isPending: boolean;
   treeItems: PageTreeItem[] | undefined;
   viewMode: ViewMode;
+  onNavigate: (pageId: string) => void;
   onSetActiveTab: (tab: Tab) => void;
   onSetViewMode: (mode: ViewMode) => void;
   onToggleFavorite: (pageId: string) => void;
@@ -94,6 +96,7 @@ const SpaceContentSection = ({
   isPending,
   treeItems,
   viewMode,
+  onNavigate,
   onSetActiveTab,
   onSetViewMode,
   onToggleFavorite,
@@ -207,13 +210,26 @@ const SpaceContentSection = ({
                         const isFav = favorites.includes(page.id);
                         return (
                           <div
-                            className={`flex items-center gap-3 rounded px-2 py-1.5 ${t("hover:bg-white/5", "hover:bg-black/3")}`}
+                            className={`flex items-center gap-3 rounded px-2 py-1.5 cursor-pointer ${t("hover:bg-white/5", "hover:bg-black/3")}`}
                             key={page.id}
+                            onClick={() => onNavigate(page.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onNavigate(page.id);
+                              }
+                            }}
+                            // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role
+                            role="button"
+                            tabIndex={0}
                           >
                             <button
                               aria-label={isFav ? "unfavorite" : "favorite"}
                               className={`shrink-0 cursor-pointer ${isFav ? t("text-yellow-400", "text-yellow-500") : t("text-text-dark/20 hover:text-yellow-400", "text-text-light/20 hover:text-yellow-500")}`}
-                              onClick={() => onToggleFavorite(page.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onToggleFavorite(page.id);
+                              }}
                               type="button"
                             >
                               <BookmarkSimpleIcon size={13} weight={isFav ? "fill" : "regular"} />
@@ -282,8 +298,18 @@ const SpaceContentSection = ({
                         const isFav = favorites.includes(page.id);
                         return (
                           <div
-                            className={`flex flex-col gap-1 rounded border p-3 ${t("border-border-dark hover:bg-white/5", "border-border-light hover:bg-black/3")}`}
+                            className={`flex flex-col gap-1 rounded border p-3 cursor-pointer ${t("border-border-dark hover:bg-white/5", "border-border-light hover:bg-black/3")}`}
                             key={page.id}
+                            onClick={() => onNavigate(page.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" || e.key === " ") {
+                                e.preventDefault();
+                                onNavigate(page.id);
+                              }
+                            }}
+                            // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role
+                            role="button"
+                            tabIndex={0}
                           >
                             <div className="flex items-start justify-between">
                               <span
@@ -294,7 +320,10 @@ const SpaceContentSection = ({
                               <button
                                 aria-label={isFav ? "unfavorite" : "favorite"}
                                 className={`ml-1 shrink-0 cursor-pointer ${isFav ? t("text-yellow-400", "text-yellow-500") : t("text-text-dark/20 hover:text-yellow-400", "text-text-light/20 hover:text-yellow-500")}`}
-                                onClick={() => onToggleFavorite(page.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onToggleFavorite(page.id);
+                                }}
                                 type="button"
                               >
                                 <BookmarkSimpleIcon size={11} weight={isFav ? "fill" : "regular"} />
@@ -677,6 +706,8 @@ const SpaceHeading = ({
 // eslint-disable-next-line complexity
 export const SpaceOverview = () => {
   const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });
+  const { setSelectedPageId } = useConsoleContext();
+  const navigate = useNavigate();
   const { data: space } = useSpaceBySlug(spaceSlug);
   const { data: treeItems, isPending: isTreePending } = usePageTree(space?.id ?? "");
   const { data: members } = useSpaceMembers(space?.id ?? "");
@@ -687,6 +718,11 @@ export const SpaceOverview = () => {
   const togglePageFav = useTogglePageFavorite();
   const { isDarkMode } = useTheme();
   const updateSpace = useUpdateSpace();
+
+  const handlePageNavigate = (pageId: string) => {
+    setSelectedPageId(pageId);
+    navigate({ to: "/home" });
+  };
 
   const [activeTab, setActiveTab] = useState<Tab>("recents");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -717,6 +753,8 @@ export const SpaceOverview = () => {
       },
     });
   };
+
+  const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   const pages = useMemo(
     () => (treeItems ? treeItems.filter((p) => p.icon !== "folder") : []),
@@ -758,57 +796,70 @@ export const SpaceOverview = () => {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col min-h-full pb-16">
-      {headerImage && (
-        <div className="pt-4">
-          <HeaderImage
-            headerImage={headerImage}
-            onOpenPicker={() => setShowUnsplash(true)}
-            onRemove={() => doUpdate({ headerImage: "" })}
-          />
+      {space ? (
+        <>
+          {headerImage && (
+            <div className="pt-4">
+              <HeaderImage
+                headerImage={headerImage}
+                onOpenPicker={() => setShowUnsplash(true)}
+                onRemove={() => doUpdate({ headerImage: "" })}
+              />
+            </div>
+          )}
+
+          <div className="px-4">
+            <SpaceHeading
+              createdAt={space?.createdAt}
+              description={space?.description}
+              hasHeader={Boolean(headerImage)}
+              icon={space?.icon}
+              isDarkMode={isDarkMode}
+              members={visibleMembers}
+              name={space?.name || spaceSlug}
+              pageCount={pages.length}
+              updatedAt={space?.updatedAt}
+              onAvatarChange={(dataUrl) => doUpdate({ icon: dataUrl })}
+              onEditDescription={(v) => doUpdate({ description: v })}
+              onEditHeader={() => setShowUnsplash(true)}
+              onEditName={(v) =>
+                doUpdate({ name: v, slug: v.toLowerCase().replaceAll(/\s+/g, "-") })
+              }
+              onToggleFav={() => toggleSpaceFav.mutate(space?.id ?? "")}
+              starred={favData?.favorited ?? false}
+            />
+
+            <SpaceContentSection
+              activeTab={activeTab}
+              favorites={favPageIds ?? []}
+              groupedPages={groupedPages}
+              isDarkMode={isDarkMode}
+              isPending={isTreePending}
+              treeItems={treeItems}
+              viewMode={viewMode}
+              onNavigate={handlePageNavigate}
+              onSetActiveTab={setActiveTab}
+              onSetViewMode={setViewMode}
+              onToggleFavorite={toggleFavorite}
+            />
+          </div>
+
+          {showUnsplash && (
+            <UnsplashPicker
+              onClose={() => setShowUnsplash(false)}
+              onSelect={(url) => {
+                doUpdate({ headerImage: url });
+                setShowUnsplash(false);
+              }}
+            />
+          )}
+        </>
+      ) : (
+        <div className="flex items-center justify-center pt-32">
+          <p className={`text-[13px] lowercase ${t("text-text-dark/25", "text-text-light/25")}`}>
+            loading...
+          </p>
         </div>
-      )}
-
-      <div className="px-4">
-        <SpaceHeading
-          createdAt={space?.createdAt}
-          description={space?.description}
-          hasHeader={Boolean(headerImage)}
-          icon={space?.icon}
-          isDarkMode={isDarkMode}
-          members={visibleMembers}
-          name={space?.name || spaceSlug}
-          pageCount={pages.length}
-          updatedAt={space?.updatedAt}
-          onAvatarChange={(dataUrl) => doUpdate({ icon: dataUrl })}
-          onEditDescription={(v) => doUpdate({ description: v })}
-          onEditHeader={() => setShowUnsplash(true)}
-          onEditName={(v) => doUpdate({ name: v, slug: v.toLowerCase().replaceAll(/\s+/g, "-") })}
-          onToggleFav={() => toggleSpaceFav.mutate(space?.id ?? "")}
-          starred={favData?.favorited ?? false}
-        />
-
-        <SpaceContentSection
-          activeTab={activeTab}
-          favorites={favPageIds ?? []}
-          groupedPages={groupedPages}
-          isDarkMode={isDarkMode}
-          isPending={isTreePending}
-          treeItems={treeItems}
-          viewMode={viewMode}
-          onSetActiveTab={setActiveTab}
-          onSetViewMode={setViewMode}
-          onToggleFavorite={toggleFavorite}
-        />
-      </div>
-
-      {showUnsplash && (
-        <UnsplashPicker
-          onClose={() => setShowUnsplash(false)}
-          onSelect={(url) => {
-            doUpdate({ headerImage: url });
-            setShowUnsplash(false);
-          }}
-        />
       )}
     </div>
   );

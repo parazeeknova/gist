@@ -40,6 +40,11 @@ const toSlug = (title: string): string =>
     .replaceAll(/[^a-z0-9]+/g, "-")
     .replaceAll(/^-+|-+$/g, "");
 
+const makeSlug = (title: string): string => {
+  const base = toSlug(title) || crypto.randomUUID().slice(0, 8);
+  return `${base}-${crypto.randomUUID().slice(0, 6)}`;
+};
+
 interface TreeNode {
   item: PageTreeItem;
   children: TreeNode[];
@@ -192,7 +197,7 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
     }
     createPage.mutate({
       parentPageId: node.item.id,
-      slugId: toSlug(trimmed),
+      slugId: makeSlug(trimmed),
       spaceId,
       title: trimmed,
     });
@@ -285,7 +290,10 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
             </button>
             <button
               className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/60", "text-text-light/25 hover:text-text-light/60")}`}
-              onClick={() => setIsRenaming(false)}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setIsRenaming(false);
+              }}
               type="button"
             >
               cancel
@@ -406,7 +414,10 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
                 </button>
                 <button
                   className="shrink-0 cursor-pointer opacity-60 hover:opacity-100"
-                  onClick={() => setIsCreatingChild(false)}
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setIsCreatingChild(false);
+                  }}
                   type="button"
                 >
                   <XIcon size={10} />
@@ -431,7 +442,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const { location } = routerState;
   const { data: treeItems, isPending } = usePageTree(space.id);
   const isOverview = location.pathname === `/s/${space.slug}`;
-  const isSettings = location.pathname === `/s/${space.slug}/settings`;
+  const isSettings = location.pathname.startsWith(`/s/${space.slug}/settings`);
 
   const createPage = useCreatePage();
 
