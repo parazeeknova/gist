@@ -21,7 +21,7 @@ import {
 import type { ToolbarProps } from "#/features/editor/types/editor.types";
 import { useTheme } from "#/shared/hooks/use-theme";
 
-const toolbarButton = (t: (dark: string, light: string) => string, active: boolean | undefined) =>
+const toolbarButton = (t: (dark: string, light: string) => string, active?: boolean) =>
   `p-1 cursor-pointer ${active ? t("bg-white/15 text-text-dark", "bg-black/10 text-text-light") : t("text-text-dark/40 hover:text-text-dark hover:bg-white/10", "text-text-light/40 hover:text-text-light hover:bg-black/5")}`;
 
 const getHeadingLevel = (editor: NonNullable<ToolbarProps["editor"]>): number => {
