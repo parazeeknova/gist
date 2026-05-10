@@ -17,11 +17,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useAuth } from "#/features/auth/hooks/use-auth";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useSpaceBySlug } from "#/features/console/hooks/use-spaces";
-// import { useConsolePages } from "#/features/console/hooks/use-pages";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
-import { FileTreeSidebar } from "./file-tree-sidebar";
 import { FloatingSidebar } from "./floating-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
 import { SidebarFooter } from "./sidebar-footer";
@@ -51,8 +49,6 @@ export const ConsoleLayout = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const animatingRef = useRef(false);
   const { data: user } = useAuth();
-
-  // const { data: allPages, isPending: allPagesPending } = useConsolePages();
 
   const {
     selectedWorkspaceId,
@@ -310,55 +306,6 @@ export const ConsoleLayout = () => {
             </span>
           </button>
         </nav>
-        {/* <div className="mb-4">
-          <p
-            className={`mb-1 text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
-          >
-            my recent pages
-          </p>
-          {(() => {
-            if (allPagesPending) {
-              return (
-                <p className={`text-[11px] px-1 ${t("text-text-dark/25", "text-text-light/25")}`}>
-                  loading...
-                </p>
-              );
-            }
-            const recent = (allPages ?? [])
-              .filter((p) => !p.slugId.includes("/") && p.icon !== "folder")
-              .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-              .slice(0, 5);
-            if (recent.length === 0) {
-              return (
-                <p className={`text-[11px] px-1 ${t("text-text-dark/25", "text-text-light/25")}`}>
-                  no pages yet
-                </p>
-              );
-            }
-            return (
-              <div className="space-y-0.5">
-                {recent.map((page) => (
-                  <div
-                    className={`flex items-center gap-2 px-1 py-0.5 text-[11px] lowercase rounded ${t("text-text-dark/50", "text-text-light/50")}`}
-                    key={page.id}
-                  >
-                    <FileTextIcon size={10} />
-                    <span className="flex-1 truncate">{page.title}</span>
-                    <span
-                      className={`shrink-0 text-[9px] ${t("text-text-dark/20", "text-text-light/20")}`}
-                    >
-                      {new Date(page.updatedAt).toLocaleDateString("en-US", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </div> */}
-        <FileTreeSidebar />
       </div>
     );
   }

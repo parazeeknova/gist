@@ -1,4 +1,4 @@
-/* eslint-disable unicorn/filename-case */
+// eslint-disable-next-line unicorn/filename-case
 import { createFileRoute } from "@tanstack/react-router";
 import { SpaceSettings } from "#/features/space/components/space-settings";
 

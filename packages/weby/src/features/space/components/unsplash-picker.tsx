@@ -45,6 +45,7 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const doSearch = useCallback(async (q: string, p: string, append: boolean) => {
     abortRef.current?.abort();
@@ -99,10 +100,23 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
     doSearch(query.trim() || "nature", String(nextPage), true);
   };
 
-  // Load default images on mount
+  // Load default images on mount, focus input
   useEffect(() => {
     doSearch("nature", "1", false);
+    inputRef.current?.focus();
+    return () => abortRef.current?.abort();
   }, [doSearch]);
+
+  // Escape key to close
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   const renderContent = () => {
     if (loading) {
@@ -177,6 +191,9 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
           onClose();
         }
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="unsplash search"
     >
       <button
         aria-label="close picker"
@@ -206,6 +223,7 @@ export const UnsplashPicker = ({ onClose, onSelect }: UnsplashPickerProps) => {
 
         <div className="flex gap-2 mb-3">
           <input
+            ref={inputRef}
             className={`flex-1 bg-transparent border px-2 py-1.5 text-[11px] lowercase outline-none ${t("border-border-dark placeholder:text-text-dark/20 text-text-dark", "border-border-light placeholder:text-text-light/20 text-text-light")}`}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder="search unsplash..."

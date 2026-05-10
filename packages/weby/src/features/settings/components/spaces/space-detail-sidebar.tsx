@@ -692,13 +692,24 @@ export const SpaceDetailSidebar = ({
   }, [isCurrentUserDirectMember, currentUser?.id, members]);
 
   const handleSaveDetails = () => {
+    const n = name.trim();
+    const d = description.trim();
+    const iconUrl = icon.trim();
+    if (!n && !d && !iconUrl) {
+      return;
+    }
+    const generatedSlug = n
+      .toLowerCase()
+      .replaceAll(/[^\w\s-]/g, "")
+      .replaceAll(/[\s_-]+/g, "-")
+      .replaceAll(/^-+|-+$/g, "");
     updateSpace.mutate({
       id: space.id,
       input: {
-        description: description.trim(),
-        icon: icon.trim(),
-        name: name.trim(),
-        slug: slug.trim(),
+        description: d,
+        icon: iconUrl || undefined,
+        name: n,
+        slug: generatedSlug || space.slug,
       },
     });
   };

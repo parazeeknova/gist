@@ -72,17 +72,23 @@ export const WorkspaceAvatarUploader = ({
 
   const handleRemove = useCallback(() => {
     setUploadError("");
+    const prev = avatarUrl;
     onAvatarChange("");
     updateWorkspace.mutate(
       { id: workspaceId, input: { icon: "", name: name.trim() || "", slug } },
       {
+        onError: (err: Error) => {
+          onAvatarChange(prev);
+          setUploadError(err.message || "failed to remove avatar");
+          setIsUploading(false);
+        },
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
         },
       },
     );
     setShowMenu(false);
-  }, [name, slug, workspaceId, onAvatarChange, queryClient, updateWorkspace]);
+  }, [name, slug, workspaceId, avatarUrl, onAvatarChange, queryClient, updateWorkspace]);
 
   const initials = name
     .split(" ")

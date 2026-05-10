@@ -10,8 +10,20 @@ export const Route = createFileRoute("/api/console/pages/favorites")({
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const res = await getBacky(`console/pages/favorites`, cookieHeader);
-        const data = await res.json();
-        return Response.json(data ?? []);
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          return Response.json(
+            { error: text || "failed to fetch favorites" },
+            { status: res.status },
+          );
+        }
+        let data: unknown;
+        try {
+          data = await res.json();
+        } catch {
+          data = [];
+        }
+        return Response.json(data, { status: res.status });
       },
     },
   },

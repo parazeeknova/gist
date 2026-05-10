@@ -90,6 +90,7 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isCreatingChild, setIsCreatingChild] = useState(false);
   const [newChildTitle, setNewChildTitle] = useState("");
+  const isSubmittingRef = useRef(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -108,6 +109,9 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   const isSelected = selectedPageId === node.item.id;
 
   useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setContextMenu(null);
@@ -116,7 +120,7 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  }, [contextMenu]);
 
   useEffect(() => {
     if (isRenaming && renameInputRef.current) {
@@ -150,13 +154,20 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   };
 
   const submitRename = () => {
+    if (isSubmittingRef.current) {
+      return;
+    }
     const trimmed = renameTitle.trim();
     if (!trimmed || trimmed === node.item.title) {
       setIsRenaming(false);
       return;
     }
+    isSubmittingRef.current = true;
     updatePage.mutate({ id: node.item.id, input: { title: trimmed } });
     setIsRenaming(false);
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 1000);
   };
 
   const handleRenameKeyDown = (e: React.KeyboardEvent) => {
@@ -425,10 +436,10 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const createPage = useCreatePage();
 
   const handleCreatePage = () => {
-    const timestamp = Date.now().toString().slice(-6);
+    const slugId = crypto.randomUUID().slice(0, 8);
     const title = "untitled page";
     createPage.mutate({
-      slugId: `untitled-page-${timestamp}`,
+      slugId: `untitled-page-${slugId}`,
       spaceId: space.id,
       title,
     });
@@ -450,9 +461,16 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           <ArrowLeftIcon size={12} />
           back
         </button>
-        <div className="flex items-center gap-1 text-[11px] text-text-dark/40 lowercase">
-          <span className="truncate max-w-30 uppercase font-bold">{space.name}</span> -
-          <span className="truncate max-w-20">{space.description}</span>
+        <div className="flex items-center gap-1 text-[11px] lowercase">
+          <span
+            className={`truncate max-w-30 uppercase font-bold ${t("text-text-dark/40", "text-text-light/40")}`}
+          >
+            {space.name}
+          </span>{" "}
+          -
+          <span className={`truncate max-w-20 ${t("text-text-dark/40", "text-text-light/40")}`}>
+            {space.description}
+          </span>
         </div>
       </div>
 
@@ -529,10 +547,10 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
             <button
               className={`cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/50", "text-text-light/25 hover:text-text-light/50")}`}
               onClick={() => {
-                const timestamp = Date.now().toString().slice(-6);
+                const folderSlug = crypto.randomUUID().slice(0, 8);
                 createPage.mutate({
                   icon: "folder",
-                  slugId: `new-folder-${timestamp}`,
+                  slugId: `new-folder-${folderSlug}`,
                   spaceId: space.id,
                   title: "new folder",
                 });

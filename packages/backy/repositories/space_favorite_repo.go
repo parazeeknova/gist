@@ -61,3 +61,21 @@ func (r *SpaceFavoriteRepo) List(ctx context.Context, userID string) ([]string, 
 	}
 	return ids, nil
 }
+
+// Toggle atomically toggles the favorite status for a space.
+// Returns true if the space is now favorited, false if unfavorited.
+func (r *SpaceFavoriteRepo) Toggle(ctx context.Context, userID, spaceID string) (bool, error) {
+	var favorited bool
+	err := r.pool.QueryRow(ctx, `
+		WITH toggled AS (
+			DELETE FROM space_favorites WHERE user_id = $1 AND space_id = $2 RETURNING 1
+		)
+		INSERT INTO space_favorites (user_id, space_id)
+		SELECT $1, $2 WHERE NOT EXISTS (SELECT 1 FROM toggled)
+		RETURNING (NOT EXISTS (SELECT 1 FROM toggled))::boolean AS inserted
+	`, userID, spaceID).Scan(&favorited)
+	if err != nil {
+		return false, fmt.Errorf("toggling space favorite: %w", err)
+	}
+	return favorited, nil
+}

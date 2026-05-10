@@ -53,6 +53,7 @@ export const ConsoleHome = () => {
     return map;
   }, [spaces]);
   const { data: allPages, isPending: allPagesPending } = useConsolePages();
+  const pageById = useMemo(() => new Map((allPages ?? []).map((p) => [p.id, p])), [allPages]);
   const createSpace = useCreateSpace();
   const [showCreateSpace, setShowCreateSpace] = useState(false);
   const [newName, setNewName] = useState("");
@@ -167,7 +168,7 @@ export const ConsoleHome = () => {
 
       <QuickActions />
 
-      <div className="mt-10">
+      <div className="mt-10" id="library-section">
         <div className="flex items-center justify-between mb-3">
           <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
             spaces you belong to
@@ -366,7 +367,7 @@ export const ConsoleHome = () => {
             }
             return recent.map((page) => {
               const parentTitle = page.parentPageId
-                ? (allPages ?? []).find((p) => p.id === page.parentPageId)?.title
+                ? pageById.get(page.parentPageId)?.title
                 : undefined;
               return (
                 <div

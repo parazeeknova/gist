@@ -128,6 +128,7 @@ export interface PageTreeItem {
   parentPageId: string | null;
   spaceId: string;
   hasChildren: boolean;
+  creatorId?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -82,14 +82,14 @@ export const useCreatePage = () => {
         method: "POST",
       }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["pageTree", variables.spaceId] });
-      queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.refetchQueries({ queryKey: ["pageTree", variables.spaceId] });
-      queryClient.refetchQueries({ queryKey: ["consolePages"] });
+      queryClient.invalidateQueries({
+        queryKey: ["pageTree", variables.spaceId],
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
     },
   });
 };
-
 export const useUpdatePage = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -100,11 +100,12 @@ export const useUpdatePage = () => {
         method: "PUT",
       }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["consolePage", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
-      queryClient.refetchQueries({ queryKey: ["pageTree"] });
-      queryClient.refetchQueries({ queryKey: ["consolePages"] });
+      queryClient.invalidateQueries({
+        queryKey: ["consolePage", variables.id],
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["pageTree"], refetchType: "all" });
     },
   });
 };
@@ -117,11 +118,9 @@ export const useDeletePage = () => {
         method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+      queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["pageTree"], refetchType: "all" });
       queryClient.removeQueries({ queryKey: ["consolePage"] });
-      queryClient.refetchQueries({ queryKey: ["pageTree"] });
-      queryClient.refetchQueries({ queryKey: ["consolePages"] });
     },
   });
 };

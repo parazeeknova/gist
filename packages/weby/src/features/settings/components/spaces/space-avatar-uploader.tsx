@@ -82,6 +82,7 @@ export const SpaceAvatarUploader = ({
 
   const handleRemove = useCallback(() => {
     setUploadError("");
+    const prev = avatarUrl;
     onAvatarChange("");
     updateSpace.mutate(
       {
@@ -94,13 +95,18 @@ export const SpaceAvatarUploader = ({
         },
       },
       {
+        onError: (err: Error) => {
+          onAvatarChange(prev);
+          setUploadError(err.message || "failed to remove avatar");
+          setIsUploading(false);
+        },
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
         },
       },
     );
     setShowMenu(false);
-  }, [name, slug, description, spaceId, onAvatarChange, queryClient, updateSpace]);
+  }, [name, slug, description, spaceId, avatarUrl, onAvatarChange, queryClient, updateSpace]);
 
   const initials = name
     .split(" ")

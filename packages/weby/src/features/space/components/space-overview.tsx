@@ -723,11 +723,15 @@ export const SpaceOverview = () => {
     [treeItems],
   );
 
-  const filteredPages = useMemo(
-    () =>
-      activeTab === "favorites" ? pages.filter((p) => (favPageIds ?? []).includes(p.id)) : pages,
-    [pages, activeTab, favPageIds],
-  );
+  const filteredPages = useMemo(() => {
+    if (activeTab === "favorites") {
+      return pages.filter((p) => (favPageIds ?? []).includes(p.id));
+    }
+    if (activeTab === "mine") {
+      return pages.filter((p) => p.creatorId === user?.id);
+    }
+    return pages;
+  }, [pages, activeTab, favPageIds, user?.id]);
 
   const groupedPages = useMemo(() => {
     const sortBy = activeTab === "recents" ? "updatedAt" : "createdAt";

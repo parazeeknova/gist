@@ -630,7 +630,7 @@ const SettingsView = (props: SettingsViewProps) => {
         onRoleChange={props.onUpdGRole}
       />
 
-      <SectionLabel isDarkMode={isDarkMode} label="academic" />
+      <SectionLabel isDarkMode={isDarkMode} label="security" />
       <SecuritySection isDarkMode={isDarkMode} />
 
       <p
@@ -667,6 +667,7 @@ export const SpaceSettings = () => {
   const [showUnsplash, setShowUnsplash] = useState(false);
   const [name, setName] = useState(space?.name ?? "");
   const [description, setDescription] = useState(space?.description ?? "");
+  const [_uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -706,11 +707,21 @@ export const SpaceSettings = () => {
     }
     const n = name.trim();
     const d = description.trim();
+    const slug = n
+      .toLowerCase()
+      .replaceAll(/[^\w\s-]/g, "")
+      .replaceAll(/[\s_-]+/g, "-")
+      .replaceAll(/^-+|-+$/g, "");
+    const payload: Record<string, string> = {};
     if (n && n !== space.name) {
-      doUpdate({ name: n, slug: n.toLowerCase().replaceAll(/\s+/g, "-") });
+      payload.name = n;
+      payload.slug = slug;
     }
     if (d !== space.description) {
-      doUpdate({ description: d });
+      payload.description = d;
+    }
+    if (Object.keys(payload).length > 0) {
+      doUpdate(payload);
     }
   };
   const onDel = () => {
@@ -722,7 +733,14 @@ export const SpaceSettings = () => {
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) {
-      doUpdate({ icon: await compressImage(f).catch(() => "") });
+      try {
+        const icon = await compressImage(f);
+        if (icon) {
+          doUpdate({ icon });
+        }
+      } catch {
+        setUploadError("failed to process image");
+      }
     }
   };
 

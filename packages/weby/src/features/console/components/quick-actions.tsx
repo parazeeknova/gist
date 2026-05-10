@@ -131,7 +131,7 @@ export const QuickActions = () => {
           isDarkMode={isDarkMode}
           label="library"
           onClick={() => {
-            const el = document.querySelector("#recent-docs-section");
+            const el = document.querySelector("#library-section");
             el?.scrollIntoView({ behavior: "smooth" });
           }}
         />

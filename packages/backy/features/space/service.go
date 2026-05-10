@@ -87,13 +87,24 @@ func (s *SpaceService) CreateSpace(ctx context.Context, name, slug, icon, descri
 	return space, nil
 }
 
+// UpdateSpaceParams holds the parameters for updating a space.
+type UpdateSpaceParams struct {
+	ID          string
+	Name        string
+	Slug        string
+	Icon        string
+	Description string
+	HeaderImage *string
+	UserID      string
+}
+
 // UpdateSpace updates an existing space. Requires admin role.
-func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, description, headerImage, userID string) (models.Space, error) {
-	if err := s.RequireAdmin(ctx, id, userID); err != nil {
+func (s *SpaceService) UpdateSpace(ctx context.Context, p UpdateSpaceParams) (models.Space, error) {
+	if err := s.RequireAdmin(ctx, p.ID, p.UserID); err != nil {
 		return models.Space{}, err
 	}
 
-	existing, err := s.spaceRepo.GetByID(ctx, id)
+	existing, err := s.spaceRepo.GetByID(ctx, p.ID)
 	if err != nil {
 		if errors.Is(err, ErrSpaceNotFound) {
 			return models.Space{}, ErrSpaceNotFound
@@ -106,41 +117,43 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 	oldIcon := existing.Icon
 	oldHeaderImage := existing.HeaderImage
 
-	existing.Name = name
-	existing.Slug = slug
-	existing.Icon = icon
-	existing.Description = description
-	existing.HeaderImage = headerImage
+	existing.Name = p.Name
+	existing.Slug = p.Slug
+	existing.Icon = p.Icon
+	existing.Description = p.Description
+	if p.HeaderImage != nil {
+		existing.HeaderImage = *p.HeaderImage
+	}
 	existing.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 
 	if err := s.spaceRepo.Update(ctx, existing); err != nil {
 		return models.Space{}, fmt.Errorf("updating space: %w", err)
 	}
 
-	nameOrSlugChanged := oldName != name || oldSlug != slug
-	iconChanged := oldIcon != icon
-	headerChanged := oldHeaderImage != headerImage
+	nameOrSlugChanged := oldName != p.Name || oldSlug != p.Slug
+	iconChanged := oldIcon != p.Icon
+	headerChanged := oldHeaderImage != existing.HeaderImage
 
 	recipients, _ := s.workspaceMemberIDsForSpace(ctx, existing.WorkspaceID)
 	if iconChanged && !nameOrSlugChanged {
 		s.notifier.Notify(ctx, notifeat.NotificationEvent{
 			Type:         notifeat.EventSpaceIconChanged,
 			WorkspaceID:  existing.WorkspaceID,
-			ActorID:      userID,
+			ActorID:      p.UserID,
 			RecipientIDs: recipients,
 			EntityType:   "space",
-			EntityID:     id,
-			Metadata:     map[string]string{"name": name},
+			EntityID:     p.ID,
+			Metadata:     map[string]string{"name": p.Name},
 		})
 	} else if nameOrSlugChanged {
 		s.notifier.Notify(ctx, notifeat.NotificationEvent{
 			Type:         notifeat.EventSpaceRenamed,
 			WorkspaceID:  existing.WorkspaceID,
-			ActorID:      userID,
+			ActorID:      p.UserID,
 			RecipientIDs: recipients,
 			EntityType:   "space",
-			EntityID:     id,
-			Metadata:     map[string]string{"name": name},
+			EntityID:     p.ID,
+			Metadata:     map[string]string{"name": p.Name},
 		})
 	}
 
@@ -148,11 +161,11 @@ func (s *SpaceService) UpdateSpace(ctx context.Context, id, name, slug, icon, de
 		s.notifier.Notify(ctx, notifeat.NotificationEvent{
 			Type:         notifeat.EventSpaceHeaderImageChanged,
 			WorkspaceID:  existing.WorkspaceID,
-			ActorID:      userID,
+			ActorID:      p.UserID,
 			RecipientIDs: recipients,
 			EntityType:   "space",
-			EntityID:     id,
-			Metadata:     map[string]string{"name": name},
+			EntityID:     p.ID,
+			Metadata:     map[string]string{"name": p.Name},
 		})
 	}
 
@@ -200,18 +213,16 @@ func (s *SpaceService) ListSpaces(ctx context.Context, workspaceID string) ([]mo
 	return spaces, nil
 }
 
-// ListFavoritedSpaces returns spaces by their IDs.
+// ListFavoritedSpaces returns spaces by their IDs using a single batch query.
+// Missing IDs (soft-deleted spaces) are silently omitted.
 func (s *SpaceService) ListFavoritedSpaces(ctx context.Context, ids []string) ([]models.Space, error) {
-	var spaces []models.Space
-	for _, id := range ids {
-		space, err := s.spaceRepo.GetByID(ctx, id)
-		if err != nil {
-			continue
-		}
-		spaces = append(spaces, space)
+	if len(ids) == 0 {
+		return []models.Space{}, nil
 	}
-	if spaces == nil {
-		spaces = []models.Space{}
+
+	spaces, err := s.spaceRepo.ListByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("listing favorited spaces: %w", err)
 	}
 	return spaces, nil
 }

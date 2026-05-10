@@ -27,6 +27,53 @@ func NewSpaceRepo() *SpaceRepo {
 	return &SpaceRepo{pool: database.GetPool()}
 }
 
+// ListByIDs fetches spaces matching the given IDs (preserving input order) with member counts.
+// Only returns non-deleted spaces. Does not return errors for missing IDs.
+func (r *SpaceRepo) ListByIDs(ctx context.Context, ids []string) ([]models.Space, error) {
+	if len(ids) == 0 {
+		return []models.Space{}, nil
+	}
+
+	query := `
+		SELECT s.id, s.name, s.slug, s.icon, s.description, s.header_image, s.workspace_id, s.created_by,
+		       s.visibility, s.default_role, s.settings,
+		       COALESCE(m.member_count, 0),
+		       s.created_at::text, s.updated_at::text
+		FROM spaces s
+		LEFT JOIN (
+			SELECT space_id, COUNT(*) AS member_count
+			FROM space_members
+			GROUP BY space_id
+		) m ON m.space_id = s.id
+		WHERE s.id = ANY($1::text[]) AND s.deleted_at IS NULL
+		ORDER BY array_position($1::text[], s.id)`
+
+	rows, err := r.pool.Query(ctx, query, ids)
+	if err != nil {
+		return nil, fmt.Errorf("querying spaces by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var spaces []models.Space
+	for rows.Next() {
+		var s models.Space
+		if err := rows.Scan(&s.ID, &s.Name, &s.Slug, &s.Icon, &s.Description, &s.HeaderImage, &s.WorkspaceID, &s.CreatedBy,
+			&s.Visibility, &s.DefaultRole, &s.Settings,
+			&s.MemberCount, &s.CreatedAt, &s.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("scanning space row: %w", err)
+		}
+		spaces = append(spaces, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating space rows: %w", err)
+	}
+
+	if spaces == nil {
+		spaces = []models.Space{}
+	}
+	return spaces, nil
+}
+
 // GetByID fetches a space by its primary key with member count.
 func (r *SpaceRepo) GetByID(ctx context.Context, id string) (models.Space, error) {
 	query := `

@@ -14,6 +14,13 @@ export const Route = createFileRoute("/api/console/pages/$id/favorite")({
           {},
           cookieHeader,
         );
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          return Response.json(
+            { error: text || "failed to toggle favorite" },
+            { status: res.status },
+          );
+        }
         const data = await res.json();
         return Response.json(data);
       },

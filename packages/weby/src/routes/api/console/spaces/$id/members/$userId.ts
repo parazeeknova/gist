@@ -5,6 +5,10 @@ type SpaceMemberRolePayload = {
   role: string;
 };
 
+function validateRole(role: unknown): role is string {
+  return typeof role === "string" && role.trim().length > 0;
+}
+
 export const Route = createFileRoute("/api/console/spaces/$id/members/$userId")({
   server: {
     handlers: {
@@ -22,6 +26,9 @@ export const Route = createFileRoute("/api/console/spaces/$id/members/$userId")(
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const body = (await request.json()) as SpaceMemberRolePayload;
+        if (!validateRole(body.role)) {
+          return Response.json({ error: "Invalid or missing role" }, { status: 400 });
+        }
         const result = await addSpaceMember(params.id, params.userId, body.role, cookieHeader);
         return Response.json(result);
       },
@@ -31,6 +38,9 @@ export const Route = createFileRoute("/api/console/spaces/$id/members/$userId")(
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const body = (await request.json()) as SpaceMemberRolePayload;
+        if (!validateRole(body.role)) {
+          return Response.json({ error: "Invalid or missing role" }, { status: 400 });
+        }
         const result = await updateSpaceMemberRole(
           params.id,
           params.userId,

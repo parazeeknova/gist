@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
+import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 import { AvatarBadge } from "#/shared/components/avatar-badge";
 import {
   useDeletePage,
@@ -72,6 +73,7 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameTitle, setRenameTitle] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const { data: favData } = useIsPageFavorited(node.item.id);
   const toggleFav = useTogglePageFavorite();
@@ -89,6 +91,9 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
   const isSelected = selectedPageId === node.item.id;
 
   useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
     const handleClick = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
@@ -97,7 +102,7 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (isRenaming && renameInputRef.current) {
@@ -125,13 +130,20 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
   };
 
   const submitRename = () => {
+    if (isSubmittingRef.current) {
+      return;
+    }
     const trimmed = renameTitle.trim();
     if (!trimmed || trimmed === node.item.title) {
       setIsRenaming(false);
       return;
     }
+    isSubmittingRef.current = true;
     updatePage.mutate({ id: node.item.id, input: { title: trimmed } });
     setIsRenaming(false);
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 1000);
   };
 
   const handleRenameKeyDown = (e: React.KeyboardEvent) => {
@@ -409,11 +421,10 @@ const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) 
   const pageQueries = useQueries({
     queries: favPageIds.map((pageId) => ({
       queryFn: async () => {
-        const res = await fetch(`/api/console/pages/${pageId}`, { credentials: "include" });
-        if (!res.ok) {
-          return;
-        }
-        return (await res.json()) as FavPageDetail;
+        const res = await fetchProtected<FavPageDetail>(
+          `/api/console/pages/${encodeURIComponent(pageId)}`,
+        );
+        return res;
       },
       queryKey: ["consolePage", pageId],
       staleTime: 60 * 1000,

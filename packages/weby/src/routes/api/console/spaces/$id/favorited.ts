@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getBacky } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/spaces/$id/favorited")({
   server: {
@@ -6,18 +7,14 @@ export const Route = createFileRoute("/api/console/spaces/$id/favorited")({
       GET: async ({ params, request }) => {
         const cookieHeader = request.headers.get("cookie");
         if (!cookieHeader) {
-          return Response.json({ favorited: false });
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const backendOrigin =
-          process.env.BACKY_ORIGIN?.replace(/\/$/, "") ?? "http://localhost:7000";
-        const res = await fetch(`${backendOrigin}/api/console/spaces/${params.id}/favorited`, {
-          headers: { Cookie: cookieHeader },
-        });
-        const body = await res.text();
-        return new Response(body, {
-          headers: { "Content-Type": "application/json" },
-          status: res.status,
-        });
+        const res = await getBacky(`console/spaces/${params.id}/favorited`, cookieHeader);
+        if (!res.ok) {
+          return Response.json({ favorited: false }, { status: res.status });
+        }
+        const data = await res.json().catch(() => ({ favorited: false }));
+        return Response.json(data);
       },
     },
   },

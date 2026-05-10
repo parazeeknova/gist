@@ -69,16 +69,27 @@ export const useUpdateSpace = () => {
         headers: { "Content-Type": "application/json" },
         method: "PUT",
       }),
+    onError: (_err, _variables, context) => {
+      const ctx = context as { previous?: { space: Space; spaceBySlug: Space } } | undefined;
+      if (ctx?.previous) {
+        queryClient.setQueryData(["spaceBySlug"], ctx.previous.spaceBySlug);
+        queryClient.setQueryData(["space", _variables.id], ctx.previous.space);
+      }
+    },
     onMutate: async ({ id, input }) => {
       await queryClient.cancelQueries({ queryKey: ["spaceBySlug"] });
-      const previous = queryClient.getQueriesData<Space>({ queryKey: ["spaceBySlug"] });
-      queryClient.setQueriesData<Space>({ queryKey: ["spaceBySlug"] }, (old) => {
+      await queryClient.cancelQueries({ queryKey: ["space", id] });
+      const previous = {
+        space: queryClient.getQueryData<Space>(["space", id]),
+        spaceBySlug: queryClient.getQueryData<Space>(["spaceBySlug"]),
+      };
+      queryClient.setQueryData<Space>(["spaceBySlug"], (old) => {
         if (!old) {
           return old;
         }
         return { ...old, ...input };
       });
-      queryClient.setQueriesData<Space>({ queryKey: ["space", id] }, (old) => {
+      queryClient.setQueryData<Space>(["space", id], (old) => {
         if (!old) {
           return old;
         }

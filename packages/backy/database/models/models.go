@@ -124,6 +124,7 @@ type PageTreeItem struct {
 	ParentPageID *string `json:"parentPageId,omitempty"`
 	SpaceID      string  `json:"spaceId"`
 	WorkspaceID  string  `json:"workspaceId"`
+	CreatorID    string  `json:"creatorId"`
 	HasChildren  bool    `json:"hasChildren"`
 	CreatedAt    string  `json:"createdAt"`
 	UpdatedAt    string  `json:"updatedAt"`

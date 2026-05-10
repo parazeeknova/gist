@@ -67,17 +67,23 @@ export const AvatarUploader = ({ avatarUrl, name, onAvatarChange }: AvatarUpload
 
   const handleRemove = useCallback(() => {
     setUploadError("");
+    const prev = avatarUrl;
     onAvatarChange("");
     updateProfile.mutate(
       { avatar_url: "", name: name.trim() || user?.name || "" },
       {
+        onError: (err: Error) => {
+          onAvatarChange(prev);
+          setUploadError(err.message || "failed to remove avatar");
+          setIsUploading(false);
+        },
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
         },
       },
     );
     setShowMenu(false);
-  }, [name, user?.name, onAvatarChange, queryClient, updateProfile]);
+  }, [name, user?.name, onAvatarChange, queryClient, updateProfile, avatarUrl]);
 
   const initials = (user?.name || user?.username || "?")
     .split(" ")

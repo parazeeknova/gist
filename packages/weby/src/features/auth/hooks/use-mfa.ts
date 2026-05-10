@@ -1,6 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
 
+const parseErrorMessage = (parsed: unknown): string => {
+  if (
+    typeof parsed === "object" &&
+    parsed !== null &&
+    typeof (parsed as { error?: string }).error === "string"
+  ) {
+    return (parsed as { error: string }).error;
+  }
+  return "setup failed";
+};
+
 export interface MFAStatus {
   is_enabled: boolean;
   method: string;
@@ -35,10 +46,8 @@ export const useMFASetup = () =>
         method: "POST",
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: "setup failed" }))) as {
-          error?: string;
-        };
-        throw new Error(err.error ?? "setup failed");
+        const parsed = await res.json().catch(() => null);
+        throw new Error(parseErrorMessage(parsed));
       }
       return res.json() as Promise<MFASetupResult>;
     },
@@ -55,10 +64,8 @@ export const useMFAEnable = () => {
         method: "POST",
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: "enable failed" }))) as {
-          error?: string;
-        };
-        throw new Error(err.error ?? "enable failed");
+        const parsed = await res.json().catch(() => null);
+        throw new Error(parseErrorMessage(parsed));
       }
       return res.json() as Promise<MFABackupCodesResult>;
     },
@@ -79,10 +86,8 @@ export const useMFADisable = () => {
         method: "POST",
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: "disable failed" }))) as {
-          error?: string;
-        };
-        throw new Error(err.error ?? "disable failed");
+        const parsed = await res.json().catch(() => null);
+        throw new Error(parseErrorMessage(parsed));
       }
       return null;
     },
@@ -102,10 +107,8 @@ export const useMFABackupCodes = () =>
         method: "POST",
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: "backup codes failed" }))) as {
-          error?: string;
-        };
-        throw new Error(err.error ?? "backup codes failed");
+        const parsed = await res.json().catch(() => null);
+        throw new Error(parseErrorMessage(parsed));
       }
       return res.json() as Promise<MFABackupCodesResult>;
     },
@@ -122,10 +125,8 @@ export const useMFAVerify = () => {
         method: "POST",
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: "verification failed" }))) as {
-          error?: string;
-        };
-        throw new Error(err.error ?? "verification failed");
+        const parsed = await res.json().catch(() => null);
+        throw new Error(parseErrorMessage(parsed));
       }
       return res.json();
     },

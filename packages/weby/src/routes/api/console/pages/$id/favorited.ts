@@ -7,11 +7,19 @@ export const Route = createFileRoute("/api/console/pages/$id/favorited")({
       GET: async ({ params, request }) => {
         const cookieHeader = request.headers.get("cookie");
         if (!cookieHeader) {
-          return Response.json({ favorited: false });
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
         const res = await getBacky(`console/pages/${params.id}/favorited`, cookieHeader);
-        const data = await res.json();
-        return Response.json(data ?? { favorited: false });
+        if (!res.ok) {
+          return Response.json({ favorited: false }, { status: res.status });
+        }
+        let data: { favorited: boolean };
+        try {
+          data = await res.json();
+        } catch {
+          data = { favorited: false };
+        }
+        return Response.json(data);
       },
     },
   },

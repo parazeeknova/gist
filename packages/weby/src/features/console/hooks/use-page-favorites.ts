@@ -8,9 +8,11 @@ export const useTogglePageFavorite = () => {
       fetchProtected<{ favorited: boolean }>(`/api/console/pages/${pageId}/favorite`, {
         method: "POST",
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["pageFavorites"] });
-      queryClient.invalidateQueries({ queryKey: ["pageFavorited"] });
+      queryClient.setQueryData(["pageFavorited", variables], (_old) => ({
+        favorited: _data.favorited,
+      }));
     },
   });
 };

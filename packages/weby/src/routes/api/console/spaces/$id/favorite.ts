@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { postBackyWithCookies } from "#/server/backy";
 
 export const Route = createFileRoute("/api/console/spaces/$id/favorite")({
   server: {
@@ -8,17 +9,20 @@ export const Route = createFileRoute("/api/console/spaces/$id/favorite")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const backendOrigin =
-          process.env.BACKY_ORIGIN?.replace(/\/$/, "") ?? "http://localhost:7000";
-        const res = await fetch(`${backendOrigin}/api/console/spaces/${params.id}/favorite`, {
-          headers: { Cookie: cookieHeader },
-          method: "POST",
-        });
-        const body = await res.text();
-        return new Response(body, {
-          headers: { "Content-Type": "application/json" },
-          status: res.status,
-        });
+        const res = await postBackyWithCookies(
+          `console/spaces/${params.id}/favorite`,
+          {},
+          cookieHeader,
+        );
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          return Response.json(
+            { error: text || "failed to toggle favorite" },
+            { status: res.status },
+          );
+        }
+        const data = await res.json();
+        return Response.json(data);
       },
     },
   },

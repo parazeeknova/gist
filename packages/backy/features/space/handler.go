@@ -4,8 +4,10 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -138,11 +140,11 @@ func (h *SpaceHandlers) CreateSpace(c *gin.Context) {
 
 // UpdateSpaceRequest is the request body for updating a space.
 type UpdateSpaceRequest struct {
-	Name        string `json:"name" binding:"required"`
-	Slug        string `json:"slug" binding:"required"`
-	Icon        string `json:"icon"`
-	Description string `json:"description"`
-	HeaderImage string `json:"headerImage"`
+	Name        string  `json:"name" binding:"required"`
+	Slug        string  `json:"slug" binding:"required"`
+	Icon        string  `json:"icon"`
+	Description string  `json:"description"`
+	HeaderImage *string `json:"headerImage"`
 }
 
 // UpdateSpace handles PUT /api/console/spaces/:id.
@@ -161,7 +163,20 @@ func (h *SpaceHandlers) UpdateSpace(c *gin.Context) {
 		return
 	}
 
-	space, err := h.spaceService.UpdateSpace(c.Request.Context(), id, req.Name, req.Slug, req.Icon, req.Description, req.HeaderImage, userID)
+	var headerImage *string
+	if req.HeaderImage != nil {
+		headerImage = req.HeaderImage
+	}
+
+	space, err := h.spaceService.UpdateSpace(c.Request.Context(), UpdateSpaceParams{
+		ID:          id,
+		Name:        req.Name,
+		Slug:        req.Slug,
+		Icon:        req.Icon,
+		Description: req.Description,
+		HeaderImage: headerImage,
+		UserID:      userID,
+	})
 	if err != nil {
 		if errors.Is(err, repositories.ErrSpaceNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
@@ -451,12 +466,21 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 	page := c.DefaultQuery("page", "1")
 	perPage := c.DefaultQuery("per_page", "20")
 
-	unsplashURL := "https://api.unsplash.com/search/photos?query=" + query +
-		"&page=" + page +
-		"&per_page=" + perPage +
-		"&orientation=landscape"
+	u, err := url.Parse("https://api.unsplash.com/search/photos")
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("unsplash url parse error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to parse unsplash url"})
+		return
+	}
+	q := u.Query()
+	q.Set("query", query)
+	q.Set("page", page)
+	q.Set("per_page", perPage)
+	q.Set("orientation", "landscape")
+	u.RawQuery = q.Encode()
 
-	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", unsplashURL, nil)
+	client := &http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequestWithContext(c.Request.Context(), "GET", u.String(), nil)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("unsplash request creation error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create unsplash request"})
@@ -465,7 +489,7 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 	req.Header.Set("Authorization", "Client-ID "+accessKey)
 	req.Header.Set("Accept-Version", "v1")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("unsplash api request error")
 		c.JSON(http.StatusBadGateway, gin.H{"error": "unsplash api unavailable"})
@@ -473,6 +497,9 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 	}
 	defer func() {
 		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+			logger.Log.Error().Err(err).Msg("failed to close response body")
+		}
+		if err := resp.Body.Close(); err != nil {
 			logger.Log.Error().Err(err).Msg("failed to close response body")
 		}
 	}()
@@ -495,28 +522,14 @@ func (h *SpaceHandlers) ToggleFavorite(c *gin.Context) {
 	userID := middleware.GetCurrentUserID(c)
 	spaceID := c.Param("id")
 
-	isFav, err := h.favRepo.IsFavorited(c.Request.Context(), userID, spaceID)
+	favorited, err := h.favRepo.Toggle(c.Request.Context(), userID, spaceID)
 	if err != nil {
-		logger.Log.Error().Err(err).Msg("check space favorite error")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		logger.Log.Error().Err(err).Msg("toggle space favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
 		return
 	}
 
-	if isFav {
-		if err := h.favRepo.Remove(c.Request.Context(), userID, spaceID); err != nil {
-			logger.Log.Error().Err(err).Msg("remove space favorite error")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove favorite"})
-			return
-		}
-	} else {
-		if err := h.favRepo.Add(c.Request.Context(), userID, spaceID); err != nil {
-			logger.Log.Error().Err(err).Msg("add space favorite error")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add favorite"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"favorited": !isFav})
+	c.JSON(http.StatusOK, gin.H{"favorited": favorited})
 }
 
 // IsFavorited handles GET /api/console/spaces/:id/favorited.

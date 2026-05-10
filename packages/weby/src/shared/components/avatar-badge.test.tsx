@@ -5,7 +5,7 @@ import { AvatarBadge } from "./avatar-badge";
 
 const MockImage = function MockImage() {
   return {
-    decode: () => {},
+    decode: () => Promise.resolve(),
     decoding: "",
     src: "",
   };
