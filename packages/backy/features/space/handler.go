@@ -522,6 +522,20 @@ func (h *SpaceHandlers) ToggleFavorite(c *gin.Context) {
 	userID := middleware.GetCurrentUserID(c)
 	spaceID := c.Param("id")
 
+	if err := h.spaceService.RequireRead(c.Request.Context(), spaceID, userID); err != nil {
+		if errors.Is(err, ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		if errors.Is(err, repositories.ErrSpaceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
+			return
+		}
+		logger.Log.Error().Err(err).Msg("space favorite permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
+		return
+	}
+
 	favorited, err := h.favRepo.Toggle(c.Request.Context(), userID, spaceID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("toggle space favorite error")
@@ -540,6 +554,20 @@ func (h *SpaceHandlers) IsFavorited(c *gin.Context) {
 	}
 	userID := middleware.GetCurrentUserID(c)
 	spaceID := c.Param("id")
+
+	if err := h.spaceService.RequireRead(c.Request.Context(), spaceID, userID); err != nil {
+		if errors.Is(err, ErrSpacePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		if errors.Is(err, repositories.ErrSpaceNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "space not found"})
+			return
+		}
+		logger.Log.Error().Err(err).Msg("space favorite permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		return
+	}
 
 	isFav, err := h.favRepo.IsFavorited(c.Request.Context(), userID, spaceID)
 	if err != nil {
@@ -566,7 +594,7 @@ func (h *SpaceHandlers) GetFavoritedSpaces(c *gin.Context) {
 		return
 	}
 
-	spaces, err := h.spaceService.ListFavoritedSpaces(c.Request.Context(), ids)
+	spaces, err := h.spaceService.ListReadableFavoritedSpaces(c.Request.Context(), ids, userID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("list favorited spaces error")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list favorited spaces"})

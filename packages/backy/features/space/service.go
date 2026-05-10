@@ -227,6 +227,31 @@ func (s *SpaceService) ListFavoritedSpaces(ctx context.Context, ids []string) ([
 	return spaces, nil
 }
 
+// ListReadableFavoritedSpaces returns favorited spaces the user can read.
+// Spaces the user cannot access are silently filtered out.
+func (s *SpaceService) ListReadableFavoritedSpaces(ctx context.Context, ids []string, userID string) ([]models.Space, error) {
+	if len(ids) == 0 {
+		return []models.Space{}, nil
+	}
+
+	spaces, err := s.spaceRepo.ListByIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("listing favorited spaces: %w", err)
+	}
+
+	var readable []models.Space
+	for _, sp := range spaces {
+		if err := s.RequireRead(ctx, sp.ID, userID); err != nil {
+			continue
+		}
+		readable = append(readable, sp)
+	}
+	if readable == nil {
+		readable = []models.Space{}
+	}
+	return readable, nil
+}
+
 // GetSpaceByID returns a space by ID.
 func (s *SpaceService) GetSpaceByID(ctx context.Context, id string) (models.Space, error) {
 	space, err := s.spaceRepo.GetByID(ctx, id)

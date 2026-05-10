@@ -817,6 +817,28 @@ func (h *Handlers) TogglePageFavorite(c *gin.Context) {
 	pageID := c.Param("id")
 	userID := middleware.GetCurrentUserID(c)
 
+	if h.pageService != nil {
+		page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+		if err != nil {
+			if errors.Is(err, pagefeat.ErrPageNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite lookup error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
+			return
+		}
+		if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+			if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite permission check error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
+			return
+		}
+	}
+
 	isFav, err := h.pageFavoriteRepo.IsFavorited(c.Request.Context(), userID, pageID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("check page favorite error")
@@ -851,6 +873,28 @@ func (h *Handlers) IsPageFavorited(c *gin.Context) {
 	pageID := c.Param("id")
 	userID := middleware.GetCurrentUserID(c)
 
+	if h.pageService != nil {
+		page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+		if err != nil {
+			if errors.Is(err, pagefeat.ErrPageNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite lookup error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+			return
+		}
+		if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+			if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite permission check error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+			return
+		}
+	}
+
 	isFav, err := h.pageFavoriteRepo.IsFavorited(c.Request.Context(), userID, pageID)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("check page favorite error")
@@ -876,5 +920,25 @@ func (h *Handlers) GetFavoritedPages(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ids)
+	if h.pageService == nil || len(ids) == 0 {
+		c.JSON(http.StatusOK, ids)
+		return
+	}
+
+	var readable []string
+	for _, pageID := range ids {
+		page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+		if err != nil {
+			continue
+		}
+		if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+			continue
+		}
+		readable = append(readable, pageID)
+	}
+	if readable == nil {
+		readable = []string{}
+	}
+
+	c.JSON(http.StatusOK, readable)
 }
