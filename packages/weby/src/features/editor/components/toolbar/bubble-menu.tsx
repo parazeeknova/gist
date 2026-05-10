@@ -4,7 +4,7 @@ import {
   LinkSimpleIcon,
   HighlighterIcon,
 } from "@phosphor-icons/react";
-import { BubbleMenu as TipTapBubbleMenu } from "@tiptap/react";
+import { BubbleMenu as TipTapBubbleMenu } from "@tiptap/react/menus";
 import type { ToolbarProps } from "#/features/editor/types/editor.types";
 import { useTheme } from "#/shared/hooks/use-theme";
 
@@ -23,7 +23,6 @@ export const BubbleMenu = ({ editor }: ToolbarProps) => {
     <TipTapBubbleMenu
       className={`flex items-center gap-0.5 rounded border py-1 px-1.5 shadow-lg ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
       editor={editor}
-      tippyOptions={{ duration: 100 }}
     >
       <button
         className={btn(editor.isActive("bold"))}
