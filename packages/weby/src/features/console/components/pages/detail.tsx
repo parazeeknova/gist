@@ -7,7 +7,7 @@ import {
   usePublishPage,
   useUnpublishPage,
 } from "#/features/console/hooks/use-pages";
-import { PageEditor } from "./editor";
+import { PageEditor } from "#/features/editor/components/page-editor";
 import { PageHistory } from "./history";
 
 interface PageDetailProps {
@@ -120,7 +120,11 @@ export const PageDetail = ({ pageId, onDeleted }: PageDetailProps) => {
         </div>
       </div>
 
-      {showHistory ? <PageHistory pageId={page.id} /> : <PageEditor page={page} />}
+      {showHistory ? (
+        <PageHistory pageId={page.id} />
+      ) : (
+        <PageEditor contentJson={page.contentJson} editable={true} pageId={page.id} />
+      )}
     </div>
   );
 };
