@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { updateUserRole } from "#/server/backy";
 
+interface UserRolePayload {
+  role: string;
+}
+
 export const Route = createFileRoute("/api/console/users/$id/role")({
   server: {
     handlers: {
@@ -9,7 +13,7 @@ export const Route = createFileRoute("/api/console/users/$id/role")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const body = await request.json();
+        const body = (await request.json()) as UserRolePayload;
         const result = await updateUserRole(params.id, body.role, cookieHeader);
         return Response.json(result);
       },

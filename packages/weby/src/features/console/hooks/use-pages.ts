@@ -11,15 +11,37 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "#/features/auth/hooks/fetch-protected";
 
-export const usePageTree = (spaceId: string) =>
+type PageTreeItemResponse = Omit<PageTreeItem, "parentPageId"> & {
+  parentPageId?: string | null;
+};
+
+const normalizeParentPageId = (parentPageId: string | null | undefined): string | null => {
+  if (parentPageId === null || parentPageId === undefined) {
+    return null;
+  }
+  const trimmedParentPageId = parentPageId.trim();
+  return trimmedParentPageId.length > 0 ? trimmedParentPageId : null;
+};
+
+const normalizePageTreeItems = (items: PageTreeItemResponse[]): PageTreeItem[] =>
+  items.map((item) => ({
+    ...item,
+    parentPageId: normalizeParentPageId(item.parentPageId),
+  }));
+
+export const usePageTree = (spaceId?: string) =>
   useQuery<PageTreeItem[]>({
-    queryFn: ({ signal }) =>
-      fetchProtected<PageTreeItem[]>(
-        `/api/console/pages/tree?spaceId=${encodeURIComponent(spaceId)}`,
+    enabled: !!spaceId,
+    queryFn: async ({ signal }) => {
+      const items = await fetchProtected<PageTreeItemResponse[]>(
+        `/api/console/pages/tree?spaceId=${encodeURIComponent(spaceId as string)}`,
         { signal },
-      ),
+      );
+      return normalizePageTreeItems(items);
+    },
     queryKey: ["pageTree", spaceId],
-    staleTime: 30 * 1000,
+    refetchOnMount: true,
+    staleTime: 10 * 1000,
   });
 
 export const usePageChildren = (parentId: string | null) =>
@@ -45,6 +67,7 @@ export const useConsolePages = () =>
   useQuery<ConsolePage[]>({
     queryFn: ({ signal }) => fetchProtected<ConsolePage[]>("/api/console/pages", { signal }),
     queryKey: ["consolePages"],
+    refetchOnMount: true,
     staleTime: 30 * 1000,
   });
 
@@ -57,13 +80,15 @@ export const useCreatePage = () => {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["pageTree", variables.spaceId],
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
     },
   });
 };
-
 export const useUpdatePage = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -74,9 +99,12 @@ export const useUpdatePage = () => {
         method: "PUT",
       }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["consolePage", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+      queryClient.invalidateQueries({
+        queryKey: ["consolePage", variables.id],
+        refetchType: "all",
+      });
+      queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["pageTree"], refetchType: "all" });
     },
   });
 };
@@ -89,8 +117,8 @@ export const useDeletePage = () => {
         method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["consolePages"] });
-      queryClient.invalidateQueries({ queryKey: ["pageTree"] });
+      queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
+      queryClient.invalidateQueries({ queryKey: ["pageTree"], refetchType: "all" });
       queryClient.removeQueries({ queryKey: ["consolePage"] });
     },
   });

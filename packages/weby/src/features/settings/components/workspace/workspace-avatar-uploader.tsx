@@ -1,5 +1,6 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { compressImage } from "#/shared/lib/image-compress";
 import { useUpdateWorkspace } from "#/features/settings/hooks/use-workspace-settings";
@@ -26,6 +27,7 @@ export const WorkspaceAvatarUploader = ({
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const updateWorkspace = useUpdateWorkspace();
 
   const handleFileUpload = useCallback(
@@ -54,6 +56,7 @@ export const WorkspaceAvatarUploader = ({
             },
             onSuccess: () => {
               setIsUploading(false);
+              void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
             },
           },
         );
@@ -64,15 +67,28 @@ export const WorkspaceAvatarUploader = ({
 
       setShowMenu(false);
     },
-    [name, slug, workspaceId, onAvatarChange, updateWorkspace],
+    [name, slug, workspaceId, onAvatarChange, queryClient, updateWorkspace],
   );
 
   const handleRemove = useCallback(() => {
     setUploadError("");
+    const prev = avatarUrl;
     onAvatarChange("");
-    updateWorkspace.mutate({ id: workspaceId, input: { icon: "", name: name.trim() || "", slug } });
+    updateWorkspace.mutate(
+      { id: workspaceId, input: { icon: "", name: name.trim() || "", slug } },
+      {
+        onError: (err: Error) => {
+          onAvatarChange(prev);
+          setUploadError(err.message || "failed to remove avatar");
+          setIsUploading(false);
+        },
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
+        },
+      },
+    );
     setShowMenu(false);
-  }, [name, slug, workspaceId, onAvatarChange, updateWorkspace]);
+  }, [name, slug, workspaceId, avatarUrl, onAvatarChange, queryClient, updateWorkspace]);
 
   const initials = name
     .split(" ")

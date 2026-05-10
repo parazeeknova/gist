@@ -111,6 +111,8 @@ func main() {
 	var spaceService *sfeat.SpaceService
 	var groupService *gfeat.GroupService
 	var pageService *pfeat.PageService
+	var favRepo *repositories.SpaceFavoriteRepo
+	var pageFavRepo *repositories.PageFavoriteRepo
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
@@ -118,6 +120,8 @@ func main() {
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
 		groupRepo := repositories.NewGroupRepo()
+		favRepo = repositories.NewSpaceFavoriteRepo()
+		pageFavRepo = repositories.NewPageFavoriteRepo()
 		pageService = pfeat.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
 		spaceService = sfeat.NewSpaceService(spaceRepo, pageRepo, groupRepo)
 		workspaceService = wsfeat.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
@@ -140,6 +144,7 @@ func main() {
 
 		h = handlers.NewWithDB(cfg, pageService, spaceService, workspaceService, groupService)
 		h.SetNotifier(notificationService)
+		h.SetPageFavoriteRepo(pageFavRepo)
 	} else {
 		h = handlers.New(cfg)
 	}
@@ -166,7 +171,7 @@ func main() {
 		pushHandlers = pushfeat.NewPushSubscriptionHandlers(notificationService)
 	}
 
-	spaceHandlers := sfeat.NewSpaceHandlers(spaceService, workspaceService)
+	spaceHandlers := sfeat.NewSpaceHandlersWithFav(spaceService, workspaceService, favRepo)
 	workspaceHandlers := wsfeat.NewWorkspaceHandlers(workspaceService)
 	groupHandlers := gfeat.NewGroupHandlers(groupService, workspaceService)
 	userHandlers := ufeat.NewUserHandlers()
@@ -292,6 +297,14 @@ func main() {
 			console.PUT("/spaces/:id/groups/:groupId", spaceHandlers.UpdateSpaceGroupRole)
 			console.DELETE("/spaces/:id/groups/:groupId", spaceHandlers.RemoveSpaceGroup)
 
+			// Unsplash proxy
+			console.GET("/unsplash/search", spaceHandlers.SearchUnsplash)
+
+			// Space favorites
+			console.POST("/spaces/:id/favorite", spaceHandlers.ToggleFavorite)
+			console.GET("/spaces/:id/favorited", spaceHandlers.IsFavorited)
+			console.GET("/spaces/favorites", spaceHandlers.GetFavoritedSpaces)
+
 			// Groups
 			console.GET("/workspaces/:workspaceId/groups", groupHandlers.GetGroups)
 			console.POST("/workspaces/:workspaceId/groups", groupHandlers.CreateGroup)
@@ -321,6 +334,11 @@ func main() {
 			console.GET("/pages/:id/history", h.GetConsolePageHistory)
 			console.GET("/pages/:id/history/:historyId", h.GetConsolePageHistoryEntry)
 			console.POST("/pages/:id/restore", h.RestoreConsolePage)
+
+			// Page favorites
+			console.POST("/pages/:id/favorite", h.TogglePageFavorite)
+			console.GET("/pages/:id/favorited", h.IsPageFavorited)
+			console.GET("/pages/favorites", h.GetFavoritedPages)
 
 			// Notifications
 			if notifHandlers != nil {

@@ -11,6 +11,7 @@ export const useSpaces = (workspaceId: string) =>
         { signal },
       ),
     queryKey: ["spaces", workspaceId],
+    refetchOnMount: true,
     staleTime: 60 * 1000,
   });
 
@@ -20,6 +21,7 @@ export const useSpaceBySlug = (slug: string) =>
     queryFn: ({ signal }) =>
       fetchProtected<Space>(`/api/console/spaces/by-slug/${encodeURIComponent(slug)}`, { signal }),
     queryKey: ["spaceBySlug", slug],
+    refetchOnMount: true,
     staleTime: 60 * 1000,
   });
 
@@ -46,22 +48,79 @@ export const useCreateSpace = () => {
 
 export const useUpdateSpace = () => {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<
+    Space,
+    Error,
+    {
+      id: string;
+      input: {
+        name: string;
+        slug: string;
+        icon?: string;
+        description?: string;
+        headerImage?: string;
+        visibility?: string;
+        defaultRole?: string;
+      };
+    },
+    { previous?: { slug: string; space?: Space; spaceBySlug?: Space } }
+  >({
     mutationFn: ({
       id,
       input,
     }: {
       id: string;
-      input: { name: string; slug: string; icon?: string; description?: string };
+      input: {
+        name: string;
+        slug: string;
+        icon?: string;
+        description?: string;
+        headerImage?: string;
+        visibility?: string;
+        defaultRole?: string;
+      };
     }) =>
       fetchProtected<Space>(`/api/console/spaces/${id}`, {
         body: JSON.stringify(input),
         headers: { "Content-Type": "application/json" },
         method: "PUT",
       }),
+    onError: (_err, _variables, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["spaceBySlug", context.previous.slug],
+          context.previous.spaceBySlug,
+        );
+        queryClient.setQueryData(["space", _variables.id], context.previous.space);
+      }
+    },
+    onMutate: async ({ id, input }) => {
+      const { slug } = input;
+      await queryClient.cancelQueries({ queryKey: ["spaceBySlug", slug] });
+      await queryClient.cancelQueries({ queryKey: ["space", id] });
+      const previous = {
+        slug,
+        space: queryClient.getQueryData<Space>(["space", id]),
+        spaceBySlug: queryClient.getQueryData<Space>(["spaceBySlug", slug]),
+      };
+      queryClient.setQueryData<Space>(["spaceBySlug", slug], (old) => {
+        if (!old) {
+          return old;
+        }
+        return { ...old, ...input };
+      });
+      queryClient.setQueryData<Space>(["space", id], (old) => {
+        if (!old) {
+          return old;
+        }
+        return { ...old, ...input };
+      });
+      return { previous };
+    },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       queryClient.invalidateQueries({ queryKey: ["space", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["spaceBySlug"] });
     },
   });
 };
@@ -178,3 +237,34 @@ export const useRemoveSpaceGroup = () => {
     },
   });
 };
+
+export const useToggleSpaceFavorite = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (spaceId: string) =>
+      fetchProtected<{ favorited: boolean }>(`/api/console/spaces/${spaceId}/favorite`, {
+        method: "POST",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["spaceFavorites"] });
+    },
+  });
+};
+
+export const useIsSpaceFavorited = (spaceId: string) =>
+  useQuery<{ favorited: boolean }>({
+    enabled: spaceId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<{ favorited: boolean }>(`/api/console/spaces/${spaceId}/favorited`, {
+        signal,
+      }),
+    queryKey: ["spaceFavorites", spaceId],
+    staleTime: 30 * 1000,
+  });
+
+export const useFavoritedSpaces = () =>
+  useQuery<Space[]>({
+    queryFn: ({ signal }) => fetchProtected<Space[]>("/api/console/spaces/favorites", { signal }),
+    queryKey: ["spaceFavorites"],
+    staleTime: 30 * 1000,
+  });

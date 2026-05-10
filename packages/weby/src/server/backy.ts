@@ -239,10 +239,13 @@ export const unpublishConsolePage = (id: string, cookieHeader?: string | null) =
     },
   );
 
-export const getPageTree = (cookieHeader?: string | null) =>
-  fetchBacky<PageTreeItem[]>("console/pages/tree", {
-    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
-  });
+export const getPageTree = (spaceId: string, cookieHeader?: string | null) =>
+  fetchBacky<PageTreeItem[]>(
+    spaceId ? `console/pages/tree?spaceId=${encodeURIComponent(spaceId)}` : "console/pages/tree",
+    {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    },
+  );
 
 export const getPageChildren = (id: string, cookieHeader?: string | null) =>
   fetchBacky<PageTreeItem[]>(`console/pages/${id}/children`, {
@@ -312,7 +315,15 @@ export const createSpace = (
 
 export const updateSpace = (
   id: string,
-  input: { name: string; slug: string; icon?: string; description?: string },
+  input: {
+    name: string;
+    slug: string;
+    icon?: string;
+    description?: string;
+    headerImage?: string;
+    visibility?: string;
+    defaultRole?: string;
+  },
   cookieHeader?: string | null,
 ) =>
   fetchBacky<Space>(`console/spaces/${id}`, {

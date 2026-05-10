@@ -1,33 +1,11 @@
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import appCss from "../styles.css?url";
 
-const APP_VERSION = import.meta.env.VITE_APP_VERSION;
-const VERSION_STORAGE_KEY = "app-version";
-// Default key used by createAsyncStoragePersister
-const QUERY_CACHE_KEY = "REACT_QUERY_OFFLINE_CACHE";
-
-// Clear persisted query cache when the app version changes so users
-// always get fresh data after a deploy instead of stale browser-cached output.
-const clearStaleCacheOnVersionBump = () => {
-  if (typeof window === "undefined") {
-    return;
-  }
-  const storedVersion = window.localStorage.getItem(VERSION_STORAGE_KEY);
-  if (storedVersion !== APP_VERSION) {
-    window.localStorage.removeItem(QUERY_CACHE_KEY);
-    window.localStorage.setItem(VERSION_STORAGE_KEY, APP_VERSION);
-  }
-};
-
-const createQueryClient = () => {
-  clearStaleCacheOnVersionBump();
-
-  return new QueryClient({
+const createQueryClient = () =>
+  new QueryClient({
     defaultOptions: {
       queries: {
         gcTime: 1000 * 60 * 60 * 24,
@@ -39,33 +17,14 @@ const createQueryClient = () => {
       },
     },
   });
-};
-
-const persister = createAsyncStoragePersister({
-  key: QUERY_CACHE_KEY,
-  storage: typeof window === "undefined" ? undefined : window.localStorage,
-});
 
 const RootComponent = () => {
   const [queryClient] = useState(createQueryClient);
-  const hasRestored = useRef(false);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      onSuccess={async () => {
-        if (hasRestored.current) {
-          return;
-        }
-        hasRestored.current = true;
-        await queryClient.resumePausedMutations();
-        await queryClient.invalidateQueries({ queryKey: ["github-stats"] });
-        await queryClient.invalidateQueries({ queryKey: ["bootstrapState"] });
-      }}
-      persistOptions={{ persister }}
-    >
+    <QueryClientProvider client={queryClient}>
       <Outlet />
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 };
 

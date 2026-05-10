@@ -20,13 +20,13 @@ import { useSpaceBySlug } from "#/features/console/hooks/use-spaces";
 import { ConsoleContext } from "./console-context";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
-import { FileTreeSidebar } from "./file-tree-sidebar";
 import { FloatingSidebar } from "./floating-sidebar";
 import { SettingsSidebar } from "./settings-sidebar";
 import { SidebarFooter } from "./sidebar-footer";
 import { SpaceSidebar } from "#/features/space/components/space-sidebar";
 import { useConsoleStore } from "#/features/console/stores/console-store";
 import { useConsoleBootstrap } from "#/features/console/hooks/use-console-bootstrap";
+import { FileTreeSidebar } from "./file-tree-sidebar";
 
 const SIDEBAR_WIDTH = 280;
 

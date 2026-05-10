@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { deleteWorkspace, updateWorkspace } from "#/server/backy";
 
+interface WorkspacePayload {
+  icon?: string;
+  name: string;
+  slug: string;
+}
+
 export const Route = createFileRoute("/api/console/workspaces/$id")({
   server: {
     handlers: {
@@ -17,7 +23,7 @@ export const Route = createFileRoute("/api/console/workspaces/$id")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const body = await request.json();
+        const body = (await request.json()) as WorkspacePayload;
         const workspace = await updateWorkspace(params.id, body, cookieHeader);
         return Response.json(workspace);
       },

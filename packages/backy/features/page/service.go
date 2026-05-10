@@ -151,6 +151,10 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 	}
 
 	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	meta := map[string]string{"name": page.Title}
+	if page.Icon == "folder" {
+		meta["isFolder"] = "true"
+	}
 	s.notifier.Notify(ctx, notifeat.NotificationEvent{
 		Type:         notifeat.EventPageCreated,
 		WorkspaceID:  page.WorkspaceID,
@@ -158,7 +162,7 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 		RecipientIDs: recipients,
 		EntityType:   "page",
 		EntityID:     page.ID,
-		Metadata:     map[string]string{"name": page.Title},
+		Metadata:     meta,
 	})
 
 	return nil

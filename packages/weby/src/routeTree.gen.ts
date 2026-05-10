@@ -31,6 +31,7 @@ import { Route as SSpaceSlugIndexRouteImport } from './routes/s/$spaceSlug/index
 import { Route as SettingsSystemsDebugRouteImport } from './routes/settings/systems/debug'
 import { Route as SettingsAccountProfileRouteImport } from './routes/settings/account/profile'
 import { Route as SettingsAccountPreferencesRouteImport } from './routes/settings/account/preferences'
+import { Route as SSpaceSlugSettingsRouteImport } from './routes/s/$spaceSlug/settings'
 import { Route as ApiGithubStatsRouteImport } from './routes/api/github/stats'
 import { Route as ApiConsoleWorkspacesRouteImport } from './routes/api/console/workspaces'
 import { Route as ApiConsoleUsersRouteImport } from './routes/api/console/users'
@@ -47,6 +48,8 @@ import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
 import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces/$id'
 import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users/$id'
+import { Route as ApiConsoleUnsplashSearchRouteImport } from './routes/api/console/unsplash/search'
+import { Route as ApiConsoleSpacesFavoritesRouteImport } from './routes/api/console/spaces/favorites'
 import { Route as ApiConsoleSpacesIdRouteImport } from './routes/api/console/spaces/$id'
 import { Route as ApiConsolePushUnsubscribeRouteImport } from './routes/api/console/push/unsubscribe'
 import { Route as ApiConsolePushSubscribeRouteImport } from './routes/api/console/push/subscribe'
@@ -54,6 +57,7 @@ import { Route as ApiConsolePushPublicKeyRouteImport } from './routes/api/consol
 import { Route as ApiConsoleProfileSessionRouteImport } from './routes/api/console/profile/session'
 import { Route as ApiConsoleProfilePasswordRouteImport } from './routes/api/console/profile/password'
 import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pages/tree'
+import { Route as ApiConsolePagesFavoritesRouteImport } from './routes/api/console/pages/favorites'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages/$id'
 import { Route as ApiConsoleNotificationsUnreadCountRouteImport } from './routes/api/console/notifications/unread-count'
 import { Route as ApiConsoleNotificationsStreamRouteImport } from './routes/api/console/notifications/stream'
@@ -73,12 +77,16 @@ import { Route as ApiConsoleUsersIdRoleRouteImport } from './routes/api/console/
 import { Route as ApiConsoleUsersIdActiveRouteImport } from './routes/api/console/users/$id/active'
 import { Route as ApiConsoleSpacesBySlugSlugRouteImport } from './routes/api/console/spaces/by-slug/$slug'
 import { Route as ApiConsoleSpacesIdMembersRouteImport } from './routes/api/console/spaces/$id/members'
+import { Route as ApiConsoleSpacesIdFavoritedRouteImport } from './routes/api/console/spaces/$id/favorited'
+import { Route as ApiConsoleSpacesIdFavoriteRouteImport } from './routes/api/console/spaces/$id/favorite'
 import { Route as ApiConsoleProfileSessionRevokeRouteImport } from './routes/api/console/profile/session/revoke'
 import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages/$id/unpublish'
 import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages/$id/restore'
 import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages/$id/publish'
 import { Route as ApiConsolePagesIdMoveRouteImport } from './routes/api/console/pages/$id/move'
 import { Route as ApiConsolePagesIdHistoryRouteImport } from './routes/api/console/pages/$id/history'
+import { Route as ApiConsolePagesIdFavoritedRouteImport } from './routes/api/console/pages/$id/favorited'
+import { Route as ApiConsolePagesIdFavoriteRouteImport } from './routes/api/console/pages/$id/favorite'
 import { Route as ApiConsolePagesIdChildrenRouteImport } from './routes/api/console/pages/$id/children'
 import { Route as ApiConsoleNotificationsIdReadRouteImport } from './routes/api/console/notifications/$id/read'
 import { Route as ApiConsoleGroupsIdMembersRouteImport } from './routes/api/console/groups/$id/members'
@@ -200,6 +208,11 @@ const SettingsAccountPreferencesRoute =
     path: '/account/preferences',
     getParentRoute: () => SettingsRoute,
   } as any)
+const SSpaceSlugSettingsRoute = SSpaceSlugSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => SSpaceSlugRoute,
+} as any)
 const ApiGithubStatsRoute = ApiGithubStatsRouteImport.update({
   id: '/api/github/stats',
   path: '/api/github/stats',
@@ -281,6 +294,18 @@ const ApiConsoleUsersIdRoute = ApiConsoleUsersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ApiConsoleUsersRoute,
 } as any)
+const ApiConsoleUnsplashSearchRoute =
+  ApiConsoleUnsplashSearchRouteImport.update({
+    id: '/api/console/unsplash/search',
+    path: '/api/console/unsplash/search',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiConsoleSpacesFavoritesRoute =
+  ApiConsoleSpacesFavoritesRouteImport.update({
+    id: '/favorites',
+    path: '/favorites',
+    getParentRoute: () => ApiConsoleSpacesRoute,
+  } as any)
 const ApiConsoleSpacesIdRoute = ApiConsoleSpacesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -319,6 +344,12 @@ const ApiConsolePagesTreeRoute = ApiConsolePagesTreeRouteImport.update({
   path: '/tree',
   getParentRoute: () => ApiConsolePagesRoute,
 } as any)
+const ApiConsolePagesFavoritesRoute =
+  ApiConsolePagesFavoritesRouteImport.update({
+    id: '/favorites',
+    path: '/favorites',
+    getParentRoute: () => ApiConsolePagesRoute,
+  } as any)
 const ApiConsolePagesIdRoute = ApiConsolePagesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -423,6 +454,18 @@ const ApiConsoleSpacesIdMembersRoute =
     path: '/members',
     getParentRoute: () => ApiConsoleSpacesIdRoute,
   } as any)
+const ApiConsoleSpacesIdFavoritedRoute =
+  ApiConsoleSpacesIdFavoritedRouteImport.update({
+    id: '/favorited',
+    path: '/favorited',
+    getParentRoute: () => ApiConsoleSpacesIdRoute,
+  } as any)
+const ApiConsoleSpacesIdFavoriteRoute =
+  ApiConsoleSpacesIdFavoriteRouteImport.update({
+    id: '/favorite',
+    path: '/favorite',
+    getParentRoute: () => ApiConsoleSpacesIdRoute,
+  } as any)
 const ApiConsoleProfileSessionRevokeRoute =
   ApiConsoleProfileSessionRevokeRouteImport.update({
     id: '/revoke',
@@ -456,6 +499,18 @@ const ApiConsolePagesIdHistoryRoute =
   ApiConsolePagesIdHistoryRouteImport.update({
     id: '/history',
     path: '/history',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdFavoritedRoute =
+  ApiConsolePagesIdFavoritedRouteImport.update({
+    id: '/favorited',
+    path: '/favorited',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdFavoriteRoute =
+  ApiConsolePagesIdFavoriteRouteImport.update({
+    id: '/favorite',
+    path: '/favorite',
     getParentRoute: () => ApiConsolePagesIdRoute,
   } as any)
 const ApiConsolePagesIdChildrenRoute =
@@ -546,6 +601,7 @@ export interface FileRoutesByFullPath {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/s/$spaceSlug/settings': typeof SSpaceSlugSettingsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/settings/systems/debug': typeof SettingsSystemsDebugRoute
@@ -564,6 +620,7 @@ export interface FileRoutesByFullPath {
   '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
+  '/api/console/pages/favorites': typeof ApiConsolePagesFavoritesRoute
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
   '/api/console/profile/session': typeof ApiConsoleProfileSessionRouteWithChildren
@@ -571,18 +628,24 @@ export interface FileRoutesByFullPath {
   '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
   '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
+  '/api/console/spaces/favorites': typeof ApiConsoleSpacesFavoritesRoute
+  '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
+  '/api/console/pages/$id/favorite': typeof ApiConsolePagesIdFavoriteRoute
+  '/api/console/pages/$id/favorited': typeof ApiConsolePagesIdFavoritedRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
+  '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
+  '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
   '/api/console/spaces/$id/members': typeof ApiConsoleSpacesIdMembersRouteWithChildren
   '/api/console/spaces/by-slug/$slug': typeof ApiConsoleSpacesBySlugSlugRoute
   '/api/console/users/$id/active': typeof ApiConsoleUsersIdActiveRoute
@@ -625,6 +688,7 @@ export interface FileRoutesByTo {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/s/$spaceSlug/settings': typeof SSpaceSlugSettingsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/settings/systems/debug': typeof SettingsSystemsDebugRoute
@@ -643,6 +707,7 @@ export interface FileRoutesByTo {
   '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
+  '/api/console/pages/favorites': typeof ApiConsolePagesFavoritesRoute
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
   '/api/console/profile/session': typeof ApiConsoleProfileSessionRouteWithChildren
@@ -650,18 +715,24 @@ export interface FileRoutesByTo {
   '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
   '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
+  '/api/console/spaces/favorites': typeof ApiConsoleSpacesFavoritesRoute
+  '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
+  '/api/console/pages/$id/favorite': typeof ApiConsolePagesIdFavoriteRoute
+  '/api/console/pages/$id/favorited': typeof ApiConsolePagesIdFavoritedRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
+  '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
+  '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
   '/api/console/spaces/$id/members': typeof ApiConsoleSpacesIdMembersRouteWithChildren
   '/api/console/spaces/by-slug/$slug': typeof ApiConsoleSpacesBySlugSlugRoute
   '/api/console/users/$id/active': typeof ApiConsoleUsersIdActiveRoute
@@ -707,6 +778,7 @@ export interface FileRoutesById {
   '/api/console/users': typeof ApiConsoleUsersRouteWithChildren
   '/api/console/workspaces': typeof ApiConsoleWorkspacesRouteWithChildren
   '/api/github/stats': typeof ApiGithubStatsRoute
+  '/s/$spaceSlug/settings': typeof SSpaceSlugSettingsRoute
   '/settings/account/preferences': typeof SettingsAccountPreferencesRoute
   '/settings/account/profile': typeof SettingsAccountProfileRoute
   '/settings/systems/debug': typeof SettingsSystemsDebugRoute
@@ -725,6 +797,7 @@ export interface FileRoutesById {
   '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
+  '/api/console/pages/favorites': typeof ApiConsolePagesFavoritesRoute
   '/api/console/pages/tree': typeof ApiConsolePagesTreeRoute
   '/api/console/profile/password': typeof ApiConsoleProfilePasswordRoute
   '/api/console/profile/session': typeof ApiConsoleProfileSessionRouteWithChildren
@@ -732,18 +805,24 @@ export interface FileRoutesById {
   '/api/console/push/subscribe': typeof ApiConsolePushSubscribeRoute
   '/api/console/push/unsubscribe': typeof ApiConsolePushUnsubscribeRoute
   '/api/console/spaces/$id': typeof ApiConsoleSpacesIdRouteWithChildren
+  '/api/console/spaces/favorites': typeof ApiConsoleSpacesFavoritesRoute
+  '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
   '/api/console/pages/$id/children': typeof ApiConsolePagesIdChildrenRoute
+  '/api/console/pages/$id/favorite': typeof ApiConsolePagesIdFavoriteRoute
+  '/api/console/pages/$id/favorited': typeof ApiConsolePagesIdFavoritedRoute
   '/api/console/pages/$id/history': typeof ApiConsolePagesIdHistoryRouteWithChildren
   '/api/console/pages/$id/move': typeof ApiConsolePagesIdMoveRoute
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
+  '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
+  '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
   '/api/console/spaces/$id/members': typeof ApiConsoleSpacesIdMembersRouteWithChildren
   '/api/console/spaces/by-slug/$slug': typeof ApiConsoleSpacesBySlugSlugRoute
   '/api/console/users/$id/active': typeof ApiConsoleUsersIdActiveRoute
@@ -790,6 +869,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/s/$spaceSlug/settings'
     | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/settings/systems/debug'
@@ -808,6 +888,7 @@ export interface FileRouteTypes {
     | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
+    | '/api/console/pages/favorites'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
     | '/api/console/profile/session'
@@ -815,18 +896,24 @@ export interface FileRouteTypes {
     | '/api/console/push/subscribe'
     | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
+    | '/api/console/spaces/favorites'
+    | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
     | '/api/console/pages/$id/children'
+    | '/api/console/pages/$id/favorite'
+    | '/api/console/pages/$id/favorited'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
     | '/api/console/profile/session/revoke'
+    | '/api/console/spaces/$id/favorite'
+    | '/api/console/spaces/$id/favorited'
     | '/api/console/spaces/$id/members'
     | '/api/console/spaces/by-slug/$slug'
     | '/api/console/users/$id/active'
@@ -869,6 +956,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/s/$spaceSlug/settings'
     | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/settings/systems/debug'
@@ -887,6 +975,7 @@ export interface FileRouteTypes {
     | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
+    | '/api/console/pages/favorites'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
     | '/api/console/profile/session'
@@ -894,18 +983,24 @@ export interface FileRouteTypes {
     | '/api/console/push/subscribe'
     | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
+    | '/api/console/spaces/favorites'
+    | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
     | '/api/console/pages/$id/children'
+    | '/api/console/pages/$id/favorite'
+    | '/api/console/pages/$id/favorited'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
     | '/api/console/profile/session/revoke'
+    | '/api/console/spaces/$id/favorite'
+    | '/api/console/spaces/$id/favorited'
     | '/api/console/spaces/$id/members'
     | '/api/console/spaces/by-slug/$slug'
     | '/api/console/users/$id/active'
@@ -950,6 +1045,7 @@ export interface FileRouteTypes {
     | '/api/console/users'
     | '/api/console/workspaces'
     | '/api/github/stats'
+    | '/s/$spaceSlug/settings'
     | '/settings/account/preferences'
     | '/settings/account/profile'
     | '/settings/systems/debug'
@@ -968,6 +1064,7 @@ export interface FileRouteTypes {
     | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
+    | '/api/console/pages/favorites'
     | '/api/console/pages/tree'
     | '/api/console/profile/password'
     | '/api/console/profile/session'
@@ -975,18 +1072,24 @@ export interface FileRouteTypes {
     | '/api/console/push/subscribe'
     | '/api/console/push/unsubscribe'
     | '/api/console/spaces/$id'
+    | '/api/console/spaces/favorites'
+    | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
     | '/api/console/pages/$id/children'
+    | '/api/console/pages/$id/favorite'
+    | '/api/console/pages/$id/favorited'
     | '/api/console/pages/$id/history'
     | '/api/console/pages/$id/move'
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
     | '/api/console/profile/session/revoke'
+    | '/api/console/spaces/$id/favorite'
+    | '/api/console/spaces/$id/favorited'
     | '/api/console/spaces/$id/members'
     | '/api/console/spaces/by-slug/$slug'
     | '/api/console/users/$id/active'
@@ -1036,6 +1139,7 @@ export interface RootRouteChildren {
   ApiConsolePushPublicKeyRoute: typeof ApiConsolePushPublicKeyRoute
   ApiConsolePushSubscribeRoute: typeof ApiConsolePushSubscribeRoute
   ApiConsolePushUnsubscribeRoute: typeof ApiConsolePushUnsubscribeRoute
+  ApiConsoleUnsplashSearchRoute: typeof ApiConsoleUnsplashSearchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1194,6 +1298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountPreferencesRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/s/$spaceSlug/settings': {
+      id: '/s/$spaceSlug/settings'
+      path: '/settings'
+      fullPath: '/s/$spaceSlug/settings'
+      preLoaderRoute: typeof SSpaceSlugSettingsRouteImport
+      parentRoute: typeof SSpaceSlugRoute
+    }
     '/api/github/stats': {
       id: '/api/github/stats'
       path: '/api/github/stats'
@@ -1306,6 +1417,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleUsersIdRouteImport
       parentRoute: typeof ApiConsoleUsersRoute
     }
+    '/api/console/unsplash/search': {
+      id: '/api/console/unsplash/search'
+      path: '/api/console/unsplash/search'
+      fullPath: '/api/console/unsplash/search'
+      preLoaderRoute: typeof ApiConsoleUnsplashSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/console/spaces/favorites': {
+      id: '/api/console/spaces/favorites'
+      path: '/favorites'
+      fullPath: '/api/console/spaces/favorites'
+      preLoaderRoute: typeof ApiConsoleSpacesFavoritesRouteImport
+      parentRoute: typeof ApiConsoleSpacesRoute
+    }
     '/api/console/spaces/$id': {
       id: '/api/console/spaces/$id'
       path: '/$id'
@@ -1353,6 +1478,13 @@ declare module '@tanstack/react-router' {
       path: '/tree'
       fullPath: '/api/console/pages/tree'
       preLoaderRoute: typeof ApiConsolePagesTreeRouteImport
+      parentRoute: typeof ApiConsolePagesRoute
+    }
+    '/api/console/pages/favorites': {
+      id: '/api/console/pages/favorites'
+      path: '/favorites'
+      fullPath: '/api/console/pages/favorites'
+      preLoaderRoute: typeof ApiConsolePagesFavoritesRouteImport
       parentRoute: typeof ApiConsolePagesRoute
     }
     '/api/console/pages/$id': {
@@ -1488,6 +1620,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleSpacesIdMembersRouteImport
       parentRoute: typeof ApiConsoleSpacesIdRoute
     }
+    '/api/console/spaces/$id/favorited': {
+      id: '/api/console/spaces/$id/favorited'
+      path: '/favorited'
+      fullPath: '/api/console/spaces/$id/favorited'
+      preLoaderRoute: typeof ApiConsoleSpacesIdFavoritedRouteImport
+      parentRoute: typeof ApiConsoleSpacesIdRoute
+    }
+    '/api/console/spaces/$id/favorite': {
+      id: '/api/console/spaces/$id/favorite'
+      path: '/favorite'
+      fullPath: '/api/console/spaces/$id/favorite'
+      preLoaderRoute: typeof ApiConsoleSpacesIdFavoriteRouteImport
+      parentRoute: typeof ApiConsoleSpacesIdRoute
+    }
     '/api/console/profile/session/revoke': {
       id: '/api/console/profile/session/revoke'
       path: '/revoke'
@@ -1528,6 +1674,20 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/api/console/pages/$id/history'
       preLoaderRoute: typeof ApiConsolePagesIdHistoryRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/favorited': {
+      id: '/api/console/pages/$id/favorited'
+      path: '/favorited'
+      fullPath: '/api/console/pages/$id/favorited'
+      preLoaderRoute: typeof ApiConsolePagesIdFavoritedRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/favorite': {
+      id: '/api/console/pages/$id/favorite'
+      path: '/favorite'
+      fullPath: '/api/console/pages/$id/favorite'
+      preLoaderRoute: typeof ApiConsolePagesIdFavoriteRouteImport
       parentRoute: typeof ApiConsolePagesIdRoute
     }
     '/api/console/pages/$id/children': {
@@ -1645,10 +1805,12 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
 )
 
 interface SSpaceSlugRouteChildren {
+  SSpaceSlugSettingsRoute: typeof SSpaceSlugSettingsRoute
   SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
 }
 
 const SSpaceSlugRouteChildren: SSpaceSlugRouteChildren = {
+  SSpaceSlugSettingsRoute: SSpaceSlugSettingsRoute,
   SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
 }
 
@@ -1711,6 +1873,8 @@ const ApiConsolePagesIdHistoryRouteWithChildren =
 
 interface ApiConsolePagesIdRouteChildren {
   ApiConsolePagesIdChildrenRoute: typeof ApiConsolePagesIdChildrenRoute
+  ApiConsolePagesIdFavoriteRoute: typeof ApiConsolePagesIdFavoriteRoute
+  ApiConsolePagesIdFavoritedRoute: typeof ApiConsolePagesIdFavoritedRoute
   ApiConsolePagesIdHistoryRoute: typeof ApiConsolePagesIdHistoryRouteWithChildren
   ApiConsolePagesIdMoveRoute: typeof ApiConsolePagesIdMoveRoute
   ApiConsolePagesIdPublishRoute: typeof ApiConsolePagesIdPublishRoute
@@ -1720,6 +1884,8 @@ interface ApiConsolePagesIdRouteChildren {
 
 const ApiConsolePagesIdRouteChildren: ApiConsolePagesIdRouteChildren = {
   ApiConsolePagesIdChildrenRoute: ApiConsolePagesIdChildrenRoute,
+  ApiConsolePagesIdFavoriteRoute: ApiConsolePagesIdFavoriteRoute,
+  ApiConsolePagesIdFavoritedRoute: ApiConsolePagesIdFavoritedRoute,
   ApiConsolePagesIdHistoryRoute: ApiConsolePagesIdHistoryRouteWithChildren,
   ApiConsolePagesIdMoveRoute: ApiConsolePagesIdMoveRoute,
   ApiConsolePagesIdPublishRoute: ApiConsolePagesIdPublishRoute,
@@ -1732,11 +1898,13 @@ const ApiConsolePagesIdRouteWithChildren =
 
 interface ApiConsolePagesRouteChildren {
   ApiConsolePagesIdRoute: typeof ApiConsolePagesIdRouteWithChildren
+  ApiConsolePagesFavoritesRoute: typeof ApiConsolePagesFavoritesRoute
   ApiConsolePagesTreeRoute: typeof ApiConsolePagesTreeRoute
 }
 
 const ApiConsolePagesRouteChildren: ApiConsolePagesRouteChildren = {
   ApiConsolePagesIdRoute: ApiConsolePagesIdRouteWithChildren,
+  ApiConsolePagesFavoritesRoute: ApiConsolePagesFavoritesRoute,
   ApiConsolePagesTreeRoute: ApiConsolePagesTreeRoute,
 }
 
@@ -1786,11 +1954,15 @@ const ApiConsoleSpacesIdMembersRouteWithChildren =
   )
 
 interface ApiConsoleSpacesIdRouteChildren {
+  ApiConsoleSpacesIdFavoriteRoute: typeof ApiConsoleSpacesIdFavoriteRoute
+  ApiConsoleSpacesIdFavoritedRoute: typeof ApiConsoleSpacesIdFavoritedRoute
   ApiConsoleSpacesIdMembersRoute: typeof ApiConsoleSpacesIdMembersRouteWithChildren
   ApiConsoleSpacesIdGroupsGroupIdRoute: typeof ApiConsoleSpacesIdGroupsGroupIdRoute
 }
 
 const ApiConsoleSpacesIdRouteChildren: ApiConsoleSpacesIdRouteChildren = {
+  ApiConsoleSpacesIdFavoriteRoute: ApiConsoleSpacesIdFavoriteRoute,
+  ApiConsoleSpacesIdFavoritedRoute: ApiConsoleSpacesIdFavoritedRoute,
   ApiConsoleSpacesIdMembersRoute: ApiConsoleSpacesIdMembersRouteWithChildren,
   ApiConsoleSpacesIdGroupsGroupIdRoute: ApiConsoleSpacesIdGroupsGroupIdRoute,
 }
@@ -1800,11 +1972,13 @@ const ApiConsoleSpacesIdRouteWithChildren =
 
 interface ApiConsoleSpacesRouteChildren {
   ApiConsoleSpacesIdRoute: typeof ApiConsoleSpacesIdRouteWithChildren
+  ApiConsoleSpacesFavoritesRoute: typeof ApiConsoleSpacesFavoritesRoute
   ApiConsoleSpacesBySlugSlugRoute: typeof ApiConsoleSpacesBySlugSlugRoute
 }
 
 const ApiConsoleSpacesRouteChildren: ApiConsoleSpacesRouteChildren = {
   ApiConsoleSpacesIdRoute: ApiConsoleSpacesIdRouteWithChildren,
+  ApiConsoleSpacesFavoritesRoute: ApiConsoleSpacesFavoritesRoute,
   ApiConsoleSpacesBySlugSlugRoute: ApiConsoleSpacesBySlugSlugRoute,
 }
 
@@ -1952,6 +2126,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiConsolePushPublicKeyRoute: ApiConsolePushPublicKeyRoute,
   ApiConsolePushSubscribeRoute: ApiConsolePushSubscribeRoute,
   ApiConsolePushUnsubscribeRoute: ApiConsolePushUnsubscribeRoute,
+  ApiConsoleUnsplashSearchRoute: ApiConsoleUnsplashSearchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -175,6 +175,9 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 	case EventSpaceIconChanged:
 		name := s.metadataStr(event.Metadata, "name", "a space")
 		return "Space icon updated", fmt.Sprintf("The icon for space %q was changed.", name)
+	case EventSpaceHeaderImageChanged:
+		name := s.metadataStr(event.Metadata, "name", "a space")
+		return "Space header updated", fmt.Sprintf("The header image for space %q was changed.", name)
 	case EventGroupMemberAdded:
 		group := s.metadataStr(event.Metadata, "groupName", "a group")
 		return "Added to group", fmt.Sprintf("You were added to the group %q.", group)
@@ -190,6 +193,9 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 		return "Page updated", fmt.Sprintf("The page %q was updated.", name)
 	case EventPageCreated:
 		name := s.metadataStr(event.Metadata, "name", "a page")
+		if event.Metadata["isFolder"] == "true" {
+			return "Folder created", fmt.Sprintf("A new folder %q was created.", name)
+		}
 		return "Page created", fmt.Sprintf("A new page %q was created.", name)
 	case EventWorkspaceMemberAdded:
 		wsName := s.metadataStr(event.Metadata, "name", "a workspace")

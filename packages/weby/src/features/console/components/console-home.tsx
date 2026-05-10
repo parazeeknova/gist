@@ -2,7 +2,9 @@ import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "#/features/auth/hooks/use-auth";
+import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { useTheme } from "#/shared/hooks/use-theme";
+import { useConsolePages } from "#/features/console/hooks/use-pages";
 import { useCreateSpace, useSpaces } from "#/features/console/hooks/use-spaces";
 import { useConsoleContext } from "./console-context";
 import { QuickActions } from "./quick-actions";
@@ -37,30 +39,21 @@ const createSubMessages = [
   "a space for everything",
 ];
 
-const MOCK_DOCS = [
-  { id: "1", modified: "2026-05-07", space: "engineering", title: "api design notes" },
-  { id: "2", modified: "2026-05-06", space: "engineering", title: "sprint retro — may" },
-  { id: "3", modified: "2026-05-05", space: "design", title: "color palette v3" },
-  { id: "4", modified: "2026-05-04", space: "personal", title: "reading list" },
-  { id: "5", modified: "2026-05-03", space: "design", title: "typography reference" },
-  { id: "6", modified: "2026-05-01", space: "personal", title: "weekly standup template" },
-];
-
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .map((word) => word[0])
-    .filter(Boolean)
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
 export const ConsoleHome = () => {
   const { data: user } = useAuth();
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const { selectedWorkspaceId } = useConsoleContext();
   const { data: spaces } = useSpaces(selectedWorkspaceId);
+  const spaceById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of spaces ?? []) {
+      map.set(s.id, s.name);
+    }
+    return map;
+  }, [spaces]);
+  const { data: allPages, isPending: allPagesPending } = useConsolePages();
+  const pageById = useMemo(() => new Map((allPages ?? []).map((p) => [p.id, p])), [allPages]);
   const createSpace = useCreateSpace();
   const [showCreateSpace, setShowCreateSpace] = useState(false);
   const [newName, setNewName] = useState("");
@@ -175,7 +168,7 @@ export const ConsoleHome = () => {
 
       <QuickActions />
 
-      <div className="mt-10">
+      <div className="mt-10" id="library-section">
         <div className="flex items-center justify-between mb-3">
           <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
             spaces you belong to
@@ -198,19 +191,11 @@ export const ConsoleHome = () => {
             >
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex items-center gap-2 min-w-0">
-                  {s.icon ? (
-                    <img
-                      alt=""
-                      className="w-5 h-5 shrink-0 rounded-full object-cover"
-                      src={s.icon}
-                    />
-                  ) : (
-                    <div
-                      className={`w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[8px] font-medium ${t("bg-white/10 text-text-dark/70", "bg-black/10 text-text-light/70")}`}
-                    >
-                      {getInitials(s.name)}
-                    </div>
-                  )}
+                  <AvatarBadge
+                    className={`w-5 h-5 ${t("bg-white/10 text-text-dark/70", "bg-black/10 text-text-light/70")}`}
+                    icon={s.icon}
+                    name={s.name}
+                  />
                   <p
                     className={`text-[13px] truncate ${t("text-text-dark/70", "text-text-light/70")}`}
                   >
@@ -357,38 +342,68 @@ export const ConsoleHome = () => {
         id="recent-docs-section"
       >
         <p className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}>
-          my docs
+          my pages
         </p>
 
         <div className="mt-3 space-y-0.5">
-          {MOCK_DOCS.map((doc) => (
-            <div
-              key={doc.id}
-              className={`grid grid-cols-[1fr_120px_100px] gap-2 items-center px-2 py-1.5 lowercase transition-colors ${t(
-                "hover:bg-white/5",
-                "hover:bg-black/3",
-              )}`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <FileTextIcon className={t("text-text-dark/25", "text-text-light/25")} size={14} />
-                <span
-                  className={`truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
+          {(() => {
+            if (allPagesPending) {
+              return (
+                <p className={`text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
+                  loading...
+                </p>
+              );
+            }
+            const recent = (allPages ?? [])
+              .filter((p) => !p.slugId.includes("/") && p.icon !== "folder")
+              .toSorted((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+              .slice(0, 5);
+            if (recent.length === 0) {
+              return (
+                <p className={`text-[11px] ${t("text-text-dark/25", "text-text-light/25")}`}>
+                  no pages yet
+                </p>
+              );
+            }
+            return recent.map((page) => {
+              const parentTitle = page.parentPageId
+                ? pageById.get(page.parentPageId)?.title
+                : undefined;
+              return (
+                <div
+                  key={page.id}
+                  className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 py-1.5 lowercase ${t("hover:bg-white/5", "hover:bg-black/3")}`}
                 >
-                  {doc.title}
-                </span>
-              </div>
-              <span
-                className={`truncate text-[11px] ${t("text-text-dark/30", "text-text-light/30")}`}
-              >
-                {doc.space}
-              </span>
-              <span
-                className={`text-right text-[10px] font-mono ${t("text-text-dark/25", "text-text-light/25")}`}
-              >
-                {doc.modified}
-              </span>
-            </div>
-          ))}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <FileTextIcon
+                      className={t("text-text-dark/25", "text-text-light/25")}
+                      size={14}
+                    />
+                    <span
+                      className={`truncate text-[12px] ${t("text-text-dark/60", "text-text-light/60")}`}
+                    >
+                      {page.title}
+                    </span>
+                  </div>
+                  <span
+                    className={`shrink-0 text-[10px] lowercase truncate max-w-32 text-center ${t("text-text-dark/20", "text-text-light/20")}`}
+                  >
+                    {parentTitle
+                      ? `${parentTitle} / ${spaceById.get(page.spaceId) || "—"}`
+                      : spaceById.get(page.spaceId) || "—"}
+                  </span>
+                  <span
+                    className={`shrink-0 text-[10px] font-mono text-right ${t("text-text-dark/25", "text-text-light/25")}`}
+                  >
+                    {new Date(page.updatedAt).toLocaleDateString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </span>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
       <p

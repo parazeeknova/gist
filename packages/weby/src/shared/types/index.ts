@@ -96,6 +96,8 @@ export interface ConsolePage {
   title: string;
   icon: string;
   isPublished: boolean;
+  spaceId: string;
+  parentPageId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -126,6 +128,7 @@ export interface PageTreeItem {
   parentPageId: string | null;
   spaceId: string;
   hasChildren: boolean;
+  creatorId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -172,6 +175,7 @@ export interface Space {
   slug: string;
   icon: string;
   description: string;
+  headerImage: string;
   workspaceId: string;
   createdBy?: string;
   visibility: string;

@@ -1,0 +1,56 @@
+import { useQuery } from "@tanstack/react-query";
+
+interface AvatarBadgeProps {
+  className?: string;
+  icon?: string | null;
+  initialsClass?: string;
+  name: string;
+}
+
+const getInitials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
+    .filter(Boolean)
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "?";
+
+const avatarImageQueryKey = (icon: string) => ["avatar-image", icon] as const;
+
+const loadAvatarImage = async (icon: string) => {
+  const image = new Image();
+  image.decoding = "async";
+  image.src = icon;
+  await image.decode();
+  return icon;
+};
+
+export const AvatarBadge = ({ className = "", icon, initialsClass, name }: AvatarBadgeProps) => {
+  const baseClassName = `shrink-0 rounded-full object-cover ${className}`.trim();
+  const imageQuery = useQuery({
+    enabled: Boolean(icon),
+    gcTime: 1000 * 60 * 60 * 24,
+    queryFn: () => loadAvatarImage(icon ?? ""),
+    queryKey: icon ? avatarImageQueryKey(icon) : ["avatar-image", "empty"],
+    retry: false,
+    staleTime: Infinity,
+  });
+  const altText = `${name.trim() || "avatar"} avatar`;
+  const initialsFontClass = initialsClass ?? "text-[0.4rem]";
+
+  if (icon && imageQuery.data) {
+    return <img alt={altText} className={baseClassName} src={imageQuery.data} />;
+  }
+
+  return (
+    <span
+      aria-label={altText}
+      className={`${baseClassName} inline-grid place-items-center ${initialsFontClass} font-medium leading-none tracking-tight`.trim()}
+      role="img"
+    >
+      {getInitials(name)}
+    </span>
+  );
+};

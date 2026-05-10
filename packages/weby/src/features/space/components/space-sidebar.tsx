@@ -1,21 +1,49 @@
 import {
   ArrowLeftIcon,
+  BookmarkSimpleIcon,
   CaretDownIcon,
   CaretRightIcon,
-  FileIcon,
+  CheckIcon,
+  DotsThreeCircleVerticalIcon,
+  FilePlusIcon,
+  FileTextIcon,
   FolderIcon,
+  FolderPlusIcon,
   GearSixIcon,
   MagnifyingGlassIcon,
+  PencilSimpleIcon,
   PlusIcon,
   SquaresFourIcon,
+  TrashIcon,
+  XIcon,
 } from "@phosphor-icons/react";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type { PageTreeItem, Space } from "#/shared/types";
-import { usePageTree } from "#/features/console/hooks/use-pages";
-import { useSpaces } from "#/features/console/hooks/use-spaces";
+import {
+  useCreatePage,
+  useDeletePage,
+  useMovePage,
+  usePageTree,
+  useUpdatePage,
+} from "#/features/console/hooks/use-pages";
+import {
+  useIsPageFavorited,
+  useTogglePageFavorite,
+} from "#/features/console/hooks/use-page-favorites";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "#/features/console/components/console-context";
+
+const toSlug = (title: string): string =>
+  title
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+
+const makeSlug = (title: string): string => {
+  const base = toSlug(title) || crypto.randomUUID().slice(0, 8);
+  return `${base}-${crypto.randomUUID().slice(0, 6)}`;
+};
 
 interface TreeNode {
   item: PageTreeItem;
@@ -42,23 +70,199 @@ const buildPageTree = (items: PageTreeItem[]): TreeNode[] => {
   return build(null);
 };
 
+const isDescendant = (items: PageTreeItem[], ancestorId: string, descendantId: string): boolean => {
+  const parentMap = new Map(items.map((i) => [i.id, i.parentPageId]));
+  const visited = new Set<string>();
+  let current: string | null | undefined = descendantId;
+  while (current) {
+    if (visited.has(current)) {
+      return false;
+    }
+    visited.add(current);
+    const parent = parentMap.get(current);
+    if (parent === ancestorId) {
+      return true;
+    }
+    if (!parent) {
+      return false;
+    }
+    current = parent;
+  }
+  return false;
+};
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  pageId: string;
+  title: string;
+}
+
 interface PageNodeProps {
   node: TreeNode;
   depth: number;
+  spaceId: string;
+  treeItems: PageTreeItem[];
 }
 
-const PageNode = ({ node, depth }: PageNodeProps) => {
+// oxlint-disable-next-line complexity
+const PageNode = ({ node, depth, spaceId, treeItems }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
   const { selectedPageId, setSelectedPageId } = useConsoleContext();
   const [expanded, setExpanded] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameTitle, setRenameTitle] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isCreatingChild, setIsCreatingChild] = useState(false);
+  const [newChildTitle, setNewChildTitle] = useState("");
+  const isSubmittingRef = useRef(false);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const childInputRef = useRef<HTMLInputElement>(null);
+
+  const updatePage = useUpdatePage();
+  const deletePage = useDeletePage();
+  const createPage = useCreatePage();
+  const movePage = useMovePage();
+  const { data: favData } = useIsPageFavorited(node.item.id);
+  const toggleFav = useTogglePageFavorite();
+  const isFaved = favData?.favorited ?? false;
+
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
-  const hasChildren = node.children.length > 0;
+  const hasChildren = node.children.length > 0 || isCreatingChild || node.item.icon === "folder";
   const isSelected = selectedPageId === node.item.id;
+
+  useEffect(() => {
+    if (!contextMenu) {
+      return;
+    }
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+        setShowDeleteConfirm(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [contextMenu]);
+
+  useEffect(() => {
+    if (isRenaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [isRenaming]);
+
+  useEffect(() => {
+    if (isCreatingChild && childInputRef.current) {
+      childInputRef.current.focus();
+    }
+  }, [isCreatingChild]);
+
+  const handleDotsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setContextMenu({
+      pageId: node.item.id,
+      title: node.item.title,
+      x: rect.left + rect.width / 2,
+      y: rect.bottom + 4,
+    });
+  };
+
+  const startRename = () => {
+    setRenameTitle(node.item.title);
+    setIsRenaming(true);
+    setContextMenu(null);
+    setShowDeleteConfirm(false);
+  };
+
+  const submitRename = () => {
+    if (isSubmittingRef.current) {
+      return;
+    }
+    const trimmed = renameTitle.trim();
+    if (!trimmed || trimmed === node.item.title) {
+      setIsRenaming(false);
+      return;
+    }
+    isSubmittingRef.current = true;
+    updatePage.mutate({ id: node.item.id, input: { title: trimmed } });
+    setIsRenaming(false);
+    setTimeout(() => {
+      isSubmittingRef.current = false;
+    }, 1000);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      submitRename();
+    } else if (e.key === "Escape") {
+      setIsRenaming(false);
+    }
+  };
+
+  const submitDelete = () => {
+    deletePage.mutate(node.item.id);
+    setContextMenu(null);
+    setShowDeleteConfirm(false);
+  };
+
+  const submitCreateChild = () => {
+    const trimmed = newChildTitle.trim();
+    if (!trimmed) {
+      setIsCreatingChild(false);
+      return;
+    }
+    createPage.mutate({
+      parentPageId: node.item.id,
+      slugId: makeSlug(trimmed),
+      spaceId,
+      title: trimmed,
+    });
+    setNewChildTitle("");
+    setIsCreatingChild(false);
+  };
+
+  const handleChildKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      submitCreateChild();
+    } else if (e.key === "Escape") {
+      setIsCreatingChild(false);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("text/plain", node.item.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (hasChildren) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData("text/plain");
+    if (
+      draggedId &&
+      draggedId !== node.item.id &&
+      !isDescendant(treeItems, draggedId, node.item.id)
+    ) {
+      movePage.mutate({ id: draggedId, input: { parentPageId: node.item.id } });
+    }
+  };
 
   return (
     <li>
       <div
-        className={`flex w-full items-center gap-1 py-0.5 text-[11px] lowercase ${t(
+        className={`flex group w-full items-center gap-1 py-0.5 text-[11px] lowercase cursor-default ${t(
           isSelected
             ? "bg-white/10 text-text-dark"
             : "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
@@ -66,6 +270,16 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
             ? "bg-black/10 text-text-light"
             : "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
         )}`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setContextMenu(null);
+          setShowDeleteConfirm(false);
+        }}
+        draggable
+        onDragOver={handleDragOver}
+        onDragStart={handleDragStart}
+        onDrop={handleDrop}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         {hasChildren ? (
@@ -80,21 +294,169 @@ const PageNode = ({ node, depth }: PageNodeProps) => {
             <FolderIcon className="shrink-0" size={10} />
           </>
         ) : (
-          <FileIcon className="shrink-0" size={10} />
+          <FileTextIcon className="shrink-0" size={10} />
         )}
-        <button
-          className="flex-1 text-left truncate"
-          onClick={() => setSelectedPageId(node.item.id)}
-          type="button"
-        >
-          {node.item.title}
-        </button>
+
+        {isRenaming ? (
+          <div className="flex-1 flex items-center gap-1">
+            <input
+              ref={renameInputRef}
+              className={`flex-1 bg-transparent outline-none text-[11px] lowercase border-b ${t("border-white/20 text-text-dark", "border-black/20 text-text-light")}`}
+              onBlur={submitRename}
+              onChange={(e) => setRenameTitle(e.target.value)}
+              onKeyDown={handleRenameKeyDown}
+              value={renameTitle}
+            />
+            <button
+              className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
+              onClick={submitRename}
+              type="button"
+            >
+              save
+            </button>
+            <button
+              className={`shrink-0 text-[10px] lowercase px-1 cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/60", "text-text-light/25 hover:text-text-light/60")}`}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                setIsRenaming(false);
+              }}
+              type="button"
+            >
+              cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            className="flex-1 text-left truncate"
+            onClick={() => {
+              if (hasChildren) {
+                setExpanded((prev) => !prev);
+              } else {
+                setSelectedPageId(node.item.id);
+              }
+            }}
+            type="button"
+          >
+            {node.item.title}
+          </button>
+        )}
+
+        {isHovered && !isRenaming && (
+          <div className="flex items-center gap-0.5 shrink-0 pr-0.5">
+            {hasChildren ? (
+              <button
+                className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCreatingChild(true);
+                  setExpanded(true);
+                }}
+                title="New child page"
+                type="button"
+              >
+                <PlusIcon size={10} />
+              </button>
+            ) : (
+              <button
+                className={`cursor-pointer flex items-center ${isFaved ? "text-yellow-400" : "opacity-60 hover:opacity-100"}`}
+                onClick={() => toggleFav.mutate(node.item.id)}
+                type="button"
+              >
+                <BookmarkSimpleIcon size={10} weight={isFaved ? "fill" : "regular"} />
+              </button>
+            )}
+            <div className="flex items-center" ref={menuRef}>
+              <button
+                className="cursor-pointer opacity-60 hover:opacity-100 flex items-center"
+                onClick={handleDotsClick}
+                type="button"
+              >
+                <DotsThreeCircleVerticalIcon size={10} />
+              </button>
+              {contextMenu && contextMenu.pageId === node.item.id && (
+                <div
+                  className={`fixed z-50 py-1 w-32 text-[11px] lowercase shadow-lg ${t(
+                    "bg-neutral-800 border border-white/10 text-text-dark",
+                    "bg-white border border-black/10 text-text-light",
+                  )}`}
+                  style={{ left: `${contextMenu.x - 64}px`, top: `${contextMenu.y}px` }}
+                >
+                  <button
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${t("hover:bg-white/10", "hover:bg-black/5")}`}
+                    onClick={startRename}
+                    type="button"
+                  >
+                    <PencilSimpleIcon size={10} />
+                    rename
+                  </button>
+                  <button
+                    className={`flex w-full items-center gap-1.5 px-2 py-1 cursor-pointer ${showDeleteConfirm ? "text-red-400" : t("hover:bg-white/10", "hover:bg-black/5")}`}
+                    onClick={() => {
+                      if (showDeleteConfirm) {
+                        submitDelete();
+                      } else {
+                        setShowDeleteConfirm(true);
+                      }
+                    }}
+                    type="button"
+                  >
+                    <TrashIcon size={10} />
+                    {showDeleteConfirm ? "confirm?" : "delete"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
       {expanded && hasChildren && (
         <ul>
           {node.children.map((child) => (
-            <PageNode depth={depth + 1} key={child.item.id} node={child} />
+            <PageNode
+              depth={depth + 1}
+              key={child.item.id}
+              node={child}
+              spaceId={spaceId}
+              treeItems={treeItems}
+            />
           ))}
+          {isCreatingChild && (
+            <li>
+              <div
+                className={`flex items-center gap-1 py-0.5 text-[11px] lowercase ${t("text-text-dark/50", "text-text-light/50")}`}
+                style={{ paddingLeft: `${(depth + 1) * 12 + 4}px` }}
+              >
+                <FileTextIcon className="shrink-0" size={10} />
+                <input
+                  ref={childInputRef}
+                  className="flex-1 bg-transparent outline-none text-[11px] lowercase border-b border-dashed border-text-dark/20"
+                  onBlur={submitCreateChild}
+                  onChange={(e) => setNewChildTitle(e.target.value)}
+                  onKeyDown={handleChildKeyDown}
+                  placeholder="new page..."
+                  value={newChildTitle}
+                />
+                <button
+                  className="shrink-0 cursor-pointer opacity-60 hover:opacity-100"
+                  onClick={submitCreateChild}
+                  type="button"
+                >
+                  <CheckIcon size={10} />
+                </button>
+                <button
+                  className="shrink-0 cursor-pointer opacity-60 hover:opacity-100"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    setIsCreatingChild(false);
+                  }}
+                  type="button"
+                >
+                  <XIcon size={10} />
+                </button>
+              </div>
+            </li>
+          )}
         </ul>
       )}
     </li>
@@ -108,27 +470,36 @@ interface SpaceSidebarProps {
 export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const { isDarkMode } = useTheme();
   const navigate = useNavigate();
-  const { selectedWorkspaceId } = useConsoleContext();
-  const { data: spaces } = useSpaces(selectedWorkspaceId);
+  const routerState = useRouterState();
+  const { location } = routerState;
   const { data: treeItems, isPending } = usePageTree(space.id);
-  const [showSpaceMenu, setShowSpaceMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const isOverview = location.pathname === `/s/${space.slug}`;
+  const isSettings = location.pathname.startsWith(`/s/${space.slug}/settings`);
+
+  const createPage = useCreatePage();
+
+  const handleCreate = (kind: "page" | "folder") => {
+    const suffix = crypto.randomUUID().slice(0, 8);
+    if (kind === "folder") {
+      createPage.mutate({
+        icon: "folder",
+        slugId: `new-folder-${suffix}`,
+        spaceId: space.id,
+        title: "new folder",
+      });
+    } else {
+      createPage.mutate({
+        slugId: `untitled-page-${suffix}`,
+        spaceId: space.id,
+        title: "untitled page",
+      });
+    }
+  };
+
+  const handleCreatePage = () => handleCreate("page");
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const pageTree = treeItems ? buildPageTree(treeItems) : [];
-
-  useEffect(() => {
-    if (!showSpaceMenu) {
-      return;
-    }
-    const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowSpaceMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [showSpaceMenu]);
 
   return (
     <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">
@@ -143,48 +514,16 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           <ArrowLeftIcon size={12} />
           back
         </button>
-        <div className="relative" ref={menuRef}>
-          <button
-            className={`flex items-center gap-1 text-[11px] lowercase ${t("text-text-dark/40 hover:text-text-dark/60", "text-text-light/40 hover:text-text-light/60")}`}
-            onClick={() => setShowSpaceMenu((prev) => !prev)}
-            type="button"
+        <div className="flex items-center gap-1 text-[11px] lowercase">
+          <span
+            className={`truncate max-w-30 uppercase font-bold ${t("text-text-dark/40", "text-text-light/40")}`}
           >
-            {space.icon ? (
-              <img
-                alt=""
-                className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
-                src={space.icon}
-              />
-            ) : null}
-            <span className="truncate max-w-30">{space.name}</span>
-            <CaretDownIcon size={10} />
-          </button>
-          {showSpaceMenu && (
-            <div
-              className={`absolute right-0 top-full mt-1 border p-1.5 z-50 shadow-lg w-44 max-h-48 overflow-y-auto ${t("border-border-dark bg-text-light", "border-border-light bg-[#e0e0e0]")}`}
-            >
-              {spaces?.map((s) => (
-                <button
-                  className={`flex w-full items-center gap-1.5 px-1.5 py-1 text-left text-[11px] lowercase ${s.id === space.id ? t("text-text-dark", "text-text-light") : t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
-                  key={s.id}
-                  onClick={() => {
-                    setShowSpaceMenu(false);
-                    navigate({ to: `/s/${s.slug}` });
-                  }}
-                  type="button"
-                >
-                  {s.icon ? (
-                    <img
-                      alt=""
-                      className="w-3.5 h-3.5 rounded-full object-cover mx-0.5"
-                      src={s.icon}
-                    />
-                  ) : null}
-                  <span className="truncate">{s.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
+            {space.name}
+          </span>{" "}
+          -
+          <span className={`truncate max-w-20 ${t("text-text-dark/40", "text-text-light/40")}`}>
+            {space.description}
+          </span>
         </div>
       </div>
 
@@ -195,7 +534,14 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           space
         </p>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${
+            isOverview
+              ? t("bg-white/10 text-text-dark", "bg-black/10 text-text-light")
+              : t(
+                  "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
+                  "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
+                )
+          }`}
           onClick={() => navigate({ to: `/s/${space.slug}` })}
           type="button"
         >
@@ -210,17 +556,24 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
           search
         </button>
         <button
-          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
-          onClick={() =>
-            navigate({ search: { workspace: space.workspaceId }, to: "/settings/spaces" })
-          }
+          className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${
+            isSettings
+              ? t("bg-white/10 text-text-dark", "bg-black/10 text-text-light")
+              : t(
+                  "text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80",
+                  "text-text-light/50 hover:bg-black/3 hover:text-text-light/80",
+                )
+          }`}
+          onClick={() => navigate({ to: `/s/${space.slug}/settings` })}
           type="button"
         >
           <GearSixIcon size={12} />
           space settings
         </button>
+
         <button
           className={`flex w-full items-center gap-2 px-1 py-1.5 text-left text-[11px] lowercase ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
+          onClick={handleCreatePage}
           type="button"
         >
           <PlusIcon size={12} />
@@ -229,11 +582,31 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
       </div>
 
       <div className="mt-4 flex-1 flex flex-col min-h-0">
-        <p
-          className={`px-1 mb-1 text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
-        >
-          pages
-        </p>
+        <div className="flex items-center justify-between px-1 mb-1">
+          <p
+            className={`text-[10px] uppercase tracking-wider ${t("text-text-dark/30", "text-text-light/30")}`}
+          >
+            pages
+          </p>
+          <div className="flex items-center gap-1.5">
+            <button
+              className={`cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/50", "text-text-light/25 hover:text-text-light/50")}`}
+              onClick={handleCreatePage}
+              title="New page"
+              type="button"
+            >
+              <FilePlusIcon size={12} />
+            </button>
+            <button
+              className={`cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/50", "text-text-light/25 hover:text-text-light/50")}`}
+              onClick={() => handleCreate("folder")}
+              title="New folder"
+              type="button"
+            >
+              <FolderPlusIcon size={12} />
+            </button>
+          </div>
+        </div>
         <div className="flex-1 overflow-y-auto">
           {(() => {
             if (isPending) {
@@ -253,7 +626,13 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
             return (
               <ul>
                 {pageTree.map((node) => (
-                  <PageNode depth={0} key={node.item.id} node={node} />
+                  <PageNode
+                    depth={0}
+                    key={node.item.id}
+                    node={node}
+                    spaceId={space.id}
+                    treeItems={treeItems ?? []}
+                  />
                 ))}
               </ul>
             );

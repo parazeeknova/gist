@@ -36,6 +36,7 @@ type Handlers struct {
 	spaceService     *spacefeat.SpaceService
 	workspaceService *wsfeat.WorkspaceService
 	groupService     *groupfeat.GroupService
+	pageFavoriteRepo *repositories.PageFavoriteRepo
 	notifier         notifeat.Notifier
 }
 
@@ -176,13 +177,15 @@ func (h *Handlers) GetGitHubStats(c *gin.Context) {
 
 // ConsolePageSummary is the lightweight response for the console page list.
 type ConsolePageSummary struct {
-	ID          string `json:"id"`
-	SlugID      string `json:"slugId"`
-	Title       string `json:"title"`
-	Icon        string `json:"icon"`
-	IsPublished bool   `json:"isPublished"`
-	CreatedAt   string `json:"createdAt"`
-	UpdatedAt   string `json:"updatedAt"`
+	ID           string  `json:"id"`
+	SlugID       string  `json:"slugId"`
+	Title        string  `json:"title"`
+	Icon         string  `json:"icon"`
+	IsPublished  bool    `json:"isPublished"`
+	SpaceID      string  `json:"spaceId"`
+	ParentPageID *string `json:"parentPageId"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    string  `json:"updatedAt"`
 }
 
 // GetConsolePages returns pages for the console scoped to spaces the user belongs to.
@@ -203,13 +206,15 @@ func (h *Handlers) GetConsolePages(c *gin.Context) {
 	summaries := make([]ConsolePageSummary, 0, len(pages))
 	for _, p := range pages {
 		summaries = append(summaries, ConsolePageSummary{
-			ID:          p.ID,
-			SlugID:      p.SlugID,
-			Title:       p.Title,
-			Icon:        p.Icon,
-			IsPublished: p.IsPublished,
-			CreatedAt:   p.CreatedAt.Format(time.RFC3339),
-			UpdatedAt:   p.UpdatedAt.Format(time.RFC3339),
+			ID:           p.ID,
+			SlugID:       p.SlugID,
+			Title:        p.Title,
+			Icon:         p.Icon,
+			IsPublished:  p.IsPublished,
+			SpaceID:      p.SpaceID,
+			ParentPageID: p.ParentPageID,
+			CreatedAt:    p.CreatedAt.Format(time.RFC3339),
+			UpdatedAt:    p.UpdatedAt.Format(time.RFC3339),
 		})
 	}
 
@@ -253,6 +258,7 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		"position":     page.Position,
 		"isPublished":  page.IsPublished,
 		"parentPageId": page.ParentPageID,
+		"spaceId":      page.SpaceID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
 	})
@@ -794,4 +800,131 @@ func (h *Handlers) GetStats(c *gin.Context) {
 		"posts":   posts,
 		"readmes": readmes,
 	})
+}
+
+// SetPageFavoriteRepo sets the page favorite repository on the handlers.
+func (h *Handlers) SetPageFavoriteRepo(r *repositories.PageFavoriteRepo) {
+	h.pageFavoriteRepo = r
+}
+
+// TogglePageFavorite handles POST /api/console/pages/:id/favorite — toggles favorite status.
+func (h *Handlers) TogglePageFavorite(c *gin.Context) {
+	if h.pageFavoriteRepo == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "favorites not available"})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	if h.pageService != nil {
+		page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+		if err != nil {
+			if errors.Is(err, pagefeat.ErrPageNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite lookup error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
+			return
+		}
+		if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+			if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite permission check error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
+			return
+		}
+	}
+
+	favorited, err := h.pageFavoriteRepo.Toggle(c.Request.Context(), userID, pageID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("toggle page favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": favorited})
+}
+
+// IsPageFavorited handles GET /api/console/pages/:id/favorited.
+func (h *Handlers) IsPageFavorited(c *gin.Context) {
+	if h.pageFavoriteRepo == nil {
+		c.JSON(http.StatusOK, gin.H{"favorited": false})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	if h.pageService != nil {
+		page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+		if err != nil {
+			if errors.Is(err, pagefeat.ErrPageNotFound) {
+				c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite lookup error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+			return
+		}
+		if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+			if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+				c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+				return
+			}
+			logger.Log.Error().Err(err).Msg("page favorite permission check error")
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+			return
+		}
+	}
+
+	isFav, err := h.pageFavoriteRepo.IsFavorited(c.Request.Context(), userID, pageID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("check page favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"favorited": isFav})
+}
+
+// GetFavoritedPages handles GET /api/console/pages/favorites.
+func (h *Handlers) GetFavoritedPages(c *gin.Context) {
+	if h.pageFavoriteRepo == nil {
+		c.JSON(http.StatusOK, []string{})
+		return
+	}
+
+	userID := middleware.GetCurrentUserID(c)
+	ids, err := h.pageFavoriteRepo.List(c.Request.Context(), userID)
+	if err != nil {
+		logger.Log.Error().Err(err).Msg("list page favorites error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list favorites"})
+		return
+	}
+
+	if h.pageService == nil || len(ids) == 0 {
+		c.JSON(http.StatusOK, ids)
+		return
+	}
+
+	var readable []string
+	for _, pageID := range ids {
+		page, err := h.pageService.GetPageByID(c.Request.Context(), pageID)
+		if err != nil {
+			continue
+		}
+		if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+			continue
+		}
+		readable = append(readable, pageID)
+	}
+	if readable == nil {
+		readable = []string{}
+	}
+
+	c.JSON(http.StatusOK, readable)
 }

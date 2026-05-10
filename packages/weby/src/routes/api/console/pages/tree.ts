@@ -9,7 +9,9 @@ export const Route = createFileRoute("/api/console/pages/tree")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const tree = await getPageTree(cookieHeader);
+        const url = new URL(request.url);
+        const spaceId = url.searchParams.get("spaceId") ?? "";
+        const tree = await getPageTree(spaceId, cookieHeader);
         return Response.json(tree ?? []);
       },
     },

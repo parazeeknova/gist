@@ -1,5 +1,6 @@
 import { CameraIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react";
 import { useState, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { compressImage } from "#/shared/lib/image-compress";
 import { useUpdateSpace } from "#/features/console/hooks/use-spaces";
@@ -28,6 +29,7 @@ export const SpaceAvatarUploader = ({
   const [uploadError, setUploadError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   const updateSpace = useUpdateSpace();
 
   const handleFileUpload = useCallback(
@@ -46,6 +48,7 @@ export const SpaceAvatarUploader = ({
 
       try {
         const url = await compressImage(file, 400, 400, 0.8);
+        const prevAvatar = avatarUrl;
         onAvatarChange(url);
         updateSpace.mutate(
           {
@@ -59,11 +62,13 @@ export const SpaceAvatarUploader = ({
           },
           {
             onError: (err: Error) => {
+              onAvatarChange(prevAvatar);
               setUploadError(err.message || "failed to upload avatar");
               setIsUploading(false);
             },
             onSuccess: () => {
               setIsUploading(false);
+              void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
             },
           },
         );
@@ -74,23 +79,38 @@ export const SpaceAvatarUploader = ({
 
       setShowMenu(false);
     },
-    [name, slug, description, spaceId, onAvatarChange, updateSpace],
+    [name, slug, description, spaceId, avatarUrl, onAvatarChange, queryClient, updateSpace],
   );
 
   const handleRemove = useCallback(() => {
     setUploadError("");
+    setIsUploading(true);
+    const prev = avatarUrl;
     onAvatarChange("");
-    updateSpace.mutate({
-      id: spaceId,
-      input: {
-        description,
-        icon: "",
-        name: name.trim() || "",
-        slug,
+    updateSpace.mutate(
+      {
+        id: spaceId,
+        input: {
+          description,
+          icon: "",
+          name: name.trim() || "",
+          slug,
+        },
       },
-    });
+      {
+        onError: (err: Error) => {
+          onAvatarChange(prev);
+          setUploadError(err.message || "failed to remove avatar");
+          setIsUploading(false);
+        },
+        onSuccess: () => {
+          setIsUploading(false);
+          void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
+        },
+      },
+    );
     setShowMenu(false);
-  }, [name, slug, description, spaceId, onAvatarChange, updateSpace]);
+  }, [name, slug, description, spaceId, avatarUrl, onAvatarChange, queryClient, updateSpace]);
 
   const initials = name
     .split(" ")
