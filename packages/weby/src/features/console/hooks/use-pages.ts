@@ -31,14 +31,13 @@ const normalizePageTreeItems = (items: PageTreeItemResponse[]): PageTreeItem[] =
 
 export const usePageTree = (spaceId?: string) =>
   useQuery<PageTreeItem[]>({
-    queryFn: ({ signal }) => {
-      if (!spaceId) {
-        return Promise.resolve([]);
-      }
-      return fetchProtected<PageTreeItemResponse[]>(
-        `/api/console/pages/tree?spaceId=${encodeURIComponent(spaceId)}`,
+    enabled: !!spaceId,
+    queryFn: async ({ signal }) => {
+      const items = await fetchProtected<PageTreeItemResponse[]>(
+        `/api/console/pages/tree?spaceId=${encodeURIComponent(spaceId as string)}`,
         { signal },
-      ).then(normalizePageTreeItems);
+      );
+      return normalizePageTreeItems(items);
     },
     queryKey: ["pageTree", spaceId],
     refetchOnMount: true,

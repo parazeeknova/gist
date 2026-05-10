@@ -1,16 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProtected } from "./fetch-protected";
-
-const parseErrorMessage = (parsed: unknown, fallback = "operation failed"): string => {
-  if (
-    typeof parsed === "object" &&
-    parsed !== null &&
-    typeof (parsed as { error?: string }).error === "string"
-  ) {
-    return (parsed as { error: string }).error;
-  }
-  return fallback;
-};
+import { parseErrorMessage } from "#/shared/lib/error-utils";
 
 export interface MFAStatus {
   is_enabled: boolean;

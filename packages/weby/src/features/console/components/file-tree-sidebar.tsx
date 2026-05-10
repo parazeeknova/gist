@@ -60,8 +60,13 @@ const buildPageTree = (items: PageTreeItem[]): TreeNode[] => {
 
 const isDescendant = (items: PageTreeItem[], ancestorId: string, descendantId: string): boolean => {
   const parentMap = new Map(items.map((i) => [i.id, i.parentPageId]));
+  const visited = new Set<string>();
   let current: string | null | undefined = descendantId;
   while (current) {
+    if (visited.has(current)) {
+      return false;
+    }
+    visited.add(current);
     const parent = parentMap.get(current);
     if (parent === ancestorId) {
       return true;
@@ -156,11 +161,15 @@ const PageNode = ({ node, depth, treeItems }: PageNodeProps) => {
       return;
     }
     isSubmittingRef.current = true;
-    updatePage.mutate({ id: node.item.id, input: { title: trimmed } });
+    updatePage.mutate(
+      { id: node.item.id, input: { title: trimmed } },
+      {
+        onSettled: () => {
+          isSubmittingRef.current = false;
+        },
+      },
+    );
     setIsRenaming(false);
-    setTimeout(() => {
-      isSubmittingRef.current = false;
-    }, 1000);
   };
 
   const handleRenameKeyDown = (e: React.KeyboardEvent) => {
@@ -441,6 +450,7 @@ const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) 
 
   const pageQueries = useQueries({
     queries: favPageIds.map((pageId) => ({
+      enabled: !!pageId,
       queryFn: async () => {
         const res = await fetchProtected<FavPageDetail>(
           `/api/console/pages/${encodeURIComponent(pageId)}`,

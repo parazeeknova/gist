@@ -703,7 +703,13 @@ export const SpaceDetailSidebar = ({
       .replaceAll(/[^\w\s-]/g, "")
       .replaceAll(/[\s_-]+/g, "-")
       .replaceAll(/^-+|-+$/g, "");
-    const finalSlug = slug || generatedSlug || space.slug;
+    const normalizedSlug = slug
+      .trim()
+      .toLowerCase()
+      .replaceAll(/[^\w\s-]/g, "")
+      .replaceAll(/[\s_-]+/g, "-")
+      .replaceAll(/^-+|-+$/g, "");
+    const finalSlug = normalizedSlug || generatedSlug || space.slug;
     updateSpace.mutate({
       id: space.id,
       input: {

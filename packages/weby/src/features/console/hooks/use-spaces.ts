@@ -48,7 +48,23 @@ export const useCreateSpace = () => {
 
 export const useUpdateSpace = () => {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useMutation<
+    Space,
+    Error,
+    {
+      id: string;
+      input: {
+        name: string;
+        slug: string;
+        icon?: string;
+        description?: string;
+        headerImage?: string;
+        visibility?: string;
+        defaultRole?: string;
+      };
+    },
+    { previous?: { slug: string; space?: Space; spaceBySlug?: Space } }
+  >({
     mutationFn: ({
       id,
       input,
@@ -70,12 +86,12 @@ export const useUpdateSpace = () => {
         method: "PUT",
       }),
     onError: (_err, _variables, context) => {
-      const ctx = context as
-        | { previous?: { slug: string; space: Space; spaceBySlug: Space } }
-        | undefined;
-      if (ctx?.previous) {
-        queryClient.setQueryData(["spaceBySlug", ctx.previous.slug], ctx.previous.spaceBySlug);
-        queryClient.setQueryData(["space", _variables.id], ctx.previous.space);
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ["spaceBySlug", context.previous.slug],
+          context.previous.spaceBySlug,
+        );
+        queryClient.setQueryData(["space", _variables.id], context.previous.space);
       }
     },
     onMutate: async ({ id, input }) => {

@@ -70,6 +70,27 @@ const buildPageTree = (items: PageTreeItem[]): TreeNode[] => {
   return build(null);
 };
 
+const isDescendant = (items: PageTreeItem[], ancestorId: string, descendantId: string): boolean => {
+  const parentMap = new Map(items.map((i) => [i.id, i.parentPageId]));
+  const visited = new Set<string>();
+  let current: string | null | undefined = descendantId;
+  while (current) {
+    if (visited.has(current)) {
+      return false;
+    }
+    visited.add(current);
+    const parent = parentMap.get(current);
+    if (parent === ancestorId) {
+      return true;
+    }
+    if (!parent) {
+      return false;
+    }
+    current = parent;
+  }
+  return false;
+};
+
 interface ContextMenuState {
   x: number;
   y: number;
@@ -81,10 +102,11 @@ interface PageNodeProps {
   node: TreeNode;
   depth: number;
   spaceId: string;
+  treeItems: PageTreeItem[];
 }
 
 // oxlint-disable-next-line complexity
-const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
+const PageNode = ({ node, depth, spaceId, treeItems }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
   const { selectedPageId, setSelectedPageId } = useConsoleContext();
   const [expanded, setExpanded] = useState(true);
@@ -228,7 +250,11 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const draggedId = e.dataTransfer.getData("text/plain");
-    if (draggedId && draggedId !== node.item.id) {
+    if (
+      draggedId &&
+      draggedId !== node.item.id &&
+      !isDescendant(treeItems, draggedId, node.item.id)
+    ) {
       movePage.mutate({ id: draggedId, input: { parentPageId: node.item.id } });
     }
   };
@@ -387,7 +413,13 @@ const PageNode = ({ node, depth, spaceId }: PageNodeProps) => {
       {expanded && hasChildren && (
         <ul>
           {node.children.map((child) => (
-            <PageNode depth={depth + 1} key={child.item.id} node={child} spaceId={spaceId} />
+            <PageNode
+              depth={depth + 1}
+              key={child.item.id}
+              node={child}
+              spaceId={spaceId}
+              treeItems={treeItems}
+            />
           ))}
           {isCreatingChild && (
             <li>
@@ -446,15 +478,25 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
 
   const createPage = useCreatePage();
 
-  const handleCreatePage = () => {
-    const slugId = crypto.randomUUID().slice(0, 8);
-    const title = "untitled page";
-    createPage.mutate({
-      slugId: `untitled-page-${slugId}`,
-      spaceId: space.id,
-      title,
-    });
+  const handleCreate = (kind: "page" | "folder") => {
+    const suffix = crypto.randomUUID().slice(0, 8);
+    if (kind === "folder") {
+      createPage.mutate({
+        icon: "folder",
+        slugId: `new-folder-${suffix}`,
+        spaceId: space.id,
+        title: "new folder",
+      });
+    } else {
+      createPage.mutate({
+        slugId: `untitled-page-${suffix}`,
+        spaceId: space.id,
+        title: "untitled page",
+      });
+    }
   };
+
+  const handleCreatePage = () => handleCreate("page");
 
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const pageTree = treeItems ? buildPageTree(treeItems) : [];
@@ -557,15 +599,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
             </button>
             <button
               className={`cursor-pointer ${t("text-text-dark/25 hover:text-text-dark/50", "text-text-light/25 hover:text-text-light/50")}`}
-              onClick={() => {
-                const folderSlug = crypto.randomUUID().slice(0, 8);
-                createPage.mutate({
-                  icon: "folder",
-                  slugId: `new-folder-${folderSlug}`,
-                  spaceId: space.id,
-                  title: "new folder",
-                });
-              }}
+              onClick={() => handleCreate("folder")}
               title="New folder"
               type="button"
             >
@@ -592,7 +626,13 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
             return (
               <ul>
                 {pageTree.map((node) => (
-                  <PageNode depth={0} key={node.item.id} node={node} spaceId={space.id} />
+                  <PageNode
+                    depth={0}
+                    key={node.item.id}
+                    node={node}
+                    spaceId={space.id}
+                    treeItems={treeItems ?? []}
+                  />
                 ))}
               </ul>
             );

@@ -1,4 +1,4 @@
-export const parseErrorMessage = (parsed: unknown): string => {
+export const parseErrorMessage = (parsed: unknown, fallback = "An error occurred"): string => {
   if (
     typeof parsed === "object" &&
     parsed !== null &&
@@ -6,5 +6,5 @@ export const parseErrorMessage = (parsed: unknown): string => {
   ) {
     return (parsed as { error: string }).error;
   }
-  return "An error occurred";
+  return fallback;
 };

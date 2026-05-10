@@ -785,11 +785,12 @@ export const SpaceOverview = () => {
         avatarUrl: user.avatar_url,
         id: user.id,
         joinedAt: "",
-        memberType: "user",
+        memberType: "user" as const,
         name: user.name,
         role: "",
         spaceId: space.id,
-      } as SpaceMemberMixed);
+        userId: user.id,
+      });
     }
     return list;
   }, [members, user, space]);
@@ -823,7 +824,14 @@ export const SpaceOverview = () => {
               onEditDescription={(v) => doUpdate({ description: v })}
               onEditHeader={() => setShowUnsplash(true)}
               onEditName={(v) =>
-                doUpdate({ name: v, slug: v.toLowerCase().replaceAll(/\s+/g, "-") })
+                doUpdate({
+                  name: v,
+                  slug: v
+                    .toLowerCase()
+                    .replaceAll(/[^\w\s-]/g, "")
+                    .replaceAll(/[\s_-]+/g, "-")
+                    .replaceAll(/^-+|-+$/g, ""),
+                })
               }
               onToggleFav={() => toggleSpaceFav.mutate(space?.id ?? "")}
               starred={favData?.favorited ?? false}

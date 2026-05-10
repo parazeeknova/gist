@@ -839,28 +839,14 @@ func (h *Handlers) TogglePageFavorite(c *gin.Context) {
 		}
 	}
 
-	isFav, err := h.pageFavoriteRepo.IsFavorited(c.Request.Context(), userID, pageID)
+	favorited, err := h.pageFavoriteRepo.Toggle(c.Request.Context(), userID, pageID)
 	if err != nil {
-		logger.Log.Error().Err(err).Msg("check page favorite error")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check favorite"})
+		logger.Log.Error().Err(err).Msg("toggle page favorite error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle favorite"})
 		return
 	}
 
-	if isFav {
-		if err := h.pageFavoriteRepo.Remove(c.Request.Context(), userID, pageID); err != nil {
-			logger.Log.Error().Err(err).Msg("remove page favorite error")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove favorite"})
-			return
-		}
-	} else {
-		if err := h.pageFavoriteRepo.Add(c.Request.Context(), userID, pageID); err != nil {
-			logger.Log.Error().Err(err).Msg("add page favorite error")
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add favorite"})
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{"favorited": !isFav})
+	c.JSON(http.StatusOK, gin.H{"favorited": favorited})
 }
 
 // IsPageFavorited handles GET /api/console/pages/:id/favorited.

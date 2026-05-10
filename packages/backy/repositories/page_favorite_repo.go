@@ -61,3 +61,19 @@ func (r *PageFavoriteRepo) List(ctx context.Context, userID string) ([]string, e
 	}
 	return ids, nil
 }
+
+func (r *PageFavoriteRepo) Toggle(ctx context.Context, userID, pageID string) (bool, error) {
+	var favorited bool
+	err := r.pool.QueryRow(ctx, `
+		WITH toggled AS (
+			DELETE FROM page_favorites WHERE user_id = $1 AND page_id = $2 RETURNING 1
+		)
+		INSERT INTO page_favorites (user_id, page_id)
+		SELECT $1, $2 WHERE NOT EXISTS (SELECT 1 FROM toggled)
+		RETURNING (NOT EXISTS (SELECT 1 FROM toggled))::boolean AS inserted
+	`, userID, pageID).Scan(&favorited)
+	if err != nil {
+		return false, fmt.Errorf("toggling page favorite: %w", err)
+	}
+	return favorited, nil
+}

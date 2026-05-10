@@ -679,7 +679,7 @@ export const SpaceSettings = () => {
   useEffect(() => {
     if (space) {
       setName(space.name);
-      setDescription(space.description);
+      setDescription(space.description ?? "");
     }
   }, [space?.id, space?.name, space?.description]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -690,7 +690,7 @@ export const SpaceSettings = () => {
     updateSpace.mutate({
       id: space.id,
       input: {
-        defaultRole: u.defaultRole ?? String(space.defaultRole),
+        defaultRole: u.defaultRole ?? space.defaultRole,
         description: u.description ?? space.description,
         headerImage: u.headerImage ?? space.headerImage,
         icon: u.icon ?? space.icon,

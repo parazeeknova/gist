@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -18,18 +19,43 @@ import (
 	"verso/backy/shared/logger"
 )
 
+type rateLimiter struct {
+	mu       sync.Mutex
+	lastCall map[string]time.Time
+	interval time.Duration
+}
+
+func newRateLimiter(interval time.Duration) *rateLimiter {
+	return &rateLimiter{
+		lastCall: make(map[string]time.Time),
+		interval: interval,
+	}
+}
+
+func (rl *rateLimiter) allow(key string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	now := time.Now()
+	if last, ok := rl.lastCall[key]; ok && now.Sub(last) < rl.interval {
+		return false
+	}
+	rl.lastCall[key] = now
+	return true
+}
+
 type SpaceHandlers struct {
 	workspaceService *wsfeat.WorkspaceService
 	spaceService     *SpaceService
 	favRepo          *repositories.SpaceFavoriteRepo
+	unsplashLimiter  *rateLimiter
 }
 
 func NewSpaceHandlers(svc *SpaceService, wsSvc *wsfeat.WorkspaceService) *SpaceHandlers {
-	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc}
+	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc, unsplashLimiter: newRateLimiter(2 * time.Second)}
 }
 
 func NewSpaceHandlersWithFav(svc *SpaceService, wsSvc *wsfeat.WorkspaceService, favRepo *repositories.SpaceFavoriteRepo) *SpaceHandlers {
-	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc, favRepo: favRepo}
+	return &SpaceHandlers{spaceService: svc, workspaceService: wsSvc, favRepo: favRepo, unsplashLimiter: newRateLimiter(2 * time.Second)}
 }
 
 // --- Space Handlers ---
@@ -163,10 +189,7 @@ func (h *SpaceHandlers) UpdateSpace(c *gin.Context) {
 		return
 	}
 
-	var headerImage *string
-	if req.HeaderImage != nil {
-		headerImage = req.HeaderImage
-	}
+	headerImage := req.HeaderImage
 
 	space, err := h.spaceService.UpdateSpace(c.Request.Context(), UpdateSpaceParams{
 		ID:          id,
@@ -463,6 +486,12 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 		return
 	}
 
+	userID := middleware.GetCurrentUserID(c)
+	if h.unsplashLimiter != nil && !h.unsplashLimiter.allow(userID) {
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "too many requests"})
+		return
+	}
+
 	page := c.DefaultQuery("page", "1")
 	perPage := c.DefaultQuery("per_page", "20")
 
@@ -496,13 +525,19 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 		return
 	}
 	defer func() {
-		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
-			logger.Log.Error().Err(err).Msg("failed to close response body")
-		}
 		if err := resp.Body.Close(); err != nil {
 			logger.Log.Error().Err(err).Msg("failed to close response body")
 		}
 	}()
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		retryAfter := resp.Header.Get("Retry-After")
+		if retryAfter != "" {
+			c.Header("Retry-After", retryAfter)
+		}
+		c.JSON(http.StatusTooManyRequests, gin.H{"error": "unsplash rate limited"})
+		return
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Log.Error().Int("status", resp.StatusCode).Msg("unsplash api error")
@@ -510,7 +545,15 @@ func (h *SpaceHandlers) SearchUnsplash(c *gin.Context) {
 		return
 	}
 
-	c.DataFromReader(http.StatusOK, resp.ContentLength, "application/json", resp.Body, nil)
+	if resp.ContentLength > 0 {
+		c.DataFromReader(http.StatusOK, resp.ContentLength, "application/json", resp.Body, nil)
+	} else {
+		c.Status(http.StatusOK)
+		c.Header("Content-Type", "application/json")
+		if _, err := io.Copy(c.Writer, resp.Body); err != nil {
+			logger.Log.Error().Err(err).Msg("failed to stream unsplash response")
+		}
+	}
 }
 
 // ToggleFavorite handles POST /api/console/spaces/:id/favorite — toggles favorite status.

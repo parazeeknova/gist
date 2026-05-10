@@ -84,6 +84,7 @@ export const SpaceAvatarUploader = ({
 
   const handleRemove = useCallback(() => {
     setUploadError("");
+    setIsUploading(true);
     const prev = avatarUrl;
     onAvatarChange("");
     updateSpace.mutate(
@@ -103,6 +104,7 @@ export const SpaceAvatarUploader = ({
           setIsUploading(false);
         },
         onSuccess: () => {
+          setIsUploading(false);
           void queryClient.invalidateQueries({ queryKey: ["avatar-image"] });
         },
       },
