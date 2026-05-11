@@ -141,6 +141,43 @@ button {
   font-size: 0.98rem;
   line-height: 1.6;
   text-transform: lowercase;
+  outline: none !important;
+  border: none !important;
+}
+
+.blog-reader-prose .tiptap:focus,
+.blog-reader-prose .tiptap:focus-visible,
+.blog-reader-prose .tiptap:focus-within {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.blog-reader-prose .tiptap [contenteditable] {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.blog-reader-prose .tiptap [contenteditable]:focus,
+.blog-reader-prose .tiptap [contenteditable]:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.blog-reader-prose .tiptap .ProseMirror {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-height: 100%;
+}
+
+.blog-reader-prose .tiptap .ProseMirror:focus,
+.blog-reader-prose .tiptap .ProseMirror:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .blog-reader-prose {

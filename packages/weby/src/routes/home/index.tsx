@@ -4,10 +4,10 @@ import { ConsoleHome } from "#/features/console/components/console-home";
 import { useConsoleContext } from "#/features/console/components/console-context";
 
 const HomeIndex = () => {
-  const { selectedPageId, setSelectedPageId } = useConsoleContext();
+  const { selectedPageId } = useConsoleContext();
 
   if (selectedPageId) {
-    return <PageDetail pageId={selectedPageId} onDeleted={() => setSelectedPageId(null)} />;
+    return <PageDetail pageId={selectedPageId} />;
   }
 
   return <ConsoleHome />;

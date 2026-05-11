@@ -7,7 +7,7 @@ import { FixedToolbar } from "#/features/editor/components/toolbar/fixed-toolbar
 import { BubbleMenu } from "#/features/editor/components/toolbar/bubble-menu";
 import type { PageEditorProps } from "#/features/editor/types/editor.types";
 
-export const PageEditor = ({ pageId, contentJson, editable }: PageEditorProps) => {
+export const PageEditor = ({ pageId, contentJson, editable, title }: PageEditorProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -34,6 +34,11 @@ export const PageEditor = ({ pageId, contentJson, editable }: PageEditorProps) =
   const editor = useEditor({
     content: parseContent(contentJson),
     editable,
+    editorProps: {
+      attributes: {
+        class: "outline-none border-none focus:outline-none focus:border-none focus:ring-0",
+      },
+    },
     extensions: getEditorExtensions(),
     immediatelyRender: false,
     onUpdate: () => {
@@ -43,7 +48,7 @@ export const PageEditor = ({ pageId, contentJson, editable }: PageEditorProps) =
     },
   });
 
-  const { dirty, cleanup, markDirty, isSaving } = useEditorContent(editor, pageId);
+  const { dirty, cleanup, markDirty } = useEditorContent(editor, pageId);
 
   markDirtyRef.current = markDirty;
 
@@ -98,31 +103,28 @@ export const PageEditor = ({ pageId, contentJson, editable }: PageEditorProps) =
   }
 
   return (
-    <div ref={wrapperRef} className="mx-auto max-w-2xl px-4 pb-16">
+    <div ref={wrapperRef} className="h-full flex flex-col pb-16">
+      <div className="px-4 mb-3 shrink-0">
+        <span
+          className={`text-[11px] lowercase font-medium ${t("text-text-dark/30", "text-text-light/30")}`}
+        >
+          {title}
+        </span>
+        {editable && dirty && (
+          <span className={`ml-2 text-[10px] ${t("text-text-dark/20", "text-text-light/20")}`}>
+            unsaved
+          </span>
+        )}
+      </div>
       {editable && (
         <>
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[11px]">
-              {dirty && (
-                <span className={t("text-text-dark/40", "text-text-light/40")}>
-                  unsaved changes
-                </span>
-              )}
-              {isSaving && (
-                <span className={t("text-text-dark/40", "text-text-light/40")}>saving...</span>
-              )}
-            </div>
+          <div className="mx-auto max-w-2xl w-full px-4 shrink-0">
+            <FixedToolbar editor={editor} />
           </div>
-          <FixedToolbar editor={editor} />
           <BubbleMenu editor={editor} />
         </>
       )}
-      <div
-        className={`blog-reader-prose min-h-[60vh] rounded border p-4 ${t(
-          "border-border-dark",
-          "border-border-light",
-        )}`}
-      >
+      <div className="mx-auto max-w-2xl w-full px-4 blog-reader-prose flex-1 min-h-0 overflow-y-auto">
         <EditorContent editor={editor} />
       </div>
     </div>

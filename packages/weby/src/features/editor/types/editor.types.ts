@@ -4,6 +4,7 @@ export interface PageEditorProps {
   pageId: string;
   contentJson: string;
   editable: boolean;
+  title: string;
 }
 
 export interface ToolbarProps {

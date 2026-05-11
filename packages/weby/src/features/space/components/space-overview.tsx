@@ -32,7 +32,6 @@ import { AvatarBadge } from "#/shared/components/avatar-badge";
 import { SidebarTooltip } from "#/features/console/components/sidebar-tooltip";
 import { compressImage } from "#/shared/lib/image-compress";
 import { UnsplashPicker } from "./unsplash-picker";
-import { useConsoleContext } from "#/features/console/components/console-context";
 import type { PageTreeItem, SpaceMemberMixed } from "#/shared/types";
 
 type Tab = "recents" | "favorites" | "mine";
@@ -82,7 +81,7 @@ interface SpaceContentSectionProps {
   isPending: boolean;
   treeItems: PageTreeItem[] | undefined;
   viewMode: ViewMode;
-  onNavigate: (pageId: string) => void;
+  onNavigate: (pageSlug: string) => void;
   onSetActiveTab: (tab: Tab) => void;
   onSetViewMode: (mode: ViewMode) => void;
   onToggleFavorite: (pageId: string) => void;
@@ -212,11 +211,11 @@ const SpaceContentSection = ({
                           <div
                             className={`flex items-center gap-3 rounded px-2 py-1.5 cursor-pointer ${t("hover:bg-white/5", "hover:bg-black/3")}`}
                             key={page.id}
-                            onClick={() => onNavigate(page.id)}
+                            onClick={() => onNavigate(page.slugId)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
-                                onNavigate(page.id);
+                                onNavigate(page.slugId);
                               }
                             }}
                             // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role
@@ -300,14 +299,13 @@ const SpaceContentSection = ({
                           <div
                             className={`flex flex-col gap-1 rounded border p-3 cursor-pointer ${t("border-border-dark hover:bg-white/5", "border-border-light hover:bg-black/3")}`}
                             key={page.id}
-                            onClick={() => onNavigate(page.id)}
+                            onClick={() => onNavigate(page.slugId)}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
-                                onNavigate(page.id);
+                                onNavigate(page.slugId);
                               }
                             }}
-                            // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role
                             role="button"
                             tabIndex={0}
                           >
@@ -706,7 +704,6 @@ const SpaceHeading = ({
 // eslint-disable-next-line complexity
 export const SpaceOverview = () => {
   const { spaceSlug } = useParams({ from: "/s/$spaceSlug" });
-  const { setSelectedPageId } = useConsoleContext();
   const navigate = useNavigate();
   const { data: space } = useSpaceBySlug(spaceSlug);
   const { data: treeItems, isPending: isTreePending } = usePageTree(space?.id ?? "");
@@ -719,9 +716,8 @@ export const SpaceOverview = () => {
   const { isDarkMode } = useTheme();
   const updateSpace = useUpdateSpace();
 
-  const handlePageNavigate = (pageId: string) => {
-    setSelectedPageId(pageId);
-    navigate({ to: "/home" });
+  const handlePageNavigate = (pageSlug: string) => {
+    navigate({ params: { pageid: pageSlug, spaceSlug }, to: "/s/$spaceSlug/p/$pageid" });
   };
 
   const [activeTab, setActiveTab] = useState<Tab>("recents");

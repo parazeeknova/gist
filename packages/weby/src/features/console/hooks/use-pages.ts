@@ -63,6 +63,17 @@ export const useConsolePage = (pageId: string) =>
     staleTime: 30 * 1000,
   });
 
+export const usePageBySpaceAndSlug = (spaceId: string, slugId: string) =>
+  useQuery<ConsolePageDetail>({
+    enabled: spaceId !== "" && slugId !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<ConsolePageDetail>(`/api/console/spaces/${spaceId}/pages/by-slug/${slugId}`, {
+        signal,
+      }),
+    queryKey: ["consolePage", spaceId, slugId],
+    staleTime: 30 * 1000,
+  });
+
 export const useConsolePages = () =>
   useQuery<ConsolePage[]>({
     queryFn: ({ signal }) => fetchProtected<ConsolePage[]>("/api/console/pages", { signal }),

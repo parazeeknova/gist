@@ -102,13 +102,15 @@ interface PageNodeProps {
   node: TreeNode;
   depth: number;
   spaceId: string;
+  spaceSlug: string;
   treeItems: PageTreeItem[];
 }
 
 // oxlint-disable-next-line complexity
-const PageNode = ({ node, depth, spaceId, treeItems }: PageNodeProps) => {
+const PageNode = ({ node, depth, spaceId, spaceSlug, treeItems }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
-  const { selectedPageId, setSelectedPageId } = useConsoleContext();
+  const navigate = useNavigate();
+  const { selectedPageId } = useConsoleContext();
   const [expanded, setExpanded] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
@@ -332,7 +334,10 @@ const PageNode = ({ node, depth, spaceId, treeItems }: PageNodeProps) => {
               if (hasChildren) {
                 setExpanded((prev) => !prev);
               } else {
-                setSelectedPageId(node.item.id);
+                navigate({
+                  params: { pageid: node.item.slugId, spaceSlug },
+                  to: "/s/$spaceSlug/p/$pageid",
+                });
               }
             }}
             type="button"
@@ -418,6 +423,7 @@ const PageNode = ({ node, depth, spaceId, treeItems }: PageNodeProps) => {
               key={child.item.id}
               node={child}
               spaceId={spaceId}
+              spaceSlug={spaceSlug}
               treeItems={treeItems}
             />
           ))}
@@ -631,6 +637,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
                     key={node.item.id}
                     node={node}
                     spaceId={space.id}
+                    spaceSlug={space.slug}
                     treeItems={treeItems ?? []}
                   />
                 ))}

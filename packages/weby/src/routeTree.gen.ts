@@ -46,6 +46,7 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
+import { Route as SSpaceSlugPPageidRouteImport } from './routes/s/$spaceSlug/p/$pageid'
 import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces/$id'
 import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users/$id'
 import { Route as ApiConsoleUnsplashSearchRouteImport } from './routes/api/console/unsplash/search'
@@ -283,6 +284,11 @@ const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
   id: '/api/auth/bootstrap-state',
   path: '/api/auth/bootstrap-state',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SSpaceSlugPPageidRoute = SSpaceSlugPPageidRouteImport.update({
+  id: '/p/$pageid',
+  path: '/p/$pageid',
+  getParentRoute: () => SSpaceSlugRoute,
 } as any)
 const ApiConsoleWorkspacesIdRoute = ApiConsoleWorkspacesIdRouteImport.update({
   id: '/$id',
@@ -632,6 +638,7 @@ export interface FileRoutesByFullPath {
   '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
+  '/s/$spaceSlug/p/$pageid': typeof SSpaceSlugPPageidRoute
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
@@ -719,6 +726,7 @@ export interface FileRoutesByTo {
   '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
+  '/s/$spaceSlug/p/$pageid': typeof SSpaceSlugPPageidRoute
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
@@ -809,6 +817,7 @@ export interface FileRoutesById {
   '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
+  '/s/$spaceSlug/p/$pageid': typeof SSpaceSlugPPageidRoute
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
@@ -900,6 +909,7 @@ export interface FileRouteTypes {
     | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
+    | '/s/$spaceSlug/p/$pageid'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
@@ -987,6 +997,7 @@ export interface FileRouteTypes {
     | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
+    | '/s/$spaceSlug/p/$pageid'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
@@ -1076,6 +1087,7 @@ export interface FileRouteTypes {
     | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
+    | '/s/$spaceSlug/p/$pageid'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
@@ -1402,6 +1414,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/bootstrap-state'
       preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/s/$spaceSlug/p/$pageid': {
+      id: '/s/$spaceSlug/p/$pageid'
+      path: '/p/$pageid'
+      fullPath: '/s/$spaceSlug/p/$pageid'
+      preLoaderRoute: typeof SSpaceSlugPPageidRouteImport
+      parentRoute: typeof SSpaceSlugRoute
     }
     '/api/console/workspaces/$id': {
       id: '/api/console/workspaces/$id'
@@ -1807,11 +1826,13 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
 interface SSpaceSlugRouteChildren {
   SSpaceSlugSettingsRoute: typeof SSpaceSlugSettingsRoute
   SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
+  SSpaceSlugPPageidRoute: typeof SSpaceSlugPPageidRoute
 }
 
 const SSpaceSlugRouteChildren: SSpaceSlugRouteChildren = {
   SSpaceSlugSettingsRoute: SSpaceSlugSettingsRoute,
   SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
+  SSpaceSlugPPageidRoute: SSpaceSlugPPageidRoute,
 }
 
 const SSpaceSlugRouteWithChildren = SSpaceSlugRoute._addFileChildren(

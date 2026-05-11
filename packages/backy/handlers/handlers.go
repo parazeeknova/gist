@@ -264,6 +264,44 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 	})
 }
 
+// GetConsolePageBySlug handles GET /api/console/spaces/:spaceId/pages/by-slug/:slugId.
+func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+		return
+	}
+
+	spaceID := c.Param("spaceId")
+	slugID := c.Param("slugId")
+
+	page, err := h.pageService.GetPageBySpaceAndSlug(c.Request.Context(), spaceID, slugID)
+	if err != nil {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("slugId", slugID).Err(err).Msg("console page by slug error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":           page.ID,
+		"slugId":       page.SlugID,
+		"title":        page.Title,
+		"icon":         page.Icon,
+		"coverPhoto":   page.CoverPhoto,
+		"contentJson":  string(page.ContentJSON),
+		"textContent":  page.TextContent,
+		"position":     page.Position,
+		"isPublished":  page.IsPublished,
+		"parentPageId": page.ParentPageID,
+		"spaceId":      page.SpaceID,
+		"createdAt":    page.CreatedAt.Format(time.RFC3339),
+		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+	})
+}
+
 // --- Console Page Mutations ---
 
 // CreateConsolePageRequest is the request body for creating a page.

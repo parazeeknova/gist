@@ -568,6 +568,18 @@ func (s *PageService) GetPageByID(ctx context.Context, id string) (models.Page, 
 	return page, nil
 }
 
+// GetPageBySpaceAndSlug returns a page by its space ID and slug ID.
+func (s *PageService) GetPageBySpaceAndSlug(ctx context.Context, spaceID, slugID string) (models.Page, error) {
+	page, err := s.pageRepo.GetBySpaceAndSlug(ctx, spaceID, slugID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("getting page by space %q slug %q: %w", spaceID, slugID, err)
+	}
+	return page, nil
+}
+
 // requireWrite checks if a user can write (create/update/delete/move) pages in a space.
 func (s *PageService) requireWrite(ctx context.Context, spaceID, userID string) error {
 	space, err := s.spaceRepo.GetByID(ctx, spaceID)

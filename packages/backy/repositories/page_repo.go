@@ -212,6 +212,36 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 	return p, nil
 }
 
+// GetBySpaceAndSlug fetches a page by its space_id and slug_id.
+func (r *PageRepo) GetBySpaceAndSlug(ctx context.Context, spaceID, slugID string) (models.Page, error) {
+	query := `
+		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
+		       text_content, position, is_published, parent_page_id, space_id, creator_id,
+		       last_updated_by_id, created_at, updated_at
+		FROM pages
+		WHERE space_id = $1 AND slug_id = $2 AND deleted_at IS NULL`
+
+	var p models.Page
+	var contentJSONBytes []byte
+
+	err := r.pool.QueryRow(ctx, query, spaceID, slugID).Scan(
+		&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
+		&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
+		&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+		&p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("querying page by space %q slug %q: %w", spaceID, slugID, err)
+	}
+
+	p.ContentJSON = json.RawMessage(contentJSONBytes)
+
+	return p, nil
+}
+
 // Insert creates a new page row
 func (r *PageRepo) Insert(ctx context.Context, p models.Page) error {
 	contentJSONBytes := []byte(p.ContentJSON)
