@@ -264,14 +264,14 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 	})
 }
 
-// GetConsolePageBySlug handles GET /api/console/spaces/:spaceId/pages/by-slug/:slugId.
+// GetConsolePageBySlug handles GET /api/console/spaces/:id/pages/by-slug/:slugId.
 func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 	if h.pageService == nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
 		return
 	}
 
-	spaceID := c.Param("spaceId")
+	spaceID := c.Param("id")
 	slugID := c.Param("slugId")
 
 	page, err := h.pageService.GetPageBySpaceAndSlug(c.Request.Context(), spaceID, slugID)

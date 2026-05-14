@@ -337,7 +337,7 @@ func main() {
 
 			// Page favorites
 			console.POST("/pages/:id/favorite", h.TogglePageFavorite)
-			console.GET("/spaces/:spaceId/pages/by-slug/:slugId", h.GetConsolePageBySlug)
+			console.GET("/spaces/:id/pages/by-slug/:slugId", h.GetConsolePageBySlug)
 			console.GET("/pages/:id/favorited", h.IsPageFavorited)
 			console.GET("/pages/favorites", h.GetFavoritedPages)
 

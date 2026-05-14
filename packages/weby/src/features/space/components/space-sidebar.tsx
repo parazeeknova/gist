@@ -508,7 +508,7 @@ export const SpaceSidebar = ({ space }: SpaceSidebarProps) => {
   const pageTree = treeItems ? buildPageTree(treeItems) : [];
 
   return (
-    <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">
+    <div className="min-h-0 w-full flex-1 flex flex-col overflow-y-auto px-4">
       <div
         className={`flex items-center justify-between px-1 py-2 border-b ${t("border-border-dark", "border-border-light")}`}
       >
