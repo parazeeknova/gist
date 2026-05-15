@@ -186,7 +186,7 @@ export const getConsolePages = (cookieHeader?: string | null) =>
   });
 
 export const getConsolePage = (id: string, cookieHeader?: string | null) =>
-  fetchBacky<ConsolePageDetail>(`console/pages/${id}`, {
+  fetchBacky<ConsolePageDetail>(`console/pages/${encodeURIComponent(id)}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
@@ -206,7 +206,7 @@ export const updateConsolePage = (
   input: UpdatePageInput,
   cookieHeader?: string | null,
 ) =>
-  fetchBacky<ConsolePageDetail>(`console/pages/${id}`, {
+  fetchBacky<ConsolePageDetail>(`console/pages/${encodeURIComponent(id)}`, {
     body: JSON.stringify(input),
     headers: {
       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
@@ -216,14 +216,14 @@ export const updateConsolePage = (
   });
 
 export const deleteConsolePage = (id: string, cookieHeader?: string | null) =>
-  fetchBacky<{ status: string }>(`console/pages/${id}`, {
+  fetchBacky<{ status: string }>(`console/pages/${encodeURIComponent(id)}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "DELETE",
   });
 
 export const publishConsolePage = (id: string, cookieHeader?: string | null) =>
   fetchBacky<{ id: string; isPublished: boolean; updatedAt: string }>(
-    `console/pages/${id}/publish`,
+    `console/pages/${encodeURIComponent(id)}/publish`,
     {
       headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
       method: "POST",
@@ -232,7 +232,7 @@ export const publishConsolePage = (id: string, cookieHeader?: string | null) =>
 
 export const unpublishConsolePage = (id: string, cookieHeader?: string | null) =>
   fetchBacky<{ id: string; isPublished: boolean; updatedAt: string }>(
-    `console/pages/${id}/unpublish`,
+    `console/pages/${encodeURIComponent(id)}/unpublish`,
     {
       headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
       method: "POST",
@@ -260,13 +260,13 @@ export const getPageTree = (spaceId: string, cookieHeader?: string | null) =>
   );
 
 export const getPageChildren = (id: string, cookieHeader?: string | null) =>
-  fetchBacky<PageTreeItem[]>(`console/pages/${id}/children`, {
+  fetchBacky<PageTreeItem[]>(`console/pages/${encodeURIComponent(id)}/children`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
 export const movePage = (id: string, input: MovePageInput, cookieHeader?: string | null) =>
   fetchBacky<{ id: string; position: string; parentPageId: string | null; updatedAt: string }>(
-    `console/pages/${id}/move`,
+    `console/pages/${encodeURIComponent(id)}/move`,
     {
       body: JSON.stringify(input),
       headers: {
@@ -278,17 +278,20 @@ export const movePage = (id: string, input: MovePageInput, cookieHeader?: string
   );
 
 export const getPageHistory = (id: string, cookieHeader?: string | null) =>
-  fetchBacky<PageHistoryItem[]>(`console/pages/${id}/history`, {
+  fetchBacky<PageHistoryItem[]>(`console/pages/${encodeURIComponent(id)}/history`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
 export const getPageHistoryEntry = (id: string, historyId: string, cookieHeader?: string | null) =>
-  fetchBacky<PageHistoryItem>(`console/pages/${id}/history/${historyId}`, {
-    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
-  });
+  fetchBacky<PageHistoryItem>(
+    `console/pages/${encodeURIComponent(id)}/history/${encodeURIComponent(historyId)}`,
+    {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    },
+  );
 
 export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: string | null) =>
-  fetchBacky<ConsolePageDetail>(`console/pages/${id}/restore`, {
+  fetchBacky<ConsolePageDetail>(`console/pages/${encodeURIComponent(id)}/restore`, {
     body: JSON.stringify(input),
     headers: {
       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
@@ -298,13 +301,13 @@ export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: 
   });
 
 export const watchConsolePage = (id: string, cookieHeader?: string | null) =>
-  fetchBacky<{ watching: boolean }>(`console/pages/${id}/watch`, {
+  fetchBacky<{ watching: boolean }>(`console/pages/${encodeURIComponent(id)}/watch`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
     method: "POST",
   });
 
 export const getPageWatchStatus = (id: string, cookieHeader?: string | null) =>
-  fetchBacky<{ watching: boolean }>(`console/pages/${id}/watching`, {
+  fetchBacky<{ watching: boolean }>(`console/pages/${encodeURIComponent(id)}/watching`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 

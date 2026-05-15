@@ -13,6 +13,7 @@ export const Route = createFileRoute("/api/console/notifications/stream")({
             Accept: "text/event-stream",
             Cookie: request.headers.get("cookie") ?? "",
           },
+          signal: request.signal,
         });
 
         return new Response(backendRes.body, {

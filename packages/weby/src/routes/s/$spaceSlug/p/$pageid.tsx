@@ -9,7 +9,11 @@ const PageView = () => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const { spaceSlug, pageid } = useParams({ from: "/s/$spaceSlug/p/$pageid" });
-  const { data: space } = useSpaceBySlug(spaceSlug);
+  const {
+    data: space,
+    isPending: isSpacePending,
+    isError: isSpaceError,
+  } = useSpaceBySlug(spaceSlug);
   const {
     data: page,
     isPending,
@@ -26,11 +30,21 @@ const PageView = () => {
     };
   }, [page?.title, pageid]);
 
-  if (!space) {
+  if (isSpacePending) {
     return (
       <div className="flex items-center justify-center pt-32">
         <p className={`text-[13px] lowercase ${t("text-text-dark/25", "text-text-light/25")}`}>
           loading space...
+        </p>
+      </div>
+    );
+  }
+
+  if (isSpaceError || !space) {
+    return (
+      <div className="flex items-center justify-center pt-32">
+        <p className={`text-[13px] lowercase ${t("text-text-dark/25", "text-text-light/25")}`}>
+          space not found
         </p>
       </div>
     );
@@ -60,7 +74,7 @@ const PageView = () => {
     <div className="h-full">
       <PageEditor
         contentJson={page.contentJson}
-        editable={true}
+        editable={page.editable}
         pageId={page.id}
         title={page.title}
         spaceName={space.name}

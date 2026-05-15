@@ -290,7 +290,7 @@ button {
   z-index: 2;
 }
 
-.dark .blog-reader-prose table .selectedCell::after {
+[data-theme="dark"] .blog-reader-prose table .selectedCell::after {
   background: rgba(180, 180, 255, 0.2);
 }
 
@@ -335,7 +335,7 @@ button {
   padding: 0.1em 0.2em;
 }
 
-.dark .blog-reader-prose mark {
+[data-theme="dark"] .blog-reader-prose mark {
   background-color: #854d0e;
   color: #fef9c3;
 }

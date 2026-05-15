@@ -247,6 +247,13 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		return
 	}
 
+	editable, err := h.pageService.CanWrite(c.Request.Context(), page.SpaceID, userID)
+	if err != nil {
+		logger.Log.Error().Str("id", id).Err(err).Msg("console page permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":           page.ID,
 		"slugId":       page.SlugID,
@@ -262,6 +269,7 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		"creatorId":    page.CreatorID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+		"editable":     editable,
 	})
 }
 
@@ -343,13 +351,15 @@ func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 		return
 	}
 
-	if page.SpaceID != spaceID {
-		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
 		return
 	}
 
-	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+	editable, err := h.pageService.CanWrite(c.Request.Context(), page.SpaceID, userID)
+	if err != nil {
+		logger.Log.Error().Str("spaceId", spaceID).Str("slugId", slugID).Err(err).Msg("console page permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
 		return
 	}
 
@@ -368,6 +378,7 @@ func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 		"creatorId":    page.CreatorID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+		"editable":     editable,
 	})
 }
 

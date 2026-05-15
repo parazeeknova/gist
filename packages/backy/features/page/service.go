@@ -256,10 +256,11 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
 	}
 
-	s.notifyPageUpdated(ctx, current, userID)
-
-	// Notifications for auto-save content updates are intentionally skipped
-	// to avoid spamming users with "Page was updated" messages on every keystroke.
+	// Autosave updates only content, so skip watcher notifications unless
+	// the mutation changed visible page metadata.
+	if input.Title != nil || input.Icon != nil || input.CoverPhoto != nil {
+		s.notifyPageUpdated(ctx, current, userID)
+	}
 
 	return current, nil
 }
@@ -640,6 +641,17 @@ func (s *PageService) RequireRead(ctx context.Context, spaceID, userID string) e
 		return nil
 	}
 	return ErrPagePermissionDenied
+}
+
+// CanWrite reports whether a user can write pages in a space.
+func (s *PageService) CanWrite(ctx context.Context, spaceID, userID string) (bool, error) {
+	if err := s.requireWrite(ctx, spaceID, userID); err != nil {
+		if errors.Is(err, ErrPagePermissionDenied) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 // insertHistoryTx inserts a page_history row within an existing transaction.

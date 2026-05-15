@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
@@ -31,6 +32,26 @@ func (h *UserHandlers) requireOwnerOrAdmin(c *gin.Context) error {
 		return errors.New("insufficient permissions")
 	}
 	return nil
+}
+
+func (h *UserHandlers) sharesWorkspace(ctx context.Context, currentUserID, targetUserID string) (bool, error) {
+	workspaceRepo := repositories.NewWorkspaceRepo()
+	currentWorkspaces, err := workspaceRepo.ListByUser(ctx, currentUserID)
+	if err != nil {
+		return false, err
+	}
+	targetWorkspaces, err := workspaceRepo.ListByUser(ctx, targetUserID)
+	if err != nil {
+		return false, err
+	}
+	for _, currentWorkspace := range currentWorkspaces {
+		for _, targetWorkspace := range targetWorkspaces {
+			if currentWorkspace.ID == targetWorkspace.ID {
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }
 
 func (h *UserHandlers) GetUsers(c *gin.Context) {
@@ -65,31 +86,47 @@ func (h *UserHandlers) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	currentUser, err := repositories.NewUserRepo().GetUserByID(c.Request.Context(), userID)
+	userRepo := repositories.NewUserRepo()
+	currentUser, err := userRepo.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
 		return
 	}
 
-	isAdmin := currentUser.Role == "owner" || currentUser.Role == "admin"
-	isSelf := currentUser.ID == user.ID
+	// Admins and the target user receive the full record; other workspace peers
+	// get a minimal safe response without email or account status.
+	if currentUser.ID == user.ID || currentUser.Role == "owner" || currentUser.Role == "admin" {
+		c.JSON(http.StatusOK, gin.H{
+			"id":         user.ID,
+			"username":   user.Username,
+			"name":       user.Name,
+			"avatar_url": user.AvatarURL,
+			"email":      user.Email,
+			"role":       user.Role,
+			"isOwner":    user.Role == "owner",
+			"is_active":  user.IsActive,
+			"created_at": user.CreatedAt,
+		})
+		return
+	}
 
-	res := gin.H{
+	shared, err := h.sharesWorkspace(c.Request.Context(), currentUser.ID, user.ID)
+	if err != nil {
+		logger.Log.Error().Err(err).Str("current_user_id", currentUser.ID).Str("target_id", user.ID).Msg("workspace membership check error")
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "internal server error"})
+		return
+	}
+	if !shared {
+		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
 		"id":         user.ID,
 		"username":   user.Username,
 		"name":       user.Name,
 		"avatar_url": user.AvatarURL,
-		"created_at": user.CreatedAt,
-	}
-
-	if isAdmin || isSelf {
-		res["email"] = user.Email
-		res["role"] = user.Role
-		res["isOwner"] = user.Role == "owner"
-		res["is_active"] = user.IsActive
-	}
-
-	c.JSON(http.StatusOK, res)
+	})
 }
 
 func (h *UserHandlers) UpdateUserRole(c *gin.Context) {

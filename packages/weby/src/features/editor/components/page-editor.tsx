@@ -197,6 +197,9 @@ export const PageEditor = ({
                 if (dirty) {
                   return "unsaved changes";
                 }
+                if (!lastSaved) {
+                  return "saved";
+                }
                 return `saved ${formatTimeAgo(lastSaved)}`;
               })()}
             </span>

@@ -38,7 +38,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
     <div className="h-full flex flex-col">
       <PageEditor
         contentJson={page.contentJson}
-        editable={true}
+        editable={page.editable}
         pageId={page.id}
         title={page.title}
         spaceName={space?.name}

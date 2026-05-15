@@ -117,6 +117,7 @@ export interface ConsolePageDetail {
   creatorId: string;
   createdAt: string;
   updatedAt: string;
+  editable: boolean;
 }
 
 export interface PageWatchStatus {

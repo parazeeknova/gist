@@ -9,7 +9,8 @@ export const Route = createFileRoute("/api/console/pages/$id/watching")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const res = await getBacky(`console/pages/${params.id}/watching`, cookieHeader);
+        const encodedId = encodeURIComponent(params.id);
+        const res = await getBacky(`console/pages/${encodedId}/watching`, cookieHeader);
         if (!res.ok) {
           return Response.json({ watching: false }, { status: res.status });
         }

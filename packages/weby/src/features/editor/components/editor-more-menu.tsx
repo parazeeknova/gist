@@ -152,7 +152,6 @@ const CreatorTooltip = ({ creatorId, t }: CreatorTooltipProps) => {
           >
             <div className="flex items-center gap-2 pl-4">{user.name || "—"}</div>
             <div className="flex items-center gap-2 mt-0.5 pl-4">@{user.username}</div>
-            <div className="flex items-center gap-2 mt-0.5 pl-4">{user.email}</div>
             <div
               className={`absolute left-3 bottom-full h-1.5 w-1.5 rotate-45 ${t("bg-neutral-800", "bg-neutral-100")}`}
             />
@@ -191,6 +190,7 @@ const DisabledMenuItem = ({
       onMouseLeave={() => setShowTooltip(false)}
     >
       <button
+        type="button"
         className={`flex w-full items-center gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${(() => {
           if (loading) {
             return t("text-text-dark/30 cursor-wait", "text-text-light/30 cursor-wait");
@@ -404,6 +404,7 @@ export const EditorMoreMenu = ({
     <>
       <button
         ref={buttonRef}
+        type="button"
         className={`p-0.5 ${t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
         onClick={toggle}
       >

@@ -7,12 +7,17 @@ afterEach(() => {
 });
 
 // Mock localStorage (zustand persist middleware requires it)
+const localStorageStore = new Map<string, string>();
 Object.defineProperty(globalThis, "localStorage", {
   value: {
-    clear: vi.fn(),
-    getItem: vi.fn(),
-    removeItem: vi.fn(),
-    setItem: vi.fn(),
+    clear: () => localStorageStore.clear(),
+    getItem: (key: string) => localStorageStore.get(key) ?? null,
+    removeItem: (key: string) => {
+      localStorageStore.delete(key);
+    },
+    setItem: (key: string, value: string) => {
+      localStorageStore.set(key, value);
+    },
   },
   writable: true,
 });
