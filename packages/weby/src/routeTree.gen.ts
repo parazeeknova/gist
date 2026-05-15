@@ -61,7 +61,6 @@ import { Route as ApiConsolePagesTreeRouteImport } from './routes/api/console/pa
 import { Route as ApiConsolePagesFavoritesRouteImport } from './routes/api/console/pages/favorites'
 import { Route as ApiConsolePagesIdRouteImport } from './routes/api/console/pages/$id'
 import { Route as ApiConsoleNotificationsUnreadCountRouteImport } from './routes/api/console/notifications/unread-count'
-import { Route as ApiConsoleNotificationsStreamRouteImport } from './routes/api/console/notifications/stream'
 import { Route as ApiConsoleNotificationsReadAllRouteImport } from './routes/api/console/notifications/read-all'
 import { Route as ApiConsoleNotificationsDismissAllRouteImport } from './routes/api/console/notifications/dismiss-all'
 import { Route as ApiConsoleNotificationsIdRouteImport } from './routes/api/console/notifications/$id'
@@ -97,6 +96,7 @@ import { Route as ApiConsoleSpacesIdGroupsGroupIdRouteImport } from './routes/ap
 import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages/$id/history/$historyId'
 import { Route as ApiConsoleGroupsIdMembersUserIdRouteImport } from './routes/api/console/groups/$id/members/$userId'
 import { Route as ApiConsoleDebugTablesTableNameRowsRouteImport } from './routes/api/console/debug/tables/$tableName/rows'
+import { Route as ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRouteImport } from './routes/api/console/spaces/$spaceId/pages/by-slug/$slug-id'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -367,12 +367,6 @@ const ApiConsoleNotificationsUnreadCountRoute =
     path: '/unread-count',
     getParentRoute: () => ApiConsoleNotificationsRoute,
   } as any)
-const ApiConsoleNotificationsStreamRoute =
-  ApiConsoleNotificationsStreamRouteImport.update({
-    id: '/stream',
-    path: '/stream',
-    getParentRoute: () => ApiConsoleNotificationsRoute,
-  } as any)
 const ApiConsoleNotificationsReadAllRoute =
   ApiConsoleNotificationsReadAllRouteImport.update({
     id: '/read-all',
@@ -573,6 +567,12 @@ const ApiConsoleDebugTablesTableNameRowsRoute =
     path: '/rows',
     getParentRoute: () => ApiConsoleDebugTablesTableNameRoute,
   } as any)
+const ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute =
+  ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRouteImport.update({
+    id: '/$spaceId/pages/by-slug/$slug-id',
+    path: '/$spaceId/pages/by-slug/$slug-id',
+    getParentRoute: () => ApiConsoleSpacesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -623,7 +623,6 @@ export interface FileRoutesByFullPath {
   '/api/console/notifications/$id': typeof ApiConsoleNotificationsIdRouteWithChildren
   '/api/console/notifications/dismiss-all': typeof ApiConsoleNotificationsDismissAllRoute
   '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
-  '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/favorites': typeof ApiConsolePagesFavoritesRoute
@@ -663,6 +662,7 @@ export interface FileRoutesByFullPath {
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
   '/api/console/spaces/$id/groups/$groupId': typeof ApiConsoleSpacesIdGroupsGroupIdRoute
   '/api/console/spaces/$id/members/$userId': typeof ApiConsoleSpacesIdMembersUserIdRoute
+  '/api/console/spaces/$spaceId/pages/by-slug/$slug-id': typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -711,7 +711,6 @@ export interface FileRoutesByTo {
   '/api/console/notifications/$id': typeof ApiConsoleNotificationsIdRouteWithChildren
   '/api/console/notifications/dismiss-all': typeof ApiConsoleNotificationsDismissAllRoute
   '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
-  '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/favorites': typeof ApiConsolePagesFavoritesRoute
@@ -751,6 +750,7 @@ export interface FileRoutesByTo {
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
   '/api/console/spaces/$id/groups/$groupId': typeof ApiConsoleSpacesIdGroupsGroupIdRoute
   '/api/console/spaces/$id/members/$userId': typeof ApiConsoleSpacesIdMembersUserIdRoute
+  '/api/console/spaces/$spaceId/pages/by-slug/$slug-id': typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -802,7 +802,6 @@ export interface FileRoutesById {
   '/api/console/notifications/$id': typeof ApiConsoleNotificationsIdRouteWithChildren
   '/api/console/notifications/dismiss-all': typeof ApiConsoleNotificationsDismissAllRoute
   '/api/console/notifications/read-all': typeof ApiConsoleNotificationsReadAllRoute
-  '/api/console/notifications/stream': typeof ApiConsoleNotificationsStreamRoute
   '/api/console/notifications/unread-count': typeof ApiConsoleNotificationsUnreadCountRoute
   '/api/console/pages/$id': typeof ApiConsolePagesIdRouteWithChildren
   '/api/console/pages/favorites': typeof ApiConsolePagesFavoritesRoute
@@ -842,6 +841,7 @@ export interface FileRoutesById {
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
   '/api/console/spaces/$id/groups/$groupId': typeof ApiConsoleSpacesIdGroupsGroupIdRoute
   '/api/console/spaces/$id/members/$userId': typeof ApiConsoleSpacesIdMembersUserIdRoute
+  '/api/console/spaces/$spaceId/pages/by-slug/$slug-id': typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -894,7 +894,6 @@ export interface FileRouteTypes {
     | '/api/console/notifications/$id'
     | '/api/console/notifications/dismiss-all'
     | '/api/console/notifications/read-all'
-    | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/favorites'
@@ -934,6 +933,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/history/$historyId'
     | '/api/console/spaces/$id/groups/$groupId'
     | '/api/console/spaces/$id/members/$userId'
+    | '/api/console/spaces/$spaceId/pages/by-slug/$slug-id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -982,7 +982,6 @@ export interface FileRouteTypes {
     | '/api/console/notifications/$id'
     | '/api/console/notifications/dismiss-all'
     | '/api/console/notifications/read-all'
-    | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/favorites'
@@ -1022,6 +1021,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/history/$historyId'
     | '/api/console/spaces/$id/groups/$groupId'
     | '/api/console/spaces/$id/members/$userId'
+    | '/api/console/spaces/$spaceId/pages/by-slug/$slug-id'
   id:
     | '__root__'
     | '/'
@@ -1072,7 +1072,6 @@ export interface FileRouteTypes {
     | '/api/console/notifications/$id'
     | '/api/console/notifications/dismiss-all'
     | '/api/console/notifications/read-all'
-    | '/api/console/notifications/stream'
     | '/api/console/notifications/unread-count'
     | '/api/console/pages/$id'
     | '/api/console/pages/favorites'
@@ -1112,6 +1111,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/history/$historyId'
     | '/api/console/spaces/$id/groups/$groupId'
     | '/api/console/spaces/$id/members/$userId'
+    | '/api/console/spaces/$spaceId/pages/by-slug/$slug-id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1520,13 +1520,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleNotificationsUnreadCountRouteImport
       parentRoute: typeof ApiConsoleNotificationsRoute
     }
-    '/api/console/notifications/stream': {
-      id: '/api/console/notifications/stream'
-      path: '/stream'
-      fullPath: '/api/console/notifications/stream'
-      preLoaderRoute: typeof ApiConsoleNotificationsStreamRouteImport
-      parentRoute: typeof ApiConsoleNotificationsRoute
-    }
     '/api/console/notifications/read-all': {
       id: '/api/console/notifications/read-all'
       path: '/read-all'
@@ -1772,6 +1765,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleDebugTablesTableNameRowsRouteImport
       parentRoute: typeof ApiConsoleDebugTablesTableNameRoute
     }
+    '/api/console/spaces/$spaceId/pages/by-slug/$slug-id': {
+      id: '/api/console/spaces/$spaceId/pages/by-slug/$slug-id'
+      path: '/$spaceId/pages/by-slug/$slug-id'
+      fullPath: '/api/console/spaces/$spaceId/pages/by-slug/$slug-id'
+      preLoaderRoute: typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRouteImport
+      parentRoute: typeof ApiConsoleSpacesRoute
+    }
   }
 }
 
@@ -1857,7 +1857,6 @@ interface ApiConsoleNotificationsRouteChildren {
   ApiConsoleNotificationsIdRoute: typeof ApiConsoleNotificationsIdRouteWithChildren
   ApiConsoleNotificationsDismissAllRoute: typeof ApiConsoleNotificationsDismissAllRoute
   ApiConsoleNotificationsReadAllRoute: typeof ApiConsoleNotificationsReadAllRoute
-  ApiConsoleNotificationsStreamRoute: typeof ApiConsoleNotificationsStreamRoute
   ApiConsoleNotificationsUnreadCountRoute: typeof ApiConsoleNotificationsUnreadCountRoute
 }
 
@@ -1867,7 +1866,6 @@ const ApiConsoleNotificationsRouteChildren: ApiConsoleNotificationsRouteChildren
     ApiConsoleNotificationsDismissAllRoute:
       ApiConsoleNotificationsDismissAllRoute,
     ApiConsoleNotificationsReadAllRoute: ApiConsoleNotificationsReadAllRoute,
-    ApiConsoleNotificationsStreamRoute: ApiConsoleNotificationsStreamRoute,
     ApiConsoleNotificationsUnreadCountRoute:
       ApiConsoleNotificationsUnreadCountRoute,
   }
@@ -1995,12 +1993,15 @@ interface ApiConsoleSpacesRouteChildren {
   ApiConsoleSpacesIdRoute: typeof ApiConsoleSpacesIdRouteWithChildren
   ApiConsoleSpacesFavoritesRoute: typeof ApiConsoleSpacesFavoritesRoute
   ApiConsoleSpacesBySlugSlugRoute: typeof ApiConsoleSpacesBySlugSlugRoute
+  ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute: typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 
 const ApiConsoleSpacesRouteChildren: ApiConsoleSpacesRouteChildren = {
   ApiConsoleSpacesIdRoute: ApiConsoleSpacesIdRouteWithChildren,
   ApiConsoleSpacesFavoritesRoute: ApiConsoleSpacesFavoritesRoute,
   ApiConsoleSpacesBySlugSlugRoute: ApiConsoleSpacesBySlugSlugRoute,
+  ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute:
+    ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute,
 }
 
 const ApiConsoleSpacesRouteWithChildren =

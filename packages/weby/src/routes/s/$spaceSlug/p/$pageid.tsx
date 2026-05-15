@@ -59,6 +59,11 @@ const PageView = () => {
         editable={true}
         pageId={page.id}
         title={page.title}
+        spaceName={space.name}
+        creatorId={page.creatorId}
+        createdAt={page.createdAt}
+        updatedAt={page.updatedAt}
+        textContent={page.textContent}
       />
     </div>
   );

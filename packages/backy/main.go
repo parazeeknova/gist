@@ -386,6 +386,9 @@ func main() {
 				admin.PUT("/:id/active", userHandlers.UpdateUserActive)
 				admin.DELETE("/:id", userHandlers.DeleteUser)
 			}
+
+			// User lookup (any authenticated user)
+			console.GET("/users/:id", userHandlers.GetUserByID)
 		}
 	}
 

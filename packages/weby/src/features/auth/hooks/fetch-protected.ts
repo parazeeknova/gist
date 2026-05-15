@@ -7,7 +7,10 @@ const refreshTokens = (): Promise<boolean> => {
 
   refreshPromise = (async () => {
     try {
-      const res = await fetch("/api/auth/refresh", { method: "POST" });
+      const res = await fetch("/api/auth/refresh", {
+        credentials: "include",
+        method: "POST",
+      });
       return res.ok;
     } catch {
       return false;

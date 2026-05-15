@@ -5,6 +5,11 @@ export interface PageEditorProps {
   contentJson: string;
   editable: boolean;
   title: string;
+  spaceName?: string;
+  creatorId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  textContent?: string;
 }
 
 export interface ToolbarProps {

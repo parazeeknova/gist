@@ -254,19 +254,8 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
 	}
 
-	ws, _ := s.spaceRepo.GetByID(ctx, current.SpaceID)
-	if ws.WorkspaceID != "" {
-		recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, ws.WorkspaceID)
-		s.notifier.Notify(ctx, notifeat.NotificationEvent{
-			Type:         notifeat.EventPageUpdated,
-			WorkspaceID:  ws.WorkspaceID,
-			ActorID:      userID,
-			RecipientIDs: recipients,
-			EntityType:   "page",
-			EntityID:     current.ID,
-			Metadata:     map[string]string{"name": current.Title},
-		})
-	}
+	// Notifications for auto-save content updates are intentionally skipped
+	// to avoid spamming users with "Page was updated" messages on every keystroke.
 
 	return current, nil
 }

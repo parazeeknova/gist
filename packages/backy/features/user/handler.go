@@ -47,6 +47,31 @@ func (h *UserHandlers) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
+func (h *UserHandlers) GetUserByID(c *gin.Context) {
+	userID := middleware.GetCurrentUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
+		return
+	}
+	targetID := c.Param("id")
+	user, err := repositories.NewUserRepo().GetUserByID(c.Request.Context(), targetID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"username":   user.Username,
+		"email":      user.Email,
+		"name":       user.Name,
+		"avatar_url": user.AvatarURL,
+		"role":       user.Role,
+		"isOwner":    user.Role == "owner",
+		"is_active":  user.IsActive,
+		"created_at": user.CreatedAt,
+	})
+}
+
 func (h *UserHandlers) UpdateUserRole(c *gin.Context) {
 	if err := h.requireOwnerOrAdmin(c); err != nil {
 		c.JSON(http.StatusForbidden, auth.ErrorResponse{Error: "permission denied"})

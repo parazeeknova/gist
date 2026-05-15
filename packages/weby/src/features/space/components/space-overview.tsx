@@ -306,6 +306,7 @@ const SpaceContentSection = ({
                                 onNavigate(page.slugId);
                               }
                             }}
+                            // oxlint-disable-next-line jsx_a11y/prefer-tag-over-role
                             role="button"
                             tabIndex={0}
                           >

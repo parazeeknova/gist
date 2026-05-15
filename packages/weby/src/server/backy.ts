@@ -239,6 +239,18 @@ export const unpublishConsolePage = (id: string, cookieHeader?: string | null) =
     },
   );
 
+export const getPageBySpaceAndSlug = (
+  spaceId: string,
+  slugId: string,
+  cookieHeader?: string | null,
+) =>
+  fetchBacky<ConsolePageDetail>(
+    `console/spaces/${encodeURIComponent(spaceId)}/pages/by-slug/${encodeURIComponent(slugId)}`,
+    {
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    },
+  );
+
 export const getPageTree = (spaceId: string, cookieHeader?: string | null) =>
   fetchBacky<PageTreeItem[]>(
     spaceId ? `console/pages/tree?spaceId=${encodeURIComponent(spaceId)}` : "console/pages/tree",
@@ -297,6 +309,11 @@ export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | n
 
 export const getSpaceBySlug = (slug: string, cookieHeader?: string | null) =>
   fetchBacky<Space>(`console/spaces/by-slug/${encodeURIComponent(slug)}`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getSpaceById = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<Space>(`console/spaces/${id}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 
@@ -546,6 +563,11 @@ export const revokeSession = (cookieHeader?: string | null) =>
 // User management functions
 export const getUsers = (cookieHeader?: string | null) =>
   fetchBacky<ConsoleUser[]>("console/users", {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
+export const getUserById = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<ConsoleUser>(`console/users/${id}`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
   });
 

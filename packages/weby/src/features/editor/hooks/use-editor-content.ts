@@ -6,6 +6,7 @@ export const useEditorContent = (editor: Editor | null, pageId: string) => {
   const updatePage = useUpdatePage();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const flush = useCallback(() => {
     if (!editor) {
@@ -22,7 +23,10 @@ export const useEditorContent = (editor: Editor | null, pageId: string) => {
         },
       },
       {
-        onSuccess: () => setDirty(false),
+        onSuccess: () => {
+          setDirty(false);
+          setLastSaved(new Date());
+        },
       },
     );
   }, [editor, pageId, updatePage]);
@@ -45,5 +49,5 @@ export const useEditorContent = (editor: Editor | null, pageId: string) => {
     }
   }, []);
 
-  return { cleanup, dirty, flush, isSaving: updatePage.isPending, markDirty };
+  return { cleanup, dirty, flush, isSaving: updatePage.isPending, lastSaved, markDirty };
 };

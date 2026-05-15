@@ -114,6 +114,7 @@ export interface ConsolePageDetail {
   isPublished: boolean;
   parentPageId: string | null;
   spaceId: string;
+  creatorId: string;
   createdAt: string;
   updatedAt: string;
 }

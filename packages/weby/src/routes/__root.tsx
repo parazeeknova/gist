@@ -28,14 +28,18 @@ const RootComponent = () => {
   );
 };
 
+const THEME_SCRIPT = [
+  "(function(){var t='dark';try{var s=localStorage.getItem('verso-theme');",
+  "if(s){var j=JSON.parse(s);var p=j.state?.preference;",
+  "if(p==='light'||p==='dark')t=p;else if(p==='system')",
+  "t=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}",
+  "}catch(e){}document.documentElement.dataset.theme=t})()",
+].join("");
+
 const RootShell = ({ children }: { children: React.ReactNode }) => (
-  <html lang="en" suppressHydrationWarning>
+  <html lang="en" data-theme="dark" suppressHydrationWarning>
     <head>
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){var t='dark';try{t=localStorage.getItem('theme')||'dark'}catch(e){}document.documentElement.dataset.theme=t})()`,
-        }}
-      />
+      <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       <HeadContent />
     </head>
     <body>

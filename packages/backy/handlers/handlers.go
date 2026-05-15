@@ -259,6 +259,7 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		"isPublished":  page.IsPublished,
 		"parentPageId": page.ParentPageID,
 		"spaceId":      page.SpaceID,
+		"creatorId":    page.CreatorID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
 	})
@@ -297,6 +298,7 @@ func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 		"isPublished":  page.IsPublished,
 		"parentPageId": page.ParentPageID,
 		"spaceId":      page.SpaceID,
+		"creatorId":    page.CreatorID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
 	})
