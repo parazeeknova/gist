@@ -42,6 +42,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
         pageId={page.id}
         title={page.title}
         spaceName={space?.name}
+        spaceSlug={space?.slug}
         creatorId={page.creatorId}
         createdAt={page.createdAt}
         updatedAt={page.updatedAt}

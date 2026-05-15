@@ -60,6 +60,7 @@ const PageView = () => {
         pageId={page.id}
         title={page.title}
         spaceName={space.name}
+        spaceSlug={spaceSlug}
         creatorId={page.creatorId}
         createdAt={page.createdAt}
         updatedAt={page.updatedAt}

@@ -197,6 +197,9 @@ func (s *NotificationService) generateText(event NotificationEvent) (string, str
 			return "Folder created", fmt.Sprintf("A new folder %q was created.", name)
 		}
 		return "Page created", fmt.Sprintf("A new page %q was created.", name)
+	case EventPageDeleted:
+		name := s.metadataStr(event.Metadata, "name", "a page")
+		return "Page deleted", fmt.Sprintf("The page %q was deleted.", name)
 	case EventWorkspaceMemberAdded:
 		wsName := s.metadataStr(event.Metadata, "name", "a workspace")
 		return "Added to workspace", fmt.Sprintf("You were added to the workspace %q.", wsName)

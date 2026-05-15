@@ -6,6 +6,7 @@ export interface PageEditorProps {
   editable: boolean;
   title: string;
   spaceName?: string;
+  spaceSlug?: string;
   creatorId?: string;
   createdAt?: string;
   updatedAt?: string;

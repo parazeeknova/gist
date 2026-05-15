@@ -18,6 +18,7 @@ import (
 
 	authfeat "verso/backy/features/auth"
 	groupfeat "verso/backy/features/group"
+	notifeat "verso/backy/features/notification"
 	pagefeat "verso/backy/features/page"
 	spacefeat "verso/backy/features/space"
 	ws "verso/backy/features/workspace"
@@ -36,6 +37,28 @@ type testDB struct {
 	spaceSvc        *spacefeat.SpaceService
 	pageSvc         *pagefeat.PageService
 	groupSvc        *groupfeat.GroupService
+}
+
+type pageDeleteEvent struct {
+	Type        string
+	EntityID    string
+	WorkspaceID string
+	ActorID     string
+	Name        string
+}
+
+type pageDeleteNotifier struct {
+	events []pageDeleteEvent
+}
+
+func (n *pageDeleteNotifier) Notify(_ context.Context, event notifeat.NotificationEvent) {
+	n.events = append(n.events, pageDeleteEvent{
+		Type:        string(event.Type),
+		EntityID:    event.EntityID,
+		WorkspaceID: event.WorkspaceID,
+		ActorID:     event.ActorID,
+		Name:        event.Metadata["name"],
+	})
 }
 
 func getTestDatabaseURL(t *testing.T, databaseURL string) string {
@@ -544,6 +567,40 @@ func TestPageService_SoftDeletedPagesDisappearFromListAndTree(t *testing.T) {
 		if item.ID == p.ID {
 			t.Fatal("expected soft-deleted page to not appear in tree")
 		}
+	}
+}
+
+func TestPageService_DeleteEmitsNotification(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
+	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	p := createTestPage(t, ctx, db, s.ID, ownerID)
+
+	notifier := &pageDeleteNotifier{}
+	db.pageSvc.SetNotifier(notifier)
+
+	if err := db.pageSvc.DeletePage(ctx, p.ID, ownerID); err != nil {
+		t.Fatalf("delete page: %v", err)
+	}
+
+	if len(notifier.events) != 1 {
+		t.Fatalf("expected 1 notification event, got %d", len(notifier.events))
+	}
+	got := notifier.events[0]
+	if got.Type != "page.deleted" {
+		t.Fatalf("expected page.deleted, got %q", got.Type)
+	}
+	if got.EntityID != p.ID {
+		t.Fatalf("expected entity id %q, got %q", p.ID, got.EntityID)
+	}
+	if got.WorkspaceID != w.ID {
+		t.Fatalf("expected workspace id %q, got %q", w.ID, got.WorkspaceID)
+	}
+	if got.Name != p.Title {
+		t.Fatalf("expected name %q, got %q", p.Title, got.Name)
 	}
 }
 

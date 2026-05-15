@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "@tanstack/react-router";
 import {
   DotsThreeVerticalIcon,
   LinkSimpleIcon,
   ArticleIcon,
   EyeSlashIcon,
-  ArrowsInIcon,
   ClockCounterClockwiseIcon,
   ArrowSquareOutIcon,
   FileArrowDownIcon,
@@ -15,19 +15,24 @@ import {
   TextAlignLeftIcon,
   CalendarIcon,
   ClockIcon,
-  UserIcon,
+  ArrowsHorizontalIcon,
 } from "@phosphor-icons/react";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useUserById } from "#/features/console/hooks/use-users";
+import { useDeletePage } from "#/features/console/hooks/use-pages";
+import { setFlashToast } from "#/features/console/components/flash-toast";
 
 interface EditorMoreMenuProps {
   pageId: string;
   title: string;
   spaceName?: string;
+  spaceSlug?: string;
   creatorId?: string;
   createdAt?: string;
   updatedAt?: string;
   textContent?: string;
+  fullWidth: boolean;
+  onToggleFullWidth: () => void;
 }
 
 const formatDateTime = (iso?: string) => {
@@ -39,17 +44,6 @@ const formatDateTime = (iso?: string) => {
     hour: "numeric",
     hour12: true,
     minute: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-};
-
-const formatDateShort = (iso?: string) => {
-  if (!iso) {
-    return "—";
-  }
-  return new Date(iso).toLocaleDateString("en-US", {
-    day: "numeric",
     month: "short",
   });
 };
@@ -72,17 +66,17 @@ const DateTooltip = ({ createdAt, updatedAt, t }: DateTooltipProps) => {
 
   return (
     <div
-      className={`relative flex items-center gap-1.5 px-3 py-0.5 text-[10px] cursor-default ${t("text-text-dark/30", "text-text-light/30")}`}
+      className={`relative flex items-center gap-1 px-2.5 py-0.5 text-[9px] cursor-default ${t("text-text-dark/30", "text-text-light/30")}`}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >
-      <span className="flex items-center justify-center w-4">
-        <ClockIcon size={12} />
+      <span className="flex items-center justify-center w-3.5">
+        <ClockIcon size={10} />
       </span>
       <span>
         updated:{" "}
         <span className={t("text-text-dark/50", "text-text-light/50")}>
-          {formatDateShort(updatedAt)}
+          {formatDateTime(updatedAt)}
         </span>
       </span>
       {isVisible && (
@@ -127,12 +121,12 @@ const CreatorTooltip = ({ creatorId, t }: CreatorTooltipProps) => {
 
   return (
     <div
-      className={`relative flex items-center gap-1.5 px-3 py-0.5 text-[10px] cursor-default ${t("text-text-dark/30", "text-text-light/30")}`}
+      className={`relative flex items-center gap-1 px-2.5 py-0.5 text-[9px] cursor-default ${t("text-text-dark/30", "text-text-light/30")}`}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
     >
       <div
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[7px] font-medium ${t("bg-white/10 text-text-dark/60", "bg-black/10 text-text-light/60")}`}
+        className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[6px] font-medium ${t("bg-white/10 text-text-dark/60", "bg-black/10 text-text-light/60")}`}
       >
         {user?.avatar_url ? (
           <img
@@ -144,23 +138,73 @@ const CreatorTooltip = ({ creatorId, t }: CreatorTooltipProps) => {
           initials
         )}
       </div>
-      <span className="truncate">{displayName}</span>
+      <span>
+        owner: <span className="truncate">{displayName}</span>
+      </span>
       {isVisible && user && (
         <div className="pointer-events-none absolute inset-x-0 top-full z-50 mt-1.5 flex justify-start">
           <div
             className={`relative whitespace-nowrap px-2.5 py-1.5 text-[10px] shadow-lg ${t("bg-neutral-800 text-white", "bg-neutral-100 text-black border border-black/10")}`}
           >
-            <div className="flex items-center gap-2">
-              <UserIcon size={10} />
-              name: {user.name || "—"}
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="w-4" />@{user.username}
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="w-4" />
-              {user.email}
-            </div>
+            <div className="flex items-center gap-2 pl-4">{user.name || "—"}</div>
+            <div className="flex items-center gap-2 mt-0.5 pl-4">@{user.username}</div>
+            <div className="flex items-center gap-2 mt-0.5 pl-4">{user.email}</div>
+            <div
+              className={`absolute left-3 bottom-full h-1.5 w-1.5 rotate-45 ${t("bg-neutral-800", "bg-neutral-100")}`}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface DisabledMenuItemProps {
+  disabled?: boolean;
+  danger?: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  t: (dark: string, light: string) => string;
+}
+
+const DisabledMenuItem = ({ disabled, danger, icon, label, onClick, t }: DisabledMenuItemProps) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => disabled && setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <button
+        className={`flex w-full items-center gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${(() => {
+          if (disabled) {
+            return t(
+              "text-text-dark/20 cursor-not-allowed",
+              "text-text-light/20 cursor-not-allowed",
+            );
+          }
+          if (danger) {
+            return t("text-red-400 hover:bg-red-400/10", "text-red-500 hover:bg-red-500/10");
+          }
+          return t(
+            "text-text-dark/60 hover:bg-white/5 hover:text-text-dark",
+            "text-text-light/60 hover:bg-black/5 hover:text-text-light",
+          );
+        })()}`}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        <span className="flex items-center justify-center w-4">{icon}</span>
+        {label}
+      </button>
+      {disabled && showTooltip && (
+        <div className="pointer-events-none absolute inset-x-0 top-full z-50 mt-1 flex justify-start">
+          <div
+            className={`relative whitespace-nowrap px-2 py-1 text-[10px] shadow-lg ${t("bg-neutral-800 text-white", "bg-neutral-100 text-black border border-black/10")}`}
+          >
+            coming soon
             <div
               className={`absolute left-3 bottom-full h-1.5 w-1.5 rotate-45 ${t("bg-neutral-800", "bg-neutral-100")}`}
             />
@@ -173,19 +217,62 @@ const CreatorTooltip = ({ creatorId, t }: CreatorTooltipProps) => {
 
 export const EditorMoreMenu = ({
   pageId: _pageId,
-  title: _title,
+  title,
   spaceName,
+  spaceSlug,
   creatorId,
   createdAt,
   updatedAt,
   textContent,
+  fullWidth,
+  onToggleFullWidth,
 }: EditorMoreMenuProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: 0, top: 0 });
+  const navigate = useNavigate();
+  const deletePage = useDeletePage();
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  const copyLink = useCallback(() => {
+    const url = window.location.href;
+    void navigator.clipboard.writeText(url);
+    showToast(`copied url for ${title} in ${spaceName ?? "space"}`);
+  }, [title, spaceName, showToast]);
+
+  const handleDelete = useCallback(() => {
+    if (showDeleteConfirm) {
+      deletePage.mutate(_pageId, {
+        onSuccess: () => {
+          setFlashToast(`deleted ${title}`);
+          if (spaceSlug) {
+            navigate({ to: `/s/${spaceSlug}` });
+            return;
+          }
+          navigate({ to: "/home" });
+        },
+      });
+      setShowDeleteConfirm(false);
+      setOpen(false);
+    } else {
+      setShowDeleteConfirm(true);
+    }
+  }, [showDeleteConfirm, _pageId, spaceSlug, deletePage, navigate, title]);
+
+  useEffect(() => {
+    if (!open) {
+      setShowDeleteConfirm(false);
+    }
+  }, [open]);
 
   const updatePosition = useCallback(() => {
     if (!buttonRef.current) {
@@ -230,24 +317,29 @@ export const EditorMoreMenu = ({
     label: string,
     onClick?: () => void,
     danger?: boolean,
+    disabled?: boolean,
   ) => (
-    <button
-      className={`flex w-full items-center gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${danger ? t("text-red-400 hover:bg-red-400/10", "text-red-500 hover:bg-red-500/10") : t("text-text-dark/60 hover:bg-white/5 hover:text-text-dark", "text-text-light/60 hover:bg-black/5 hover:text-text-light")}`}
+    <DisabledMenuItem
+      disabled={disabled}
+      danger={danger}
+      icon={icon}
+      label={label}
       onClick={() => {
+        if (disabled) {
+          return;
+        }
         setOpen(false);
         onClick?.();
       }}
-    >
-      <span className="flex items-center justify-center w-4">{icon}</span>
-      {label}
-    </button>
+      t={t}
+    />
   );
 
   const statItem = (icon: React.ReactNode, label: string, value: string) => (
     <div
-      className={`flex items-center gap-1.5 px-3 py-0.5 text-[10px] ${t("text-text-dark/30", "text-text-light/30")}`}
+      className={`flex items-center gap-1 px-2.5 py-0.5 text-[9px] ${t("text-text-dark/30", "text-text-light/30")}`}
     >
-      <span className="flex items-center justify-center w-4">{icon}</span>
+      <span className="flex items-center justify-center w-3.5">{icon}</span>
       <span>
         {label}: <span className={t("text-text-dark/50", "text-text-light/50")}>{value}</span>
       </span>
@@ -271,15 +363,33 @@ export const EditorMoreMenu = ({
                 className={`w-48 border py-1 ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
               >
                 <div className="py-0.5">
-                  {menuItem(<LinkSimpleIcon size={12} />, "copy link")}
-                  {menuItem(<ArticleIcon size={12} />, "copy as markdown")}
+                  {menuItem(<LinkSimpleIcon size={12} />, "copy link", copyLink)}
+                  {menuItem(<ArticleIcon size={12} />, "copy as markdown", undefined, false, true)}
                 </div>
                 <div
                   className={`mx-3 my-0.5 border-t ${t("border-border-dark", "border-border-light")}`}
                 />
                 <div className="py-0.5">
                   {menuItem(<EyeSlashIcon size={12} />, "stop watching")}
-                  {menuItem(<ArrowsInIcon size={12} />, "full width")}
+                  <button
+                    className={`flex w-full items-center justify-between gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${t("text-text-dark/60 hover:bg-white/5 hover:text-text-dark", "text-text-light/60 hover:bg-black/5 hover:text-text-light")}`}
+                    onClick={onToggleFullWidth}
+                    type="button"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-4">
+                        <ArrowsHorizontalIcon size={12} />
+                      </span>
+                      full width
+                    </div>
+                    <div
+                      className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${fullWidth ? t("bg-white/20", "bg-black/20") : t("bg-white/10", "bg-black/10")}`}
+                    >
+                      <div
+                        className={`absolute top-0.5 h-3 w-3 rounded-full transition-transform ${fullWidth ? t("translate-x-3.5 bg-white/60", "translate-x-3.5 bg-black/40") : t("translate-x-0.5 bg-white/30", "translate-x-0.5 bg-black/20")}`}
+                      />
+                    </div>
+                  </button>
                 </div>
                 <div
                   className={`mx-3 my-0.5 border-t ${t("border-border-dark", "border-border-light")}`}
@@ -294,16 +404,25 @@ export const EditorMoreMenu = ({
                   className={`mx-3 my-1 border-t ${t("border-border-dark", "border-border-light")}`}
                 />
                 <div className="py-0.5">
-                  {menuItem(<TrashIcon size={12} />, "delete", undefined, true)}
+                  <button
+                    className={`flex w-full items-center gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${showDeleteConfirm ? "text-red-400 bg-red-400/10" : t("text-red-400/60 hover:bg-red-400/10", "text-red-500/60 hover:bg-red-500/10")}`}
+                    onClick={handleDelete}
+                    type="button"
+                  >
+                    <span className="flex items-center justify-center w-4">
+                      <TrashIcon size={12} />
+                    </span>
+                    {showDeleteConfirm ? "confirm?" : "delete"}
+                  </button>
                 </div>
                 <div
                   className={`mx-3 my-0.5 border-t ${t("border-border-dark", "border-border-light")}`}
                 />
                 <div className="py-0.5">
                   {creatorId && <CreatorTooltip creatorId={creatorId} t={t} />}
-                  {statItem(<SquaresFourIcon size={12} />, "space", spaceName ?? "—")}
+                  {statItem(<SquaresFourIcon size={10} />, "space", spaceName ?? "—")}
                   {statItem(
-                    <TextAlignLeftIcon size={12} />,
+                    <TextAlignLeftIcon size={10} />,
                     "words",
                     String(wordCount(textContent)),
                   )}
@@ -312,6 +431,17 @@ export const EditorMoreMenu = ({
               </div>
             </div>
           </>,
+          document.body,
+        )}
+      {toast &&
+        createPortal(
+          <div className="fixed bottom-6 left-1/2 z-10000 -translate-x-1/2">
+            <div
+              className={`px-3 py-1.5 text-[11px] lowercase shadow-lg ${t("bg-neutral-800 text-white", "bg-neutral-100 text-black border border-black/10")}`}
+            >
+              {toast}
+            </div>
+          </div>,
           document.body,
         )}
     </>

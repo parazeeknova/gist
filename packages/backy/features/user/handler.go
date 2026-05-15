@@ -59,6 +59,7 @@ func (h *UserHandlers) GetUserByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
 		return
 	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":         user.ID,
 		"username":   user.Username,

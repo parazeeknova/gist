@@ -291,6 +291,17 @@ func (s *PageService) DeletePage(ctx context.Context, pageID string, userID stri
 		return fmt.Errorf("commit tx: %w", err)
 	}
 
+	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventPageDeleted,
+		WorkspaceID:  page.WorkspaceID,
+		ActorID:      userID,
+		RecipientIDs: recipients,
+		EntityType:   "page",
+		EntityID:     page.ID,
+		Metadata:     map[string]string{"name": page.Title},
+	})
+
 	return nil
 }
 

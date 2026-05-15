@@ -1,11 +1,16 @@
 import { EditorContent, useEditor } from "@tiptap/react";
 import { useEffect, useCallback, useRef, useState } from "react";
+import { BookmarkSimpleIcon } from "@phosphor-icons/react";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { getEditorExtensions } from "#/features/editor/extensions";
 import { useEditorContent } from "#/features/editor/hooks/use-editor-content";
 import { FixedToolbar } from "#/features/editor/components/toolbar/fixed-toolbar";
 import { BubbleMenu } from "#/features/editor/components/toolbar/bubble-menu";
 import { EditorMoreMenu } from "#/features/editor/components/editor-more-menu";
+import {
+  useIsPageFavorited,
+  useTogglePageFavorite,
+} from "#/features/console/hooks/use-page-favorites";
 import type { PageEditorProps } from "#/features/editor/types/editor.types";
 
 export const PageEditor = ({
@@ -14,6 +19,7 @@ export const PageEditor = ({
   editable,
   title,
   spaceName,
+  spaceSlug,
   creatorId,
   createdAt,
   updatedAt,
@@ -60,6 +66,49 @@ export const PageEditor = ({
   });
 
   const { dirty, cleanup, isSaving, lastSaved, markDirty } = useEditorContent(editor, pageId);
+  const { data: favData } = useIsPageFavorited(pageId);
+  const toggleFav = useTogglePageFavorite();
+  const isFaved = favData?.favorited ?? false;
+
+  const [fullWidth, setFullWidth] = useState(() => {
+    try {
+      return localStorage.getItem("verso-editor-fullwidth") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleFullWidth = useCallback(() => {
+    setFullWidth((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("verso-editor-fullwidth", String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleContentClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!editor || !editable) {
+        return;
+      }
+      const target = e.target as HTMLElement;
+      const proseEl = contentRef.current;
+      if (!proseEl) {
+        return;
+      }
+      // Only focus at end if clicking the container itself (blank area)
+      if (target === proseEl || !proseEl.contains(target)) {
+        editor.commands.focus("end");
+      }
+    },
+    [editor, editable],
+  );
 
   const [now, setNow] = useState(new Date());
 
@@ -172,26 +221,49 @@ export const PageEditor = ({
               })()}
             </span>
           )}
+          <button
+            className={`p-0.5 transition-colors ${isFaved ? "text-yellow-400" : t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
+            onClick={() => toggleFav.mutate(pageId)}
+            type="button"
+          >
+            <BookmarkSimpleIcon size={14} weight={isFaved ? "fill" : "regular"} />
+          </button>
           <EditorMoreMenu
             pageId={pageId}
             title={title}
             spaceName={spaceName}
+            spaceSlug={spaceSlug}
             creatorId={creatorId}
             createdAt={createdAt}
             updatedAt={updatedAt}
             textContent={textContent}
+            fullWidth={fullWidth}
+            onToggleFullWidth={toggleFullWidth}
           />
         </div>
       </div>
       {editable && (
         <>
-          <div className="mx-auto max-w-2xl w-full px-4 shrink-0">
+          <div className={`w-full px-4 shrink-0 ${fullWidth ? "" : "mx-auto max-w-2xl"}`}>
             <FixedToolbar editor={editor} />
           </div>
           <BubbleMenu editor={editor} />
         </>
       )}
-      <div className="mx-auto max-w-2xl w-full px-4 blog-reader-prose flex-1 min-h-0 overflow-y-auto">
+      <div
+        ref={contentRef}
+        className={`w-full px-4 blog-reader-prose flex-1 min-h-0 overflow-y-auto ${fullWidth ? "" : "mx-auto max-w-2xl"}`}
+        onClick={handleContentClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            handleContentClick(e as unknown as React.MouseEvent);
+          }
+        }}
+        aria-label="page content"
+        aria-multiline="true"
+        role="textbox"
+        tabIndex={0}
+      >
         <EditorContent editor={editor} />
       </div>
     </div>

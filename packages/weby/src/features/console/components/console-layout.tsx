@@ -18,6 +18,7 @@ import { useAuth } from "#/features/auth/hooks/use-auth";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useSpaceBySlug } from "#/features/console/hooks/use-spaces";
 import { ConsoleContext } from "./console-context";
+import { FlashToast } from "./flash-toast";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
 import { FloatingSidebar } from "./floating-sidebar";
@@ -357,6 +358,7 @@ export const ConsoleLayout = () => {
             <Outlet />
           </main>
         </div>
+        <FlashToast isDarkMode={isDarkMode} />
       </div>
     </ConsoleContext.Provider>
   );
