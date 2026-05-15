@@ -1,10 +1,11 @@
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 import { useUpdatePage } from "#/features/console/hooks/use-pages";
 
 export const useEditorContent = (editor: Editor | null, pageId: string) => {
   const updatePage = useUpdatePage();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFlushRef = useRef(false);
   const [dirty, setDirty] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
@@ -12,6 +13,11 @@ export const useEditorContent = (editor: Editor | null, pageId: string) => {
     if (!editor) {
       return;
     }
+    if (updatePage.isPending) {
+      pendingFlushRef.current = true;
+      return;
+    }
+    pendingFlushRef.current = false;
     const json = editor.getJSON();
     const text = editor.getText();
     updatePage.mutate(
@@ -30,6 +36,12 @@ export const useEditorContent = (editor: Editor | null, pageId: string) => {
       },
     );
   }, [editor, pageId, updatePage]);
+
+  useEffect(() => {
+    if (!updatePage.isPending && pendingFlushRef.current) {
+      flush();
+    }
+  }, [updatePage.isPending, flush]);
 
   const markDirty = useCallback(() => {
     setDirty(true);

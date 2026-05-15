@@ -50,6 +50,7 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
     queryFn: ({ signal }) =>
       fetchProtected<NotificationItem[]>("/api/console/notifications", { signal }),
     queryKey: ["notifications", "list"],
+    refetchOnMount: "always",
   });
 
   const readMutation = useMutation({
@@ -86,6 +87,7 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
     if (!notiOpen) {
       return;
     }
+    void queryClient.invalidateQueries({ queryKey: ["notifications", "list"] });
     const handleClick = (e: MouseEvent) => {
       if (notiRef.current && !notiRef.current.contains(e.target as Node)) {
         setNotiOpen(false);
@@ -94,7 +96,7 @@ export const NotificationBell = ({ isDarkMode }: NotificationBellProps) => {
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [notiOpen]);
+  }, [notiOpen, queryClient]);
 
   const unreadCount = countData?.count ?? 0;
   const allNotifs = notifications ?? [];

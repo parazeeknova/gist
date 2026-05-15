@@ -90,12 +90,8 @@ export const FixedToolbar = ({ editor }: ToolbarProps) => {
           const level = Number.parseInt(e.target.value, 10);
           if (level === 0) {
             editor.chain().focus().setParagraph().run();
-          } else {
-            editor
-              .chain()
-              .focus()
-              .toggleHeading({ level: level as 1 | 2 | 3 })
-              .run();
+          } else if (level === 1 || level === 2 || level === 3) {
+            editor.chain().focus().toggleHeading({ level }).run();
           }
         }}
         value={getHeadingLevel(editor)}

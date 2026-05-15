@@ -10,7 +10,11 @@ const PageView = () => {
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const { spaceSlug, pageid } = useParams({ from: "/s/$spaceSlug/p/$pageid" });
   const { data: space } = useSpaceBySlug(spaceSlug);
-  const { data: page, isPending, isError } = usePageBySpaceAndSlug(space?.id ?? "", pageid);
+  const {
+    data: page,
+    isPending,
+    isError,
+  } = usePageBySpaceAndSlug(space?.id ?? "", pageid, { enabled: !!space?.id });
 
   useEffect(() => {
     if (typeof document === "undefined") {

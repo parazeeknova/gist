@@ -25,9 +25,9 @@ export const useSpaceBySlug = (slug: string) =>
     staleTime: 60 * 1000,
   });
 
-export const useSpaceById = (id: string) =>
+export const useSpaceById = (id: string, options?: { enabled?: boolean }) =>
   useQuery<Space>({
-    enabled: id !== "",
+    enabled: (options?.enabled ?? true) && id !== "",
     queryFn: ({ signal }) =>
       fetchProtected<Space>(`/api/console/spaces/${encodeURIComponent(id)}`, { signal }),
     queryKey: ["spaceById", id],

@@ -16,6 +16,9 @@ import (
 // ErrDuplicateUser is returned when a user creation violates a unique constraint.
 var ErrDuplicateUser = errors.New("user already exists")
 
+// ErrUserNotFound is returned when a user is not found.
+var ErrUserNotFound = errors.New("user not found")
+
 // UserRepo handles database operations for the users and password_credentials tables.
 type UserRepo struct {
 	pool *pgxpool.Pool
@@ -110,7 +113,7 @@ func (r *UserRepo) FindUserByUsernameOrEmail(ctx context.Context, identifier str
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("find user by email: %w", err)
 	}
@@ -131,7 +134,7 @@ func (r *UserRepo) GetUserByID(ctx context.Context, id string) (*models.AuthUser
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("get user by id: %w", err)
 	}
@@ -246,7 +249,7 @@ func (r *UserRepo) FindMetaByID(ctx context.Context, userID string) (*UserMeta, 
 	err := r.pool.QueryRow(ctx, "SELECT COALESCE(name,''), COALESCE(avatar_url,'') FROM users WHERE id = $1", userID).Scan(&m.Name, &m.AvatarURL)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, nil
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("find user meta: %w", err)
 	}

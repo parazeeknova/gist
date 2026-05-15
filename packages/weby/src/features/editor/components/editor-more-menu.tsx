@@ -238,15 +238,37 @@ export const EditorMoreMenu = ({
   const navigate = useNavigate();
   const deletePage = useDeletePage();
 
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const showToast = useCallback((message: string) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     setToast(message);
-    setTimeout(() => setToast(null), 2500);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimeoutRef.current = null;
+    }, 2500);
   }, []);
 
-  const copyLink = useCallback(() => {
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const copyLink = useCallback(async () => {
     const url = window.location.href;
-    void navigator.clipboard.writeText(url);
-    showToast(`copied url for ${title} in ${spaceName ?? "space"}`);
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast(`copied url for ${title} in ${spaceName ?? "space"}`);
+    } catch (error) {
+      console.error("failed to copy link:", error);
+      showToast("failed to copy link");
+    }
   }, [title, spaceName, showToast]);
 
   const handleDelete = useCallback(() => {
@@ -280,16 +302,23 @@ export const EditorMoreMenu = ({
     }
     const rect = buttonRef.current.getBoundingClientRect();
     const menuWidth = 192;
+    // fallback height
+    const menuHeight = menuRef.current?.getBoundingClientRect().height ?? 300;
     let left = rect.right - 8;
     if (left + menuWidth > window.innerWidth - 8) {
       left = window.innerWidth - menuWidth - 8;
     }
-    setPos({ left, top: rect.bottom + 6 });
+    let top = rect.bottom + 6;
+    if (top + menuHeight > window.innerHeight - 8) {
+      top = rect.top - menuHeight - 6;
+    }
+    setPos({ left, top });
   }, []);
 
   const toggle = useCallback(() => {
     if (!open) {
-      updatePosition();
+      // Use setTimeout to allow the menu to render before measuring height
+      setTimeout(updatePosition, 0);
     }
     setOpen((prev) => !prev);
   }, [open, updatePosition]);
@@ -299,11 +328,15 @@ export const EditorMoreMenu = ({
       return;
     }
     const onMouseDown = (e: MouseEvent) => {
+      const { target } = e;
+      if (!(target instanceof Node)) {
+        return;
+      }
       if (
         menuRef.current &&
-        !menuRef.current.contains(e.target as Node) &&
+        !menuRef.current.contains(target) &&
         buttonRef.current &&
-        !buttonRef.current.contains(e.target as Node)
+        !buttonRef.current.contains(target)
       ) {
         setOpen(false);
       }

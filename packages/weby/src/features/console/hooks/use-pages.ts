@@ -62,14 +62,18 @@ export const useConsolePage = (pageId: string) =>
     queryKey: ["consolePage", pageId],
     staleTime: 30 * 1000,
   });
-
-export const usePageBySpaceAndSlug = (spaceId: string, slugId: string) =>
+export const usePageBySpaceAndSlug = (
+  spaceId: string,
+  slugId: string,
+  options?: { enabled?: boolean },
+) =>
   useQuery<ConsolePageDetail>({
-    enabled: spaceId !== "" && slugId !== "",
+    enabled: (options?.enabled ?? true) && spaceId !== "" && slugId !== "",
     queryFn: ({ signal }) =>
-      fetchProtected<ConsolePageDetail>(`/api/console/spaces/${spaceId}/pages/by-slug/${slugId}`, {
-        signal,
-      }),
+      fetchProtected<ConsolePageDetail>(
+        `/api/console/spaces/${encodeURIComponent(spaceId)}/pages/by-slug/${encodeURIComponent(slugId)}`,
+        { signal },
+      ),
     queryKey: ["consolePage", spaceId, slugId],
     staleTime: 30 * 1000,
   });
@@ -109,9 +113,9 @@ export const useUpdatePage = () => {
         headers: { "Content-Type": "application/json" },
         method: "PUT",
       }),
-    onSuccess: (_data, variables) => {
+    onSuccess: (_data, _variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["consolePage", variables.id],
+        queryKey: ["consolePage"],
         refetchType: "all",
       });
       queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
@@ -143,8 +147,8 @@ export const usePublishPage = () => {
         `/api/console/pages/${id}/publish`,
         { method: "POST" },
       ),
-    onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["consolePage", id] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consolePage"] });
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
     },
@@ -159,8 +163,8 @@ export const useUnpublishPage = () => {
         `/api/console/pages/${id}/unpublish`,
         { method: "POST" },
       ),
-    onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ["consolePage", id] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consolePage"] });
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
     },
@@ -205,9 +209,9 @@ export const useRestorePage = () => {
         headers: { "Content-Type": "application/json" },
         method: "POST",
       }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["consolePage", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["pageHistory", variables.id] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["consolePage"] });
+      queryClient.invalidateQueries({ queryKey: ["pageHistory"] });
       queryClient.invalidateQueries({ queryKey: ["consolePages"] });
       queryClient.invalidateQueries({ queryKey: ["pageTree"] });
     },

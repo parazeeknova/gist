@@ -274,6 +274,7 @@ func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 
 	spaceID := c.Param("id")
 	slugID := c.Param("slugId")
+	userID := middleware.GetCurrentUserID(c)
 
 	page, err := h.pageService.GetPageBySpaceAndSlug(c.Request.Context(), spaceID, slugID)
 	if err != nil {
@@ -286,13 +287,23 @@ func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 		return
 	}
 
+	if page.SpaceID != spaceID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+		return
+	}
+
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":           page.ID,
 		"slugId":       page.SlugID,
 		"title":        page.Title,
 		"icon":         page.Icon,
 		"coverPhoto":   page.CoverPhoto,
-		"contentJson":  string(page.ContentJSON),
+		"contentJson":  page.ContentJSON,
 		"textContent":  page.TextContent,
 		"position":     page.Position,
 		"isPublished":  page.IsPublished,

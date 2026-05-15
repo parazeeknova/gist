@@ -47,11 +47,22 @@ export const BubbleMenu = ({ editor }: ToolbarProps) => {
           if (url === null) {
             return;
           }
-          if (url === "") {
+          const trimmed = url.trim();
+          if (trimmed === "") {
             editor.chain().focus().extendMarkRange("link").unsetLink().run();
             return;
           }
-          editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+          let href = trimmed;
+          if (
+            !/^https?:\/\//i.test(href) &&
+            !/^mailto:/i.test(href) &&
+            !/^tel:/i.test(href) &&
+            !href.startsWith("/") &&
+            !href.startsWith("#")
+          ) {
+            href = `https://${href}`;
+          }
+          editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
         }}
         type="button"
       >

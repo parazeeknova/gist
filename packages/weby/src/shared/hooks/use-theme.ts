@@ -1,8 +1,8 @@
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useThemeStore } from "#/shared/hooks/theme-store";
 import type { ThemePreference } from "#/shared/hooks/theme-store";
 
-export type { ThemePreference } from "#/shared/hooks/theme-store";
+export type { ThemePreference };
 
 export const useTheme = () => {
   const resolved = useThemeStore((s) => s.resolved);
@@ -16,16 +16,5 @@ export const useTheme = () => {
 
   const isDarkMode = resolved === "dark";
 
-  const setThemePreference = useCallback(
-    (preference: ThemePreference) => {
-      setPreference(preference);
-    },
-    [setPreference],
-  );
-
-  const toggleTheme = useCallback(() => {
-    toggle();
-  }, [toggle]);
-
-  return { isDarkMode, setThemePreference, toggleTheme };
+  return { isDarkMode, setThemePreference: setPreference, toggleTheme: toggle };
 };

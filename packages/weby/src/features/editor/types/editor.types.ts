@@ -14,5 +14,5 @@ export interface PageEditorProps {
 }
 
 export interface ToolbarProps {
-  editor: Editor;
+  editor: Editor | null;
 }

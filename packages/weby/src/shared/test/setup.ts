@@ -6,6 +6,17 @@ afterEach(() => {
   cleanup();
 });
 
+// Mock localStorage (zustand persist middleware requires it)
+Object.defineProperty(globalThis, "localStorage", {
+  value: {
+    clear: vi.fn(),
+    getItem: vi.fn(),
+    removeItem: vi.fn(),
+    setItem: vi.fn(),
+  },
+  writable: true,
+});
+
 // Mock fetch globally
 Object.defineProperty(globalThis, "fetch", {
   value: vi.fn(),

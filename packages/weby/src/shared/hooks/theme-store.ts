@@ -81,11 +81,14 @@ export const useThemeStore = create<ThemeState & ThemeActions>()(
         set({ preference, resolved });
       },
       toggle: () => {
-        const { resolved } = get();
-        const next: ThemePreference = resolved === "dark" ? "light" : "dark";
-        const newResolved = next as "light" | "dark";
-        applyDOM(newResolved);
-        set({ preference: next, resolved: newResolved });
+        const { preference, resolved } = get();
+        const nextResolved = resolved === "dark" ? "light" : "dark";
+        applyDOM(nextResolved);
+        if (preference === "system") {
+          set({ resolved: nextResolved });
+        } else {
+          set({ preference: nextResolved, resolved: nextResolved });
+        }
       },
     }),
     {

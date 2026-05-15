@@ -9,7 +9,7 @@ interface PageDetailProps {
 
 export const PageDetail = ({ pageId }: PageDetailProps) => {
   const { data: page, isPending, isError } = useConsolePage(pageId);
-  const { data: space } = useSpaceById(page?.spaceId ?? "");
+  const { data: space } = useSpaceById(page?.spaceId ?? "", { enabled: !!page?.spaceId });
   const { isDarkMode } = useTheme();
 
   const themeClass = (dark: string, light: string) => (isDarkMode ? dark : light);

@@ -32,6 +32,7 @@ type testDB struct {
 	spaceRepo       *repositories.SpaceRepo
 	groupRepo       *repositories.GroupRepo
 	pageRepo        *repositories.PageRepo
+	pageWatcherRepo *repositories.PageWatcherRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
 	workspaceSvc    *ws.WorkspaceService
 	spaceSvc        *spacefeat.SpaceService
@@ -132,7 +133,8 @@ func setupTestDB(t *testing.T) *testDB {
 	db.groupRepo = repositories.NewGroupRepo()
 	db.workspaceSvc = ws.NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
 	db.spaceSvc = spacefeat.NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
-	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
+	db.pageWatcherRepo = repositories.NewPageWatcherRepo()
+	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageWatcherRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
 	db.groupSvc = groupfeat.NewGroupService(db.groupRepo, db.workspaceRepo)
 
 	truncateTables(t, ctx)

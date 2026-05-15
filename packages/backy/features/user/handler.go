@@ -56,21 +56,40 @@ func (h *UserHandlers) GetUserByID(c *gin.Context) {
 	targetID := c.Param("id")
 	user, err := repositories.NewUserRepo().GetUserByID(c.Request.Context(), targetID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
+		if errors.Is(err, repositories.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, auth.ErrorResponse{Error: "user not found"})
+			return
+		}
+		logger.Log.Error().Err(err).Str("target_id", targetID).Msg("get user error")
+		c.JSON(http.StatusInternalServerError, auth.ErrorResponse{Error: "internal server error"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	currentUser, err := repositories.NewUserRepo().GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, auth.ErrorResponse{Error: "unauthenticated"})
+		return
+	}
+
+	isAdmin := currentUser.Role == "owner" || currentUser.Role == "admin"
+	isSelf := currentUser.ID == user.ID
+
+	res := gin.H{
 		"id":         user.ID,
 		"username":   user.Username,
-		"email":      user.Email,
 		"name":       user.Name,
 		"avatar_url": user.AvatarURL,
-		"role":       user.Role,
-		"isOwner":    user.Role == "owner",
-		"is_active":  user.IsActive,
 		"created_at": user.CreatedAt,
-	})
+	}
+
+	if isAdmin || isSelf {
+		res["email"] = user.Email
+		res["role"] = user.Role
+		res["isOwner"] = user.Role == "owner"
+		res["is_active"] = user.IsActive
+	}
+
+	c.JSON(http.StatusOK, res)
 }
 
 func (h *UserHandlers) UpdateUserRole(c *gin.Context) {

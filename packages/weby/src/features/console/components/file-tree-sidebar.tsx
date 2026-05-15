@@ -29,6 +29,7 @@ import { useSpaces, useFavoritedSpaces } from "#/features/console/hooks/use-spac
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "./console-context";
 import { useNavigate } from "@tanstack/react-router";
+import { setFlashToast } from "#/features/console/components/flash-toast";
 
 interface TreeNode {
   item: PageTreeItem;
@@ -559,13 +560,18 @@ const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) 
           key={page.id}
           onClick={async () => {
             setSelectedPageId(page.id);
-            const spaceData = await fetchProtected<{ slug: string }>(
-              `/api/console/spaces/${encodeURIComponent(page.spaceId)}`,
-            );
-            navigate({
-              params: { pageid: page.slugId, spaceSlug: spaceData.slug },
-              to: "/s/$spaceSlug/p/$pageid",
-            });
+            try {
+              const spaceData = await fetchProtected<{ slug: string }>(
+                `/api/console/spaces/${encodeURIComponent(page.spaceId)}`,
+              );
+              navigate({
+                params: { pageid: page.slugId, spaceSlug: spaceData.slug },
+                to: "/s/$spaceSlug/p/$pageid",
+              });
+            } catch (error) {
+              console.error("failed to fetch space for page:", error);
+              setFlashToast("failed to load space");
+            }
           }}
           type="button"
         >

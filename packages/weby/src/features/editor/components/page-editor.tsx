@@ -71,6 +71,9 @@ export const PageEditor = ({
   const isFaved = favData?.favorited ?? false;
 
   const [fullWidth, setFullWidth] = useState(() => {
+    if (typeof window === "undefined" || !window.localStorage) {
+      return false;
+    }
     try {
       return localStorage.getItem("verso-editor-fullwidth") === "true";
     } catch {
@@ -81,10 +84,12 @@ export const PageEditor = ({
   const toggleFullWidth = useCallback(() => {
     setFullWidth((prev) => {
       const next = !prev;
-      try {
-        localStorage.setItem("verso-editor-fullwidth", String(next));
-      } catch {
-        // ignore
+      if (typeof window !== "undefined" && window.localStorage) {
+        try {
+          localStorage.setItem("verso-editor-fullwidth", String(next));
+        } catch {
+          // ignore
+        }
       }
       return next;
     });
@@ -93,7 +98,7 @@ export const PageEditor = ({
   const contentRef = useRef<HTMLDivElement>(null);
 
   const handleContentClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: React.MouseEvent | React.KeyboardEvent) => {
       if (!editor || !editable) {
         return;
       }
@@ -135,51 +140,21 @@ export const PageEditor = ({
 
   markDirtyRef.current = markDirty;
 
+  const previousContentJsonRef = useRef(contentJson);
+
   useEffect(() => {
     if (!editor) {
       return;
     }
-    const nextContent = parseContent(contentJson);
-    const currentJson = JSON.stringify(editor.getJSON());
-    if (JSON.stringify(nextContent) !== currentJson) {
-      editor.commands.setContent(nextContent);
-    }
-  }, [pageId, contentJson, editor, parseContent]);
-
-  useEffect(() => () => cleanup(), [cleanup]);
-
-  // Collapse blank lines in code blocks
-  useEffect(() => {
-    const container = wrapperRef.current;
-    if (!container) {
+    if (previousContentJsonRef.current === contentJson) {
       return;
     }
-    const collapseBlankLines = () => {
-      const codeLines = container.querySelectorAll(".ProseMirror-code-block .ProseMirror-line");
-      for (const line of codeLines) {
-        const el = line as HTMLElement;
-        const text = el.textContent?.trim() ?? "";
-        if (text === "") {
-          el.style.height = "0";
-          el.style.minHeight = "0";
-          el.style.lineHeight = "0";
-          el.style.fontSize = "0";
-          el.style.margin = "0";
-          el.style.padding = "0";
-        }
-      }
-    };
-    collapseBlankLines();
-    const timers = [setTimeout(collapseBlankLines, 100), setTimeout(collapseBlankLines, 300)];
-    const observer = new MutationObserver(() => collapseBlankLines());
-    observer.observe(container, { childList: true, subtree: true });
-    return () => {
-      for (const timer of timers) {
-        clearTimeout(timer);
-      }
-      observer.disconnect();
-    };
-  }, []);
+    previousContentJsonRef.current = contentJson;
+    const nextContent = parseContent(contentJson);
+    editor.commands.setContent(nextContent);
+  }, [contentJson, editor, parseContent]);
+
+  useEffect(() => () => cleanup(), [cleanup]);
 
   if (!editor) {
     return null;
@@ -256,7 +231,7 @@ export const PageEditor = ({
         onClick={handleContentClick}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
-            handleContentClick(e as unknown as React.MouseEvent);
+            handleContentClick(e);
           }
         }}
         aria-label="page content"

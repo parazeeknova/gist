@@ -35,11 +35,10 @@ export const FlashToast = ({ isDarkMode }: FlashToastProps) => {
       }
     };
 
-    const onFlash = () => showToast();
-    window.addEventListener(FLASH_TOAST_EVENT, onFlash);
+    window.addEventListener(FLASH_TOAST_EVENT, showToast);
     showToast();
 
-    return () => window.removeEventListener(FLASH_TOAST_EVENT, onFlash);
+    return () => window.removeEventListener(FLASH_TOAST_EVENT, showToast);
   }, []);
 
   useEffect(() => {
