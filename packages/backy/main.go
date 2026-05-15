@@ -340,6 +340,8 @@ func main() {
 			console.POST("/pages/:id/favorite", h.TogglePageFavorite)
 			console.GET("/spaces/:id/pages/by-slug/:slugId", h.GetConsolePageBySlug)
 			console.GET("/pages/:id/favorited", h.IsPageFavorited)
+			console.POST("/pages/:id/watch", h.TogglePageWatch)
+			console.GET("/pages/:id/watching", h.IsPageWatched)
 			console.GET("/pages/favorites", h.GetFavoritedPages)
 
 			// Notifications

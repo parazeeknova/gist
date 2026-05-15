@@ -185,13 +185,13 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 	err = tx.QueryRow(
 		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&current.ID, &current.SlugID, &current.Title, &current.Icon, &current.CoverPhoto,
 		&contentJSONBytes, &current.YDoc, &current.TextContent, &current.Position, &current.IsPublished,
-		&current.ParentPageID, &current.SpaceID, &current.CreatorID, &current.LastUpdatedByID,
+		&current.ParentPageID, &current.SpaceID, &current.WorkspaceID, &current.CreatorID, &current.LastUpdatedByID,
 		&current.CreatedAt, &current.UpdatedAt,
 	)
 	if err != nil {
@@ -699,13 +699,13 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 	err = tx.QueryRow(
 		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
 		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
+		&page.ParentPageID, &page.SpaceID, &page.WorkspaceID, &page.CreatorID, &page.LastUpdatedByID,
 		&page.CreatedAt, &page.UpdatedAt,
 	)
 	if err != nil {
@@ -750,9 +750,12 @@ func (s *PageService) notifyPageDeleted(ctx context.Context, page models.Page, a
 	if s.notifier == nil {
 		return
 	}
-	var recipients []string
-	if s.spaceRepo != nil {
-		recipients, _ = s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	if s.pageWatcherRepo != nil {
+		watchers, err := s.pageWatcherRepo.ListByPage(ctx, page.ID)
+		if err == nil {
+			recipients = appendUniqueStrings(recipients, watchers)
+		}
 	}
 	if len(recipients) == 0 {
 		return
@@ -766,6 +769,26 @@ func (s *PageService) notifyPageDeleted(ctx context.Context, page models.Page, a
 		EntityID:     page.ID,
 		Metadata:     map[string]string{"name": page.Title},
 	})
+}
+
+func appendUniqueStrings(base []string, values []string) []string {
+	seen := make(map[string]struct{}, len(base)+len(values))
+	merged := make([]string, 0, len(base)+len(values))
+	for _, value := range base {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		merged = append(merged, value)
+	}
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		merged = append(merged, value)
+	}
+	return merged
 }
 
 // WatchPage toggles the current user's watcher status for a page.

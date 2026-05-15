@@ -119,6 +119,10 @@ export interface ConsolePageDetail {
   updatedAt: string;
 }
 
+export interface PageWatchStatus {
+  watching: boolean;
+}
+
 export interface PageTreeItem {
   id: string;
   slugId: string;

@@ -297,6 +297,17 @@ export const restorePage = (id: string, input: RestorePageInput, cookieHeader?: 
     method: "POST",
   });
 
+export const watchConsolePage = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ watching: boolean }>(`console/pages/${id}/watch`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+    method: "POST",
+  });
+
+export const getPageWatchStatus = (id: string, cookieHeader?: string | null) =>
+  fetchBacky<{ watching: boolean }>(`console/pages/${id}/watching`, {
+    headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+  });
+
 // Space functions
 export const getSpaces = (workspaceId?: string | null, cookieHeader?: string | null) => {
   const url = workspaceId

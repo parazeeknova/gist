@@ -3,9 +3,10 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import {
   DotsThreeVerticalIcon,
+  EyeIcon,
+  EyeSlashIcon,
   LinkSimpleIcon,
   ArticleIcon,
-  EyeSlashIcon,
   ClockCounterClockwiseIcon,
   ArrowSquareOutIcon,
   FileArrowDownIcon,
@@ -33,6 +34,9 @@ interface EditorMoreMenuProps {
   textContent?: string;
   fullWidth: boolean;
   onToggleFullWidth: () => void;
+  isWatching: boolean;
+  watchPending?: boolean;
+  onToggleWatch: () => void;
 }
 
 const formatDateTime = (iso?: string) => {
@@ -165,20 +169,32 @@ interface DisabledMenuItemProps {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  loading?: boolean;
   t: (dark: string, light: string) => string;
 }
 
-const DisabledMenuItem = ({ disabled, danger, icon, label, onClick, t }: DisabledMenuItemProps) => {
+const DisabledMenuItem = ({
+  disabled,
+  danger,
+  icon,
+  label,
+  loading,
+  onClick,
+  t,
+}: DisabledMenuItemProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
     <div
       className="relative"
-      onMouseEnter={() => disabled && setShowTooltip(true)}
+      onMouseEnter={() => disabled && !loading && setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       <button
         className={`flex w-full items-center gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${(() => {
+          if (loading) {
+            return t("text-text-dark/30 cursor-wait", "text-text-light/30 cursor-wait");
+          }
           if (disabled) {
             return t(
               "text-text-dark/20 cursor-not-allowed",
@@ -193,13 +209,13 @@ const DisabledMenuItem = ({ disabled, danger, icon, label, onClick, t }: Disable
             "text-text-light/60 hover:bg-black/5 hover:text-text-light",
           );
         })()}`}
-        disabled={disabled}
+        disabled={disabled || loading}
         onClick={onClick}
       >
         <span className="flex items-center justify-center w-4">{icon}</span>
         {label}
       </button>
-      {disabled && showTooltip && (
+      {disabled && !loading && showTooltip && (
         <div className="pointer-events-none absolute inset-x-0 top-full z-50 mt-1 flex justify-start">
           <div
             className={`relative whitespace-nowrap px-2 py-1 text-[10px] shadow-lg ${t("bg-neutral-800 text-white", "bg-neutral-100 text-black border border-black/10")}`}
@@ -226,6 +242,9 @@ export const EditorMoreMenu = ({
   textContent,
   fullWidth,
   onToggleFullWidth,
+  isWatching,
+  watchPending,
+  onToggleWatch,
 }: EditorMoreMenuProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
@@ -351,12 +370,14 @@ export const EditorMoreMenu = ({
     onClick?: () => void,
     danger?: boolean,
     disabled?: boolean,
+    loading?: boolean,
   ) => (
     <DisabledMenuItem
       disabled={disabled}
       danger={danger}
       icon={icon}
       label={label}
+      loading={loading}
       onClick={() => {
         if (disabled) {
           return;
@@ -403,7 +424,14 @@ export const EditorMoreMenu = ({
                   className={`mx-3 my-0.5 border-t ${t("border-border-dark", "border-border-light")}`}
                 />
                 <div className="py-0.5">
-                  {menuItem(<EyeSlashIcon size={12} />, "stop watching")}
+                  {menuItem(
+                    isWatching ? <EyeSlashIcon size={12} /> : <EyeIcon size={12} />,
+                    isWatching ? "stop watching" : "watch page",
+                    onToggleWatch,
+                    false,
+                    false,
+                    watchPending,
+                  )}
                   <button
                     className={`flex w-full items-center justify-between gap-2 px-3 py-1 text-[11px] lowercase transition-colors ${t("text-text-dark/60 hover:bg-white/5 hover:text-text-dark", "text-text-light/60 hover:bg-black/5 hover:text-text-light")}`}
                     onClick={onToggleFullWidth}

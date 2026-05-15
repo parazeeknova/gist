@@ -81,6 +81,8 @@ import { Route as ApiConsoleSpacesIdMembersRouteImport } from './routes/api/cons
 import { Route as ApiConsoleSpacesIdFavoritedRouteImport } from './routes/api/console/spaces/$id/favorited'
 import { Route as ApiConsoleSpacesIdFavoriteRouteImport } from './routes/api/console/spaces/$id/favorite'
 import { Route as ApiConsoleProfileSessionRevokeRouteImport } from './routes/api/console/profile/session/revoke'
+import { Route as ApiConsolePagesIdWatchingRouteImport } from './routes/api/console/pages/$id/watching'
+import { Route as ApiConsolePagesIdWatchRouteImport } from './routes/api/console/pages/$id/watch'
 import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages/$id/unpublish'
 import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages/$id/restore'
 import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages/$id/publish'
@@ -479,6 +481,17 @@ const ApiConsoleProfileSessionRevokeRoute =
     path: '/revoke',
     getParentRoute: () => ApiConsoleProfileSessionRoute,
   } as any)
+const ApiConsolePagesIdWatchingRoute =
+  ApiConsolePagesIdWatchingRouteImport.update({
+    id: '/watching',
+    path: '/watching',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdWatchRoute = ApiConsolePagesIdWatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
+  getParentRoute: () => ApiConsolePagesIdRoute,
+} as any)
 const ApiConsolePagesIdUnpublishRoute =
   ApiConsolePagesIdUnpublishRouteImport.update({
     id: '/unpublish',
@@ -657,6 +670,8 @@ export interface FileRoutesByFullPath {
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/watch': typeof ApiConsolePagesIdWatchRoute
+  '/api/console/pages/$id/watching': typeof ApiConsolePagesIdWatchingRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
   '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
   '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
@@ -746,6 +761,8 @@ export interface FileRoutesByTo {
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/watch': typeof ApiConsolePagesIdWatchRoute
+  '/api/console/pages/$id/watching': typeof ApiConsolePagesIdWatchingRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
   '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
   '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
@@ -838,6 +855,8 @@ export interface FileRoutesById {
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/watch': typeof ApiConsolePagesIdWatchRoute
+  '/api/console/pages/$id/watching': typeof ApiConsolePagesIdWatchingRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
   '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
   '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
@@ -931,6 +950,8 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/watch'
+    | '/api/console/pages/$id/watching'
     | '/api/console/profile/session/revoke'
     | '/api/console/spaces/$id/favorite'
     | '/api/console/spaces/$id/favorited'
@@ -1020,6 +1041,8 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/watch'
+    | '/api/console/pages/$id/watching'
     | '/api/console/profile/session/revoke'
     | '/api/console/spaces/$id/favorite'
     | '/api/console/spaces/$id/favorited'
@@ -1111,6 +1134,8 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/watch'
+    | '/api/console/pages/$id/watching'
     | '/api/console/profile/session/revoke'
     | '/api/console/spaces/$id/favorite'
     | '/api/console/spaces/$id/favorited'
@@ -1673,6 +1698,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleProfileSessionRevokeRouteImport
       parentRoute: typeof ApiConsoleProfileSessionRoute
     }
+    '/api/console/pages/$id/watching': {
+      id: '/api/console/pages/$id/watching'
+      path: '/watching'
+      fullPath: '/api/console/pages/$id/watching'
+      preLoaderRoute: typeof ApiConsolePagesIdWatchingRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/watch': {
+      id: '/api/console/pages/$id/watch'
+      path: '/watch'
+      fullPath: '/api/console/pages/$id/watch'
+      preLoaderRoute: typeof ApiConsolePagesIdWatchRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
     '/api/console/pages/$id/unpublish': {
       id: '/api/console/pages/$id/unpublish'
       path: '/unpublish'
@@ -1921,6 +1960,8 @@ interface ApiConsolePagesIdRouteChildren {
   ApiConsolePagesIdPublishRoute: typeof ApiConsolePagesIdPublishRoute
   ApiConsolePagesIdRestoreRoute: typeof ApiConsolePagesIdRestoreRoute
   ApiConsolePagesIdUnpublishRoute: typeof ApiConsolePagesIdUnpublishRoute
+  ApiConsolePagesIdWatchRoute: typeof ApiConsolePagesIdWatchRoute
+  ApiConsolePagesIdWatchingRoute: typeof ApiConsolePagesIdWatchingRoute
 }
 
 const ApiConsolePagesIdRouteChildren: ApiConsolePagesIdRouteChildren = {
@@ -1932,6 +1973,8 @@ const ApiConsolePagesIdRouteChildren: ApiConsolePagesIdRouteChildren = {
   ApiConsolePagesIdPublishRoute: ApiConsolePagesIdPublishRoute,
   ApiConsolePagesIdRestoreRoute: ApiConsolePagesIdRestoreRoute,
   ApiConsolePagesIdUnpublishRoute: ApiConsolePagesIdUnpublishRoute,
+  ApiConsolePagesIdWatchRoute: ApiConsolePagesIdWatchRoute,
+  ApiConsolePagesIdWatchingRoute: ApiConsolePagesIdWatchingRoute,
 }
 
 const ApiConsolePagesIdRouteWithChildren =

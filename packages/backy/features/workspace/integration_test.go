@@ -606,6 +606,79 @@ func TestPageService_DeleteEmitsNotification(t *testing.T) {
 	}
 }
 
+func TestPageService_WatchToggleAndStatus(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
+	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	p := createTestPage(t, ctx, db, s.ID, ownerID)
+
+	watched, err := db.pageSvc.IsPageWatched(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("initial watch status: %v", err)
+	}
+	if watched {
+		t.Fatal("expected page to start unwatched")
+	}
+
+	watched, err = db.pageSvc.WatchPage(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("watch page: %v", err)
+	}
+	if !watched {
+		t.Fatal("expected page to be watched after toggle")
+	}
+
+	watched, err = db.pageSvc.IsPageWatched(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("check watched page: %v", err)
+	}
+	if !watched {
+		t.Fatal("expected page to remain watched")
+	}
+
+	watched, err = db.pageSvc.WatchPage(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("unwatch page: %v", err)
+	}
+	if watched {
+		t.Fatal("expected page to be unwatched after second toggle")
+	}
+}
+
+func TestPageService_UpdateEmitsWatcherNotification(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	watcherID := createTestUser(t, ctx, db, "watcher", "watcher@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
+	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	addSpaceMember(t, ctx, db, s.ID, watcherID, models.SpaceRoleReader)
+	p := createTestPage(t, ctx, db, s.ID, ownerID)
+
+	if _, err := db.pageSvc.WatchPage(ctx, p.ID, watcherID); err != nil {
+		t.Fatalf("watch page: %v", err)
+	}
+
+	notifier := &pageDeleteNotifier{}
+	db.pageSvc.SetNotifier(notifier)
+
+	title := "Updated Title"
+	if _, err := db.pageSvc.UpdatePage(ctx, p.ID, ownerID, pagefeat.UpdatePageInput{Title: &title}); err != nil {
+		t.Fatalf("update page: %v", err)
+	}
+
+	if len(notifier.events) != 1 {
+		t.Fatalf("expected 1 notification event, got %d", len(notifier.events))
+	}
+	if notifier.events[0].Type != "page.updated" {
+		t.Fatalf("expected page.updated, got %q", notifier.events[0].Type)
+	}
+}
+
 func TestSpaceService_SoftDeletedSpacesDisappearFromList(t *testing.T) {
 	db := setupTestDB(t)
 	ctx := context.Background()

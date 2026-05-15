@@ -265,6 +265,62 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 	})
 }
 
+// TogglePageWatch handles POST /api/console/pages/:id/watch.
+func (h *Handlers) TogglePageWatch(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	watching, err := h.pageService.WatchPage(c.Request.Context(), pageID, userID)
+	if err != nil {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("id", pageID).Err(err).Msg("toggle page watch error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle watch"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"watching": watching})
+}
+
+// IsPageWatched handles GET /api/console/pages/:id/watching.
+func (h *Handlers) IsPageWatched(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusOK, gin.H{"watching": false})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	watching, err := h.pageService.IsPageWatched(c.Request.Context(), pageID, userID)
+	if err != nil {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("id", pageID).Err(err).Msg("check page watch error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check watch status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"watching": watching})
+}
+
 // GetConsolePageBySlug handles GET /api/console/spaces/:id/pages/by-slug/:slugId.
 func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
 	if h.pageService == nil {

@@ -11,6 +11,8 @@ import {
   useIsPageFavorited,
   useTogglePageFavorite,
 } from "#/features/console/hooks/use-page-favorites";
+import { setFlashToast } from "#/features/console/components/flash-toast";
+import { useIsPageWatching, useWatchPage } from "#/features/console/hooks/use-page-watches";
 import type { PageEditorProps } from "#/features/editor/types/editor.types";
 
 export const PageEditor = ({
@@ -69,6 +71,9 @@ export const PageEditor = ({
   const { data: favData } = useIsPageFavorited(pageId);
   const toggleFav = useTogglePageFavorite();
   const isFaved = favData?.favorited ?? false;
+  const { data: watchData } = useIsPageWatching(pageId);
+  const watchPage = useWatchPage();
+  const isWatching = watchData?.watching ?? false;
 
   const [fullWidth, setFullWidth] = useState(() => {
     if (typeof window === "undefined" || !window.localStorage) {
@@ -214,6 +219,15 @@ export const PageEditor = ({
             textContent={textContent}
             fullWidth={fullWidth}
             onToggleFullWidth={toggleFullWidth}
+            isWatching={isWatching}
+            onToggleWatch={() =>
+              watchPage.mutate(pageId, {
+                onSuccess: (data) => {
+                  setFlashToast(data.watching ? "watching page" : "stopped watching");
+                },
+              })
+            }
+            watchPending={watchPage.isPending}
           />
         </div>
       </div>
