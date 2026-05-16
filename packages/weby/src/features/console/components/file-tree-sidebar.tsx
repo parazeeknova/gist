@@ -28,6 +28,8 @@ import { useQueries } from "@tanstack/react-query";
 import { useSpaces, useFavoritedSpaces } from "#/features/console/hooks/use-spaces";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsoleContext } from "./console-context";
+import { useNavigate } from "@tanstack/react-router";
+import { setFlashToast } from "#/features/console/components/flash-toast";
 
 interface TreeNode {
   item: PageTreeItem;
@@ -83,11 +85,13 @@ interface PageNodeProps {
   node: TreeNode;
   depth: number;
   treeItems: PageTreeItem[];
+  spaceSlug: string;
 }
 
-const PageNode = ({ node, depth, treeItems }: PageNodeProps) => {
+const PageNode = ({ node, depth, treeItems, spaceSlug }: PageNodeProps) => {
   const { isDarkMode } = useTheme();
   const { selectedPageId, setSelectedPageId } = useConsoleContext();
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -280,6 +284,10 @@ const PageNode = ({ node, depth, treeItems }: PageNodeProps) => {
                 setExpanded((prev) => !prev);
               } else {
                 setSelectedPageId(node.item.id);
+                navigate({
+                  params: { pageid: node.item.slugId, spaceSlug },
+                  to: "/s/$spaceSlug/p/$pageid",
+                });
               }
             }}
             type="button"
@@ -355,7 +363,13 @@ const PageNode = ({ node, depth, treeItems }: PageNodeProps) => {
       {expanded && hasChildren && (
         <ul>
           {node.children.map((child) => (
-            <PageNode depth={depth + 1} key={child.item.id} node={child} treeItems={treeItems} />
+            <PageNode
+              depth={depth + 1}
+              key={child.item.id}
+              node={child}
+              treeItems={treeItems}
+              spaceSlug={spaceSlug}
+            />
           ))}
         </ul>
       )}
@@ -421,7 +435,13 @@ const SpaceTreeNode = ({ space, defaultExpanded }: SpaceTreeNodeProps) => {
             return (
               <ul>
                 {pageTree.map((node) => (
-                  <PageNode depth={0} key={node.item.id} node={node} treeItems={treeItems} />
+                  <PageNode
+                    depth={0}
+                    key={node.item.id}
+                    node={node}
+                    treeItems={treeItems}
+                    spaceSlug={space.slug}
+                  />
                 ))}
               </ul>
             );
@@ -440,12 +460,14 @@ interface FavoritedPagesListProps {
 interface FavPageDetail {
   id: string;
   title: string;
+  slugId: string;
   spaceId: string;
 }
 
 const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) => {
   const { isDarkMode } = useTheme();
   const { setSelectedPageId } = useConsoleContext();
+  const navigate = useNavigate();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
 
   const pageQueries = useQueries({
@@ -508,7 +530,13 @@ const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) 
               <button
                 className={`flex items-center gap-1 pl-6 pr-1 py-0.5 text-[11px] lowercase w-full text-left ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
                 key={page.id}
-                onClick={() => setSelectedPageId(page.id)}
+                onClick={() => {
+                  setSelectedPageId(page.id);
+                  navigate({
+                    params: { pageid: page.slugId, spaceSlug: space.slug },
+                    to: "/s/$spaceSlug/p/$pageid",
+                  });
+                }}
                 type="button"
               >
                 <span className={`shrink-0 ${t("text-text-dark/20", "text-text-light/20")}`}>
@@ -530,7 +558,21 @@ const FavoritedPagesList = ({ favPageIds, favSpaces }: FavoritedPagesListProps) 
         <button
           className={`flex items-center gap-2 px-1 py-0.5 text-[11px] lowercase w-full text-left ${t("text-text-dark/50 hover:bg-white/5 hover:text-text-dark/80", "text-text-light/50 hover:bg-black/3 hover:text-text-light/80")}`}
           key={page.id}
-          onClick={() => setSelectedPageId(page.id)}
+          onClick={async () => {
+            setSelectedPageId(page.id);
+            try {
+              const spaceData = await fetchProtected<{ slug: string }>(
+                `/api/console/spaces/${encodeURIComponent(page.spaceId)}`,
+              );
+              navigate({
+                params: { pageid: page.slugId, spaceSlug: spaceData.slug },
+                to: "/s/$spaceSlug/p/$pageid",
+              });
+            } catch (error) {
+              console.error("failed to fetch space for page:", error);
+              setFlashToast("failed to load space");
+            }
+          }}
           type="button"
         >
           <FileTextIcon size={10} />

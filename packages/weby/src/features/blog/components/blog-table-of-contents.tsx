@@ -7,6 +7,7 @@ interface BlogTableOfContentsProps {
   headings: BlogHeading[];
   isDarkMode: boolean;
   onSelect: (id: string) => void;
+  compact?: boolean;
 }
 
 export const BlogTableOfContents = ({
@@ -14,6 +15,7 @@ export const BlogTableOfContents = ({
   headings,
   isDarkMode,
   onSelect,
+  compact = false,
 }: BlogTableOfContentsProps) => {
   const itemsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
 
@@ -37,16 +39,18 @@ export const BlogTableOfContents = ({
   }, [activeHeadingId, isDarkMode]);
 
   return (
-    <div className="space-y-3">
-      <p className={`text-[13px] ${isDarkMode ? "text-text-dark/60" : "text-text-light/60"}`}>
+    <div className={compact ? "space-y-2" : "space-y-3"}>
+      <p
+        className={`${compact ? "text-[11px]" : "text-[13px]"} ${isDarkMode ? "text-text-dark/60" : "text-text-light/60"}`}
+      >
         on this page
       </p>
       <div
-        className={`space-y-2 border-l pl-4 ${isDarkMode ? "border-border-dark" : "border-border-light"}`}
+        className={`${compact ? "space-y-1.5 pl-3" : "space-y-2 pl-4"} border-l ${isDarkMode ? "border-border-dark" : "border-border-light"}`}
       >
         {headings.map((heading) => {
           const isActive = heading.id === activeHeadingId;
-          let itemClass = "block border-l-2 px-2 py-0.5 text-left ";
+          let itemClass = `block border-l-2 text-left ${compact ? "px-2 py-0.5 text-[11px] leading-4" : "px-2 py-0.5 text-[12px]"} `;
           if (isActive) {
             itemClass += isDarkMode
               ? "border-[#b58cff] bg-white/8 text-text-dark"
@@ -65,7 +69,9 @@ export const BlogTableOfContents = ({
                   itemsRef.current.set(heading.id, el);
                 }
               }}
-              style={{ paddingLeft: `${(heading.level - 1) * 12 + 8}px` }}
+              style={{
+                paddingLeft: `${(heading.level - 1) * (compact ? 10 : 12) + (compact ? 6 : 8)}px`,
+              }}
               title={heading.label}
               type="button"
             >

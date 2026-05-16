@@ -9,8 +9,9 @@ export const Route = createFileRoute("/api/console/pages/$id/favorite")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
+        const encodedId = encodeURIComponent(params.id);
         const res = await postBackyWithCookies(
-          `console/pages/${params.id}/favorite`,
+          `console/pages/${encodedId}/favorite`,
           {},
           cookieHeader,
         );

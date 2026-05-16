@@ -46,9 +46,9 @@ export const ConsoleHome = () => {
   const { selectedWorkspaceId } = useConsoleContext();
   const { data: spaces } = useSpaces(selectedWorkspaceId);
   const spaceById = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, { name: string; slug: string }>();
     for (const s of spaces ?? []) {
-      map.set(s.id, s.name);
+      map.set(s.id, { name: s.name, slug: s.slug });
     }
     return map;
   }, [spaces]);
@@ -369,10 +369,20 @@ export const ConsoleHome = () => {
               const parentTitle = page.parentPageId
                 ? pageById.get(page.parentPageId)?.title
                 : undefined;
+              const space = spaceById.get(page.spaceId);
               return (
-                <div
+                <button
                   key={page.id}
-                  className={`grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 py-1.5 lowercase ${t("hover:bg-white/5", "hover:bg-black/3")}`}
+                  className={`w-full grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-2 py-1.5 lowercase text-left ${t("hover:bg-white/5", "hover:bg-black/3")}`}
+                  onClick={() => {
+                    if (space) {
+                      navigate({
+                        params: { pageid: page.slugId, spaceSlug: space.slug },
+                        to: "/s/$spaceSlug/p/$pageid",
+                      });
+                    }
+                  }}
+                  type="button"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <FileTextIcon
@@ -388,9 +398,7 @@ export const ConsoleHome = () => {
                   <span
                     className={`shrink-0 text-[10px] lowercase truncate max-w-32 text-center ${t("text-text-dark/20", "text-text-light/20")}`}
                   >
-                    {parentTitle
-                      ? `${parentTitle} / ${spaceById.get(page.spaceId) || "—"}`
-                      : spaceById.get(page.spaceId) || "—"}
+                    {parentTitle ? `${parentTitle} / ${space?.name || "—"}` : space?.name || "—"}
                   </span>
                   <span
                     className={`shrink-0 text-[10px] font-mono text-right ${t("text-text-dark/25", "text-text-light/25")}`}
@@ -400,7 +408,7 @@ export const ConsoleHome = () => {
                       month: "short",
                     })}
                   </span>
-                </div>
+                </button>
               );
             });
           })()}

@@ -28,7 +28,7 @@ func NewPageRepo(pool *pgxpool.Pool) *PageRepo {
 func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, space_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE slug_id = $1 AND is_published = true AND deleted_at IS NULL`
@@ -39,7 +39,7 @@ func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, err
 	err := r.pool.QueryRow(ctx, query, slug).Scan(
 		&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 		&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-		&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+		&p.ParentPageID, &p.SpaceID, &p.WorkspaceID, &p.CreatorID, &p.LastUpdatedByID,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -58,7 +58,7 @@ func (r *PageRepo) GetBySlug(ctx context.Context, slug string) (models.Page, err
 func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, space_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE is_published = true AND deleted_at IS NULL
@@ -78,7 +78,7 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 		if err := rows.Scan(
 			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.ParentPageID, &p.SpaceID, &p.WorkspaceID, &p.CreatorID, &p.LastUpdatedByID,
 			&p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page row: %w", err)
@@ -100,7 +100,7 @@ func (r *PageRepo) ListPublished(ctx context.Context) ([]models.Page, error) {
 func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, space_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE deleted_at IS NULL
@@ -120,7 +120,7 @@ func (r *PageRepo) ListAll(ctx context.Context) ([]models.Page, error) {
 		if err := rows.Scan(
 			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.ParentPageID, &p.SpaceID, &p.WorkspaceID, &p.CreatorID, &p.LastUpdatedByID,
 			&p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page row: %w", err)
@@ -143,7 +143,7 @@ func (r *PageRepo) ListAllForUser(ctx context.Context, userID string) ([]models.
 	query := `
 		SELECT DISTINCT ON (p.id)
 			p.id, p.slug_id, p.title, p.icon, p.cover_photo, p.content_json, p.ydoc,
-			p.text_content, p.position, p.is_published, p.parent_page_id, p.space_id, p.creator_id,
+			p.text_content, p.position, p.is_published, p.parent_page_id, p.space_id, p.workspace_id, p.creator_id,
 			p.last_updated_by_id, p.created_at, p.updated_at
 		FROM pages p
 		JOIN space_members sm ON sm.space_id = p.space_id
@@ -165,7 +165,7 @@ func (r *PageRepo) ListAllForUser(ctx context.Context, userID string) ([]models.
 		if err := rows.Scan(
 			&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 			&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-			&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+			&p.ParentPageID, &p.SpaceID, &p.WorkspaceID, &p.CreatorID, &p.LastUpdatedByID,
 			&p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning page row: %w", err)
@@ -186,7 +186,7 @@ func (r *PageRepo) ListAllForUser(ctx context.Context, userID string) ([]models.
 func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) {
 	query := `
 		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		       text_content, position, is_published, parent_page_id, space_id, creator_id,
+		       text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		       last_updated_by_id, created_at, updated_at
 		FROM pages
 		WHERE id = $1 AND deleted_at IS NULL`
@@ -197,7 +197,7 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
 		&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
-		&p.ParentPageID, &p.SpaceID, &p.CreatorID, &p.LastUpdatedByID,
+		&p.ParentPageID, &p.SpaceID, &p.WorkspaceID, &p.CreatorID, &p.LastUpdatedByID,
 		&p.CreatedAt, &p.UpdatedAt,
 	)
 	if err != nil {
@@ -205,6 +205,36 @@ func (r *PageRepo) GetByID(ctx context.Context, id string) (models.Page, error) 
 			return models.Page{}, ErrPageNotFound
 		}
 		return models.Page{}, fmt.Errorf("querying page by id %q: %w", id, err)
+	}
+
+	p.ContentJSON = json.RawMessage(contentJSONBytes)
+
+	return p, nil
+}
+
+// GetBySpaceAndSlug fetches a page by its space_id and slug_id.
+func (r *PageRepo) GetBySpaceAndSlug(ctx context.Context, spaceID, slugID string) (models.Page, error) {
+	query := `
+		SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
+		       text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
+		       last_updated_by_id, created_at, updated_at
+		FROM pages
+		WHERE space_id = $1 AND slug_id = $2 AND deleted_at IS NULL`
+
+	var p models.Page
+	var contentJSONBytes []byte
+
+	err := r.pool.QueryRow(ctx, query, spaceID, slugID).Scan(
+		&p.ID, &p.SlugID, &p.Title, &p.Icon, &p.CoverPhoto,
+		&contentJSONBytes, &p.YDoc, &p.TextContent, &p.Position, &p.IsPublished,
+		&p.ParentPageID, &p.SpaceID, &p.WorkspaceID, &p.CreatorID, &p.LastUpdatedByID,
+		&p.CreatedAt, &p.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("querying page by space %q slug %q: %w", spaceID, slugID, err)
 	}
 
 	p.ContentJSON = json.RawMessage(contentJSONBytes)

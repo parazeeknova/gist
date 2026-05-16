@@ -114,8 +114,14 @@ export interface ConsolePageDetail {
   isPublished: boolean;
   parentPageId: string | null;
   spaceId: string;
+  creatorId: string;
   createdAt: string;
   updatedAt: string;
+  editable: boolean;
+}
+
+export interface PageWatchStatus {
+  watching: boolean;
 }
 
 export interface PageTreeItem {

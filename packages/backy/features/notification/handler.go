@@ -2,7 +2,6 @@ package notification
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -143,24 +142,33 @@ func (h *NotificationHandlers) Stream(c *gin.Context) {
 	c.Header("Connection", "keep-alive")
 	c.Header("X-Accel-Buffering", "no")
 
+	// Flush headers immediately so the proxy/client doesn't time out
+	// waiting for the first body chunk.
+	c.Writer.WriteHeader(http.StatusOK)
+	flusher, _ := c.Writer.(http.Flusher)
+	if flusher != nil {
+		flusher.Flush()
+	}
+
 	ch := make(chan string, 32)
 	unsub := h.hub.Subscribe(userID, ch)
 	defer unsub()
 
 	ctx := c.Request.Context()
-	c.Stream(func(w io.Writer) bool {
+	for {
 		select {
 		case msg, ok := <-ch:
 			if !ok {
-				return false
+				return
 			}
-			_, _ = fmt.Fprintf(w, "data: %s\n\n", msg)
-			c.Writer.Flush()
-			return true
+			_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", msg)
+			if flusher != nil {
+				flusher.Flush()
+			}
 		case <-ctx.Done():
-			return false
+			return
 		}
-	})
+	}
 }
 
 // DismissAllNotifications soft-deletes all notifications for the current user.

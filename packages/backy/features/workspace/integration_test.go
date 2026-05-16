@@ -18,6 +18,7 @@ import (
 
 	authfeat "verso/backy/features/auth"
 	groupfeat "verso/backy/features/group"
+	notifeat "verso/backy/features/notification"
 	pagefeat "verso/backy/features/page"
 	spacefeat "verso/backy/features/space"
 	ws "verso/backy/features/workspace"
@@ -31,11 +32,34 @@ type testDB struct {
 	spaceRepo       *repositories.SpaceRepo
 	groupRepo       *repositories.GroupRepo
 	pageRepo        *repositories.PageRepo
+	pageWatcherRepo *repositories.PageWatcherRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
 	workspaceSvc    *ws.WorkspaceService
 	spaceSvc        *spacefeat.SpaceService
 	pageSvc         *pagefeat.PageService
 	groupSvc        *groupfeat.GroupService
+}
+
+type pageDeleteEvent struct {
+	Type        string
+	EntityID    string
+	WorkspaceID string
+	ActorID     string
+	Name        string
+}
+
+type pageDeleteNotifier struct {
+	events []pageDeleteEvent
+}
+
+func (n *pageDeleteNotifier) Notify(_ context.Context, event notifeat.NotificationEvent) {
+	n.events = append(n.events, pageDeleteEvent{
+		Type:        string(event.Type),
+		EntityID:    event.EntityID,
+		WorkspaceID: event.WorkspaceID,
+		ActorID:     event.ActorID,
+		Name:        event.Metadata["name"],
+	})
 }
 
 func getTestDatabaseURL(t *testing.T, databaseURL string) string {
@@ -109,7 +133,8 @@ func setupTestDB(t *testing.T) *testDB {
 	db.groupRepo = repositories.NewGroupRepo()
 	db.workspaceSvc = ws.NewWorkspaceService(db.workspaceRepo, db.spaceRepo, db.groupRepo)
 	db.spaceSvc = spacefeat.NewSpaceService(db.spaceRepo, db.pageRepo, db.groupRepo)
-	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
+	db.pageWatcherRepo = repositories.NewPageWatcherRepo()
+	db.pageSvc = pagefeat.NewPageService(db.pageRepo, db.pageWatcherRepo, db.pageHistoryRepo, db.spaceRepo, db.groupRepo)
 	db.groupSvc = groupfeat.NewGroupService(db.groupRepo, db.workspaceRepo)
 
 	truncateTables(t, ctx)
@@ -544,6 +569,114 @@ func TestPageService_SoftDeletedPagesDisappearFromListAndTree(t *testing.T) {
 		if item.ID == p.ID {
 			t.Fatal("expected soft-deleted page to not appear in tree")
 		}
+	}
+}
+
+func TestPageService_DeleteEmitsNotification(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
+	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	p := createTestPage(t, ctx, db, s.ID, ownerID)
+
+	notifier := &pageDeleteNotifier{}
+	db.pageSvc.SetNotifier(notifier)
+
+	if err := db.pageSvc.DeletePage(ctx, p.ID, ownerID); err != nil {
+		t.Fatalf("delete page: %v", err)
+	}
+
+	if len(notifier.events) != 1 {
+		t.Fatalf("expected 1 notification event, got %d", len(notifier.events))
+	}
+	got := notifier.events[0]
+	if got.Type != "page.deleted" {
+		t.Fatalf("expected page.deleted, got %q", got.Type)
+	}
+	if got.EntityID != p.ID {
+		t.Fatalf("expected entity id %q, got %q", p.ID, got.EntityID)
+	}
+	if got.WorkspaceID != w.ID {
+		t.Fatalf("expected workspace id %q, got %q", w.ID, got.WorkspaceID)
+	}
+	if got.Name != p.Title {
+		t.Fatalf("expected name %q, got %q", p.Title, got.Name)
+	}
+}
+
+func TestPageService_WatchToggleAndStatus(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
+	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	p := createTestPage(t, ctx, db, s.ID, ownerID)
+
+	watched, err := db.pageSvc.IsPageWatched(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("initial watch status: %v", err)
+	}
+	if watched {
+		t.Fatal("expected page to start unwatched")
+	}
+
+	watched, err = db.pageSvc.WatchPage(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("watch page: %v", err)
+	}
+	if !watched {
+		t.Fatal("expected page to be watched after toggle")
+	}
+
+	watched, err = db.pageSvc.IsPageWatched(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("check watched page: %v", err)
+	}
+	if !watched {
+		t.Fatal("expected page to remain watched")
+	}
+
+	watched, err = db.pageSvc.WatchPage(ctx, p.ID, ownerID)
+	if err != nil {
+		t.Fatalf("unwatch page: %v", err)
+	}
+	if watched {
+		t.Fatal("expected page to be unwatched after second toggle")
+	}
+}
+
+func TestPageService_UpdateEmitsWatcherNotification(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := context.Background()
+
+	ownerID := createTestUser(t, ctx, db, "owner", "owner@example.com")
+	watcherID := createTestUser(t, ctx, db, "watcher", "watcher@example.com")
+	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
+	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	addWorkspaceMember(t, ctx, db, w.ID, watcherID, "member")
+	addSpaceMember(t, ctx, db, s.ID, watcherID, models.SpaceRoleReader)
+	p := createTestPage(t, ctx, db, s.ID, ownerID)
+
+	if _, err := db.pageSvc.WatchPage(ctx, p.ID, watcherID); err != nil {
+		t.Fatalf("watch page: %v", err)
+	}
+
+	notifier := &pageDeleteNotifier{}
+	db.pageSvc.SetNotifier(notifier)
+
+	title := "Updated Title"
+	if _, err := db.pageSvc.UpdatePage(ctx, p.ID, ownerID, pagefeat.UpdatePageInput{Title: &title}); err != nil {
+		t.Fatalf("update page: %v", err)
+	}
+
+	if len(notifier.events) != 1 {
+		t.Fatalf("expected 1 notification event, got %d", len(notifier.events))
+	}
+	if notifier.events[0].Type != "page.updated" {
+		t.Fatalf("expected page.updated, got %q", notifier.events[0].Type)
 	}
 }
 

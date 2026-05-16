@@ -247,6 +247,13 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		return
 	}
 
+	editable, err := h.pageService.CanWrite(c.Request.Context(), page.SpaceID, userID)
+	if err != nil {
+		logger.Log.Error().Str("id", id).Err(err).Msg("console page permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":           page.ID,
 		"slugId":       page.SlugID,
@@ -259,8 +266,119 @@ func (h *Handlers) GetConsolePage(c *gin.Context) {
 		"isPublished":  page.IsPublished,
 		"parentPageId": page.ParentPageID,
 		"spaceId":      page.SpaceID,
+		"creatorId":    page.CreatorID,
 		"createdAt":    page.CreatedAt.Format(time.RFC3339),
 		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+		"editable":     editable,
+	})
+}
+
+// TogglePageWatch handles POST /api/console/pages/:id/watch.
+func (h *Handlers) TogglePageWatch(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "page service unavailable"})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	watching, err := h.pageService.WatchPage(c.Request.Context(), pageID, userID)
+	if err != nil {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("id", pageID).Err(err).Msg("toggle page watch error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to toggle watch"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"watching": watching})
+}
+
+// IsPageWatched handles GET /api/console/pages/:id/watching.
+func (h *Handlers) IsPageWatched(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusOK, gin.H{"watching": false})
+		return
+	}
+
+	pageID := c.Param("id")
+	userID := middleware.GetCurrentUserID(c)
+
+	watching, err := h.pageService.IsPageWatched(c.Request.Context(), pageID, userID)
+	if err != nil {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		if errors.Is(err, pagefeat.ErrPagePermissionDenied) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+			return
+		}
+		logger.Log.Error().Str("id", pageID).Err(err).Msg("check page watch error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check watch status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"watching": watching})
+}
+
+// GetConsolePageBySlug handles GET /api/console/spaces/:id/pages/by-slug/:slugId.
+func (h *Handlers) GetConsolePageBySlug(c *gin.Context) {
+	if h.pageService == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+		return
+	}
+
+	spaceID := c.Param("id")
+	slugID := c.Param("slugId")
+	userID := middleware.GetCurrentUserID(c)
+
+	page, err := h.pageService.GetPageBySpaceAndSlug(c.Request.Context(), spaceID, slugID)
+	if err != nil {
+		if errors.Is(err, pagefeat.ErrPageNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "page not found"})
+			return
+		}
+		logger.Log.Error().Str("spaceId", spaceID).Str("slugId", slugID).Err(err).Msg("console page by slug error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
+	if err := h.pageService.RequireRead(c.Request.Context(), page.SpaceID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "permission denied"})
+		return
+	}
+
+	editable, err := h.pageService.CanWrite(c.Request.Context(), page.SpaceID, userID)
+	if err != nil {
+		logger.Log.Error().Str("spaceId", spaceID).Str("slugId", slugID).Err(err).Msg("console page permission check error")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load page"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":           page.ID,
+		"slugId":       page.SlugID,
+		"title":        page.Title,
+		"icon":         page.Icon,
+		"coverPhoto":   page.CoverPhoto,
+		"contentJson":  page.ContentJSON,
+		"textContent":  page.TextContent,
+		"position":     page.Position,
+		"isPublished":  page.IsPublished,
+		"parentPageId": page.ParentPageID,
+		"spaceId":      page.SpaceID,
+		"creatorId":    page.CreatorID,
+		"createdAt":    page.CreatedAt.Format(time.RFC3339),
+		"updatedAt":    page.UpdatedAt.Format(time.RFC3339),
+		"editable":     editable,
 	})
 }
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { deleteSpace, updateSpace } from "#/server/backy";
+import { deleteSpace, getSpaceById, updateSpace, BackyError } from "#/server/backy";
 
 interface SpacePayload {
   defaultRole?: string;
@@ -48,8 +48,33 @@ export const Route = createFileRoute("/api/console/spaces/$id")({
         if (!cookieHeader) {
           return Response.json({ error: "Unauthorized" }, { status: 401 });
         }
-        const result = await deleteSpace(params.id, cookieHeader);
-        return Response.json(result);
+        try {
+          const result = await deleteSpace(params.id, cookieHeader);
+          return Response.json(result);
+        } catch (error) {
+          if (error instanceof BackyError) {
+            return Response.json({ error: error.message }, { status: error.status });
+          }
+          throw error;
+        }
+      },
+      GET: async ({ params, request }) => {
+        const cookieHeader = request.headers.get("cookie");
+        if (!cookieHeader) {
+          return Response.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        try {
+          const space = await getSpaceById(params.id, cookieHeader);
+          if (!space) {
+            return Response.json({ error: "Space not found" }, { status: 404 });
+          }
+          return Response.json(space);
+        } catch (error) {
+          if (error instanceof BackyError) {
+            return Response.json({ error: error.message }, { status: error.status });
+          }
+          throw error;
+        }
       },
       PUT: async ({ params, request }) => {
         const cookieHeader = request.headers.get("cookie");
@@ -61,8 +86,15 @@ export const Route = createFileRoute("/api/console/spaces/$id")({
           return Response.json({ error: "Invalid payload" }, { status: 400 });
         }
         const body: SpacePayload = raw;
-        const space = await updateSpace(params.id, body, cookieHeader);
-        return Response.json(space);
+        try {
+          const space = await updateSpace(params.id, body, cookieHeader);
+          return Response.json(space);
+        } catch (error) {
+          if (error instanceof BackyError) {
+            return Response.json({ error: error.message }, { status: error.status });
+          }
+          throw error;
+        }
       },
     },
   },

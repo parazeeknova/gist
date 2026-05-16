@@ -108,6 +108,16 @@ func TestNotificationService_CreateAndList(t *testing.T) {
 	assert.Len(t, notifsA, 0)
 }
 
+func TestNotificationService_PageDeletedText(t *testing.T) {
+	svc := &NotificationService{}
+	title, body := svc.generateText(NotificationEvent{
+		Type:     EventPageDeleted,
+		Metadata: map[string]string{"name": "Archive"},
+	})
+	assert.Equal(t, "Page deleted", title)
+	assert.Contains(t, body, "Archive")
+}
+
 func TestNotificationService_ActorReceivesOwnNotification(t *testing.T) {
 	if os.Getenv("DATABASE_URL") == "" {
 		t.Skip("DATABASE_URL not set")
@@ -344,6 +354,7 @@ func TestNotificationService_GenerateText(t *testing.T) {
 		{EventRoleChanged, map[string]string{"role": "admin"}, "Role changed", "admin"},
 		{EventPageUpdated, map[string]string{"name": "Home"}, "Page updated", "Home"},
 		{EventPageCreated, map[string]string{"name": "Welcome"}, "Page created", "Welcome"},
+		{EventPageDeleted, map[string]string{"name": "Goodbye"}, "Page deleted", "Goodbye"},
 		{EventWorkspaceMemberAdded, map[string]string{"name": "Acme"}, "Added to workspace", "Acme"},
 		{EventSpaceMemberAdded, map[string]string{"name": "General"}, "Added to space", "General"},
 		{EventSpaceMemberRemoved, map[string]string{"name": "Engine"}, "Removed from space", "Engine"},

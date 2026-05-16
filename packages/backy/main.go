@@ -116,13 +116,14 @@ func main() {
 	if dbAvailable {
 		pool := database.GetPool()
 		pageRepo := repositories.NewPageRepo(pool)
+		pageWatcherRepo := repositories.NewPageWatcherRepo()
 		pageHistoryRepo := repositories.NewPageHistoryRepo(pool)
 		spaceRepo := repositories.NewSpaceRepo()
 		workspaceRepo := repositories.NewWorkspaceRepo()
 		groupRepo := repositories.NewGroupRepo()
 		favRepo = repositories.NewSpaceFavoriteRepo()
 		pageFavRepo = repositories.NewPageFavoriteRepo()
-		pageService = pfeat.NewPageService(pageRepo, pageHistoryRepo, spaceRepo, groupRepo)
+		pageService = pfeat.NewPageService(pageRepo, pageWatcherRepo, pageHistoryRepo, spaceRepo, groupRepo)
 		spaceService = sfeat.NewSpaceService(spaceRepo, pageRepo, groupRepo)
 		workspaceService = wsfeat.NewWorkspaceService(workspaceRepo, spaceRepo, groupRepo)
 		groupService = gfeat.NewGroupService(groupRepo, workspaceRepo)
@@ -338,7 +339,10 @@ func main() {
 			// Page favorites
 			console.POST("/pages/:id/favorite", h.TogglePageFavorite)
 			console.GET("/pages/:id/favorited", h.IsPageFavorited)
+			console.POST("/pages/:id/watch", h.TogglePageWatch)
+			console.GET("/pages/:id/watching", h.IsPageWatched)
 			console.GET("/pages/favorites", h.GetFavoritedPages)
+			console.GET("/spaces/:id/pages/by-slug/:slugId", h.GetConsolePageBySlug)
 
 			// Notifications
 			if notifHandlers != nil {
@@ -385,6 +389,9 @@ func main() {
 				admin.PUT("/:id/active", userHandlers.UpdateUserActive)
 				admin.DELETE("/:id", userHandlers.DeleteUser)
 			}
+
+			// User lookup (any authenticated user)
+			console.GET("/users/:id", userHandlers.GetUserByID)
 		}
 	}
 

@@ -352,6 +352,13 @@ type Notification struct {
 	CreatedAt       time.Time  `json:"createdAt"`
 }
 
+// PageWatcher represents a user watching a page.
+type PageWatcher struct {
+	PageID    string    `json:"pageId"`
+	UserID    string    `json:"userId"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
 // NotificationWithActor is a notification enriched with actor user details for display.
 type NotificationWithActor struct {
 	ID              string     `json:"id"`

@@ -18,6 +18,7 @@ import { useAuth } from "#/features/auth/hooks/use-auth";
 import { useTheme } from "#/shared/hooks/use-theme";
 import { useSpaceBySlug } from "#/features/console/hooks/use-spaces";
 import { ConsoleContext } from "./console-context";
+import { FlashToast } from "./flash-toast";
 import { ConsoleNavbar } from "./console-navbar";
 import { DebugSidebar } from "./debug/sidebar";
 import { FloatingSidebar } from "./floating-sidebar";
@@ -233,7 +234,7 @@ export const ConsoleLayout = () => {
     sidebarContent = <SpaceSidebar space={currentSpace} />;
   } else {
     sidebarContent = (
-      <div className="min-h-0 w-70 flex-1 flex flex-col overflow-y-auto px-4">
+      <div className="min-h-0 w-full flex-1 flex flex-col overflow-y-auto px-4">
         <nav className="mb-3 space-y-0.5">
           {NAV_ROUTES.map((route) => (
             <a
@@ -338,7 +339,7 @@ export const ConsoleLayout = () => {
               {sidebarContent}
             </div>
 
-            <div className="w-70 px-4">
+            <div className="w-full px-4">
               <SidebarFooter isDebugRoute={isDebugRoute} isSettingsRoute={isSettingsRoute} />
             </div>
           </aside>
@@ -357,6 +358,7 @@ export const ConsoleLayout = () => {
             <Outlet />
           </main>
         </div>
+        <FlashToast isDarkMode={isDarkMode} />
       </div>
     </ConsoleContext.Provider>
   );

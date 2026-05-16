@@ -46,6 +46,7 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAuthBootstrapStateRouteImport } from './routes/api/auth/bootstrap-state'
+import { Route as SSpaceSlugPPageidRouteImport } from './routes/s/$spaceSlug/p/$pageid'
 import { Route as ApiConsoleWorkspacesIdRouteImport } from './routes/api/console/workspaces/$id'
 import { Route as ApiConsoleUsersIdRouteImport } from './routes/api/console/users/$id'
 import { Route as ApiConsoleUnsplashSearchRouteImport } from './routes/api/console/unsplash/search'
@@ -80,6 +81,8 @@ import { Route as ApiConsoleSpacesIdMembersRouteImport } from './routes/api/cons
 import { Route as ApiConsoleSpacesIdFavoritedRouteImport } from './routes/api/console/spaces/$id/favorited'
 import { Route as ApiConsoleSpacesIdFavoriteRouteImport } from './routes/api/console/spaces/$id/favorite'
 import { Route as ApiConsoleProfileSessionRevokeRouteImport } from './routes/api/console/profile/session/revoke'
+import { Route as ApiConsolePagesIdWatchingRouteImport } from './routes/api/console/pages/$id/watching'
+import { Route as ApiConsolePagesIdWatchRouteImport } from './routes/api/console/pages/$id/watch'
 import { Route as ApiConsolePagesIdUnpublishRouteImport } from './routes/api/console/pages/$id/unpublish'
 import { Route as ApiConsolePagesIdRestoreRouteImport } from './routes/api/console/pages/$id/restore'
 import { Route as ApiConsolePagesIdPublishRouteImport } from './routes/api/console/pages/$id/publish'
@@ -96,6 +99,7 @@ import { Route as ApiConsoleSpacesIdGroupsGroupIdRouteImport } from './routes/ap
 import { Route as ApiConsolePagesIdHistoryHistoryIdRouteImport } from './routes/api/console/pages/$id/history/$historyId'
 import { Route as ApiConsoleGroupsIdMembersUserIdRouteImport } from './routes/api/console/groups/$id/members/$userId'
 import { Route as ApiConsoleDebugTablesTableNameRowsRouteImport } from './routes/api/console/debug/tables/$tableName/rows'
+import { Route as ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRouteImport } from './routes/api/console/spaces/$spaceId/pages/by-slug/$slugId'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -283,6 +287,11 @@ const ApiAuthBootstrapStateRoute = ApiAuthBootstrapStateRouteImport.update({
   id: '/api/auth/bootstrap-state',
   path: '/api/auth/bootstrap-state',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SSpaceSlugPPageidRoute = SSpaceSlugPPageidRouteImport.update({
+  id: '/p/$pageid',
+  path: '/p/$pageid',
+  getParentRoute: () => SSpaceSlugRoute,
 } as any)
 const ApiConsoleWorkspacesIdRoute = ApiConsoleWorkspacesIdRouteImport.update({
   id: '/$id',
@@ -472,6 +481,17 @@ const ApiConsoleProfileSessionRevokeRoute =
     path: '/revoke',
     getParentRoute: () => ApiConsoleProfileSessionRoute,
   } as any)
+const ApiConsolePagesIdWatchingRoute =
+  ApiConsolePagesIdWatchingRouteImport.update({
+    id: '/watching',
+    path: '/watching',
+    getParentRoute: () => ApiConsolePagesIdRoute,
+  } as any)
+const ApiConsolePagesIdWatchRoute = ApiConsolePagesIdWatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
+  getParentRoute: () => ApiConsolePagesIdRoute,
+} as any)
 const ApiConsolePagesIdUnpublishRoute =
   ApiConsolePagesIdUnpublishRouteImport.update({
     id: '/unpublish',
@@ -567,6 +587,12 @@ const ApiConsoleDebugTablesTableNameRowsRoute =
     path: '/rows',
     getParentRoute: () => ApiConsoleDebugTablesTableNameRoute,
   } as any)
+const ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute =
+  ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRouteImport.update({
+    id: '/$spaceId/pages/by-slug/$slugId',
+    path: '/$spaceId/pages/by-slug/$slugId',
+    getParentRoute: () => ApiConsoleSpacesRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -632,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
+  '/s/$spaceSlug/p/$pageid': typeof SSpaceSlugPPageidRoute
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
@@ -643,6 +670,8 @@ export interface FileRoutesByFullPath {
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/watch': typeof ApiConsolePagesIdWatchRoute
+  '/api/console/pages/$id/watching': typeof ApiConsolePagesIdWatchingRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
   '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
   '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
@@ -656,6 +685,7 @@ export interface FileRoutesByFullPath {
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
   '/api/console/spaces/$id/groups/$groupId': typeof ApiConsoleSpacesIdGroupsGroupIdRoute
   '/api/console/spaces/$id/members/$userId': typeof ApiConsoleSpacesIdMembersUserIdRoute
+  '/api/console/spaces/$spaceId/pages/by-slug/$slugId': typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -719,6 +749,7 @@ export interface FileRoutesByTo {
   '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
+  '/s/$spaceSlug/p/$pageid': typeof SSpaceSlugPPageidRoute
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
@@ -730,6 +761,8 @@ export interface FileRoutesByTo {
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/watch': typeof ApiConsolePagesIdWatchRoute
+  '/api/console/pages/$id/watching': typeof ApiConsolePagesIdWatchingRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
   '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
   '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
@@ -743,6 +776,7 @@ export interface FileRoutesByTo {
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
   '/api/console/spaces/$id/groups/$groupId': typeof ApiConsoleSpacesIdGroupsGroupIdRoute
   '/api/console/spaces/$id/members/$userId': typeof ApiConsoleSpacesIdMembersUserIdRoute
+  '/api/console/spaces/$spaceId/pages/by-slug/$slugId': typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -809,6 +843,7 @@ export interface FileRoutesById {
   '/api/console/unsplash/search': typeof ApiConsoleUnsplashSearchRoute
   '/api/console/users/$id': typeof ApiConsoleUsersIdRouteWithChildren
   '/api/console/workspaces/$id': typeof ApiConsoleWorkspacesIdRouteWithChildren
+  '/s/$spaceSlug/p/$pageid': typeof SSpaceSlugPPageidRoute
   '/api/console/debug/tables/$tableName': typeof ApiConsoleDebugTablesTableNameRouteWithChildren
   '/api/console/groups/$id/members': typeof ApiConsoleGroupsIdMembersRouteWithChildren
   '/api/console/notifications/$id/read': typeof ApiConsoleNotificationsIdReadRoute
@@ -820,6 +855,8 @@ export interface FileRoutesById {
   '/api/console/pages/$id/publish': typeof ApiConsolePagesIdPublishRoute
   '/api/console/pages/$id/restore': typeof ApiConsolePagesIdRestoreRoute
   '/api/console/pages/$id/unpublish': typeof ApiConsolePagesIdUnpublishRoute
+  '/api/console/pages/$id/watch': typeof ApiConsolePagesIdWatchRoute
+  '/api/console/pages/$id/watching': typeof ApiConsolePagesIdWatchingRoute
   '/api/console/profile/session/revoke': typeof ApiConsoleProfileSessionRevokeRoute
   '/api/console/spaces/$id/favorite': typeof ApiConsoleSpacesIdFavoriteRoute
   '/api/console/spaces/$id/favorited': typeof ApiConsoleSpacesIdFavoritedRoute
@@ -833,6 +870,7 @@ export interface FileRoutesById {
   '/api/console/pages/$id/history/$historyId': typeof ApiConsolePagesIdHistoryHistoryIdRoute
   '/api/console/spaces/$id/groups/$groupId': typeof ApiConsoleSpacesIdGroupsGroupIdRoute
   '/api/console/spaces/$id/members/$userId': typeof ApiConsoleSpacesIdMembersUserIdRoute
+  '/api/console/spaces/$spaceId/pages/by-slug/$slugId': typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -900,6 +938,7 @@ export interface FileRouteTypes {
     | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
+    | '/s/$spaceSlug/p/$pageid'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
@@ -911,6 +950,8 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/watch'
+    | '/api/console/pages/$id/watching'
     | '/api/console/profile/session/revoke'
     | '/api/console/spaces/$id/favorite'
     | '/api/console/spaces/$id/favorited'
@@ -924,6 +965,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/history/$historyId'
     | '/api/console/spaces/$id/groups/$groupId'
     | '/api/console/spaces/$id/members/$userId'
+    | '/api/console/spaces/$spaceId/pages/by-slug/$slugId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -987,6 +1029,7 @@ export interface FileRouteTypes {
     | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
+    | '/s/$spaceSlug/p/$pageid'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
@@ -998,6 +1041,8 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/watch'
+    | '/api/console/pages/$id/watching'
     | '/api/console/profile/session/revoke'
     | '/api/console/spaces/$id/favorite'
     | '/api/console/spaces/$id/favorited'
@@ -1011,6 +1056,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/history/$historyId'
     | '/api/console/spaces/$id/groups/$groupId'
     | '/api/console/spaces/$id/members/$userId'
+    | '/api/console/spaces/$spaceId/pages/by-slug/$slugId'
   id:
     | '__root__'
     | '/'
@@ -1076,6 +1122,7 @@ export interface FileRouteTypes {
     | '/api/console/unsplash/search'
     | '/api/console/users/$id'
     | '/api/console/workspaces/$id'
+    | '/s/$spaceSlug/p/$pageid'
     | '/api/console/debug/tables/$tableName'
     | '/api/console/groups/$id/members'
     | '/api/console/notifications/$id/read'
@@ -1087,6 +1134,8 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/publish'
     | '/api/console/pages/$id/restore'
     | '/api/console/pages/$id/unpublish'
+    | '/api/console/pages/$id/watch'
+    | '/api/console/pages/$id/watching'
     | '/api/console/profile/session/revoke'
     | '/api/console/spaces/$id/favorite'
     | '/api/console/spaces/$id/favorited'
@@ -1100,6 +1149,7 @@ export interface FileRouteTypes {
     | '/api/console/pages/$id/history/$historyId'
     | '/api/console/spaces/$id/groups/$groupId'
     | '/api/console/spaces/$id/members/$userId'
+    | '/api/console/spaces/$spaceId/pages/by-slug/$slugId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1403,6 +1453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthBootstrapStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/s/$spaceSlug/p/$pageid': {
+      id: '/s/$spaceSlug/p/$pageid'
+      path: '/p/$pageid'
+      fullPath: '/s/$spaceSlug/p/$pageid'
+      preLoaderRoute: typeof SSpaceSlugPPageidRouteImport
+      parentRoute: typeof SSpaceSlugRoute
+    }
     '/api/console/workspaces/$id': {
       id: '/api/console/workspaces/$id'
       path: '/$id'
@@ -1641,6 +1698,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleProfileSessionRevokeRouteImport
       parentRoute: typeof ApiConsoleProfileSessionRoute
     }
+    '/api/console/pages/$id/watching': {
+      id: '/api/console/pages/$id/watching'
+      path: '/watching'
+      fullPath: '/api/console/pages/$id/watching'
+      preLoaderRoute: typeof ApiConsolePagesIdWatchingRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
+    '/api/console/pages/$id/watch': {
+      id: '/api/console/pages/$id/watch'
+      path: '/watch'
+      fullPath: '/api/console/pages/$id/watch'
+      preLoaderRoute: typeof ApiConsolePagesIdWatchRouteImport
+      parentRoute: typeof ApiConsolePagesIdRoute
+    }
     '/api/console/pages/$id/unpublish': {
       id: '/api/console/pages/$id/unpublish'
       path: '/unpublish'
@@ -1753,6 +1824,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiConsoleDebugTablesTableNameRowsRouteImport
       parentRoute: typeof ApiConsoleDebugTablesTableNameRoute
     }
+    '/api/console/spaces/$spaceId/pages/by-slug/$slugId': {
+      id: '/api/console/spaces/$spaceId/pages/by-slug/$slugId'
+      path: '/$spaceId/pages/by-slug/$slugId'
+      fullPath: '/api/console/spaces/$spaceId/pages/by-slug/$slugId'
+      preLoaderRoute: typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRouteImport
+      parentRoute: typeof ApiConsoleSpacesRoute
+    }
   }
 }
 
@@ -1807,11 +1885,13 @@ const ApiBlogsRouteWithChildren = ApiBlogsRoute._addFileChildren(
 interface SSpaceSlugRouteChildren {
   SSpaceSlugSettingsRoute: typeof SSpaceSlugSettingsRoute
   SSpaceSlugIndexRoute: typeof SSpaceSlugIndexRoute
+  SSpaceSlugPPageidRoute: typeof SSpaceSlugPPageidRoute
 }
 
 const SSpaceSlugRouteChildren: SSpaceSlugRouteChildren = {
   SSpaceSlugSettingsRoute: SSpaceSlugSettingsRoute,
   SSpaceSlugIndexRoute: SSpaceSlugIndexRoute,
+  SSpaceSlugPPageidRoute: SSpaceSlugPPageidRoute,
 }
 
 const SSpaceSlugRouteWithChildren = SSpaceSlugRoute._addFileChildren(
@@ -1880,6 +1960,8 @@ interface ApiConsolePagesIdRouteChildren {
   ApiConsolePagesIdPublishRoute: typeof ApiConsolePagesIdPublishRoute
   ApiConsolePagesIdRestoreRoute: typeof ApiConsolePagesIdRestoreRoute
   ApiConsolePagesIdUnpublishRoute: typeof ApiConsolePagesIdUnpublishRoute
+  ApiConsolePagesIdWatchRoute: typeof ApiConsolePagesIdWatchRoute
+  ApiConsolePagesIdWatchingRoute: typeof ApiConsolePagesIdWatchingRoute
 }
 
 const ApiConsolePagesIdRouteChildren: ApiConsolePagesIdRouteChildren = {
@@ -1891,6 +1973,8 @@ const ApiConsolePagesIdRouteChildren: ApiConsolePagesIdRouteChildren = {
   ApiConsolePagesIdPublishRoute: ApiConsolePagesIdPublishRoute,
   ApiConsolePagesIdRestoreRoute: ApiConsolePagesIdRestoreRoute,
   ApiConsolePagesIdUnpublishRoute: ApiConsolePagesIdUnpublishRoute,
+  ApiConsolePagesIdWatchRoute: ApiConsolePagesIdWatchRoute,
+  ApiConsolePagesIdWatchingRoute: ApiConsolePagesIdWatchingRoute,
 }
 
 const ApiConsolePagesIdRouteWithChildren =
@@ -1974,12 +2058,15 @@ interface ApiConsoleSpacesRouteChildren {
   ApiConsoleSpacesIdRoute: typeof ApiConsoleSpacesIdRouteWithChildren
   ApiConsoleSpacesFavoritesRoute: typeof ApiConsoleSpacesFavoritesRoute
   ApiConsoleSpacesBySlugSlugRoute: typeof ApiConsoleSpacesBySlugSlugRoute
+  ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute: typeof ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute
 }
 
 const ApiConsoleSpacesRouteChildren: ApiConsoleSpacesRouteChildren = {
   ApiConsoleSpacesIdRoute: ApiConsoleSpacesIdRouteWithChildren,
   ApiConsoleSpacesFavoritesRoute: ApiConsoleSpacesFavoritesRoute,
   ApiConsoleSpacesBySlugSlugRoute: ApiConsoleSpacesBySlugSlugRoute,
+  ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute:
+    ApiConsoleSpacesSpaceIdPagesBySlugSlugIdRoute,
 }
 
 const ApiConsoleSpacesRouteWithChildren =

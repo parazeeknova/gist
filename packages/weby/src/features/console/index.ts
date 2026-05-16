@@ -12,7 +12,6 @@ export { SettingsSidebar } from "./components/settings-sidebar";
 export { SidebarFooter } from "./components/sidebar-footer";
 export { SidebarTooltip } from "./components/sidebar-tooltip";
 export { PageDetail } from "./components/pages/detail";
-export { PageEditor } from "./components/pages/editor";
 export { PageHistory } from "./components/pages/history";
 export { DebugSidebar } from "./components/debug/sidebar";
 export { DebugTable } from "./components/debug/table";

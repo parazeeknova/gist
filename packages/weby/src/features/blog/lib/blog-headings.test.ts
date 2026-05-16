@@ -18,4 +18,38 @@ describe("extractBlogHeadings", () => {
       { id: "types-of-crdts", label: "types of crdts", level: 2 },
     ]);
   });
+
+  it("keeps duplicate headings uniquely addressable", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <h2>same title</h2>
+      <h2>same title</h2>
+      <h2>same title</h2>
+    `;
+
+    const headings = extractBlogHeadings(container);
+
+    expect(headings).toEqual([
+      { id: "same-title", label: "same title", level: 2 },
+      { id: "same-title-2", label: "same title", level: 2 },
+      { id: "same-title-3", label: "same title", level: 2 },
+    ]);
+  });
+
+  it("falls back to deterministic ids for empty slugs", () => {
+    const container = document.createElement("div");
+    container.innerHTML = `
+      <h2>!!!</h2>
+      <h2>??</h2>
+      <h2>!!!</h2>
+    `;
+
+    const headings = extractBlogHeadings(container);
+
+    expect(headings).toEqual([
+      { id: "heading-1", label: "!!!", level: 2 },
+      { id: "heading-2", label: "??", level: 2 },
+      { id: "heading-1-2", label: "!!!", level: 2 },
+    ]);
+  });
 });

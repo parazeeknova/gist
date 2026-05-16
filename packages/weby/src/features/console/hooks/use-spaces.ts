@@ -25,6 +25,16 @@ export const useSpaceBySlug = (slug: string) =>
     staleTime: 60 * 1000,
   });
 
+export const useSpaceById = (id: string, options?: { enabled?: boolean }) =>
+  useQuery<Space>({
+    enabled: (options?.enabled ?? true) && id !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<Space>(`/api/console/spaces/${encodeURIComponent(id)}`, { signal }),
+    queryKey: ["spaceById", id],
+    refetchOnMount: true,
+    staleTime: 60 * 1000,
+  });
+
 export const useCreateSpace = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -18,6 +18,7 @@ const (
 	EventRoleChanged             NotificationEventType = "role.changed"
 	EventPageUpdated             NotificationEventType = "page.updated"
 	EventPageCreated             NotificationEventType = "page.created"
+	EventPageDeleted             NotificationEventType = "page.deleted"
 	EventWorkspaceMemberAdded    NotificationEventType = "workspace.member_added"
 	EventSpaceMemberAdded        NotificationEventType = "space.member_added"
 	EventSpaceMemberRemoved      NotificationEventType = "space.member_removed"

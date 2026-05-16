@@ -9,6 +9,15 @@ export const useUsers = () =>
     staleTime: 30 * 1000,
   });
 
+export const useUserById = (id: string) =>
+  useQuery<ConsoleUser>({
+    enabled: id !== "",
+    queryFn: ({ signal }) =>
+      fetchProtected<ConsoleUser>(`/api/console/users/${encodeURIComponent(id)}`, { signal }),
+    queryKey: ["userById", id],
+    staleTime: 60 * 1000,
+  });
+
 export const useUpdateUserRole = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -6,8 +6,6 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
-
-	"github.com/go-jose/go-jose/v4"
 )
 
 // GenerateRefreshToken creates a cryptographically random refresh token (raw value)
@@ -30,16 +28,6 @@ func VerifyRefreshToken(rawToken, storedHash string) bool {
 	hasher := sha256.Sum256([]byte(rawToken))
 	computedHash := base64.RawURLEncoding.EncodeToString(hasher[:])
 	return subtle.ConstantTimeCompare([]byte(computedHash), []byte(storedHash)) == 1
-}
-
-// JWKFromSecret creates a JSON Web Key from a symmetric secret for key management.
-func JWKFromSecret(secret []byte, keyID string) *jose.JSONWebKey {
-	return &jose.JSONWebKey{
-		Key:       secret,
-		KeyID:     keyID,
-		Algorithm: string(jose.HS256),
-		Use:       "sig",
-	}
 }
 
 // GenerateSigningSecret creates a cryptographically random 32-byte secret

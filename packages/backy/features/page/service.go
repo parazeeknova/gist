@@ -21,6 +21,7 @@ import (
 // PageService provides business logic over page and page history repositories
 type PageService struct {
 	pageRepo        *repositories.PageRepo
+	pageWatcherRepo *repositories.PageWatcherRepo
 	pageHistoryRepo *repositories.PageHistoryRepo
 	spaceRepo       *repositories.SpaceRepo
 	groupRepo       *repositories.GroupRepo
@@ -28,9 +29,10 @@ type PageService struct {
 }
 
 // NewPageService creates a new page service
-func NewPageService(pageRepo *repositories.PageRepo, pageHistoryRepo *repositories.PageHistoryRepo, spaceRepo *repositories.SpaceRepo, groupRepo *repositories.GroupRepo) *PageService {
+func NewPageService(pageRepo *repositories.PageRepo, pageWatcherRepo *repositories.PageWatcherRepo, pageHistoryRepo *repositories.PageHistoryRepo, spaceRepo *repositories.SpaceRepo, groupRepo *repositories.GroupRepo) *PageService {
 	return &PageService{
 		pageRepo:        pageRepo,
+		pageWatcherRepo: pageWatcherRepo,
 		pageHistoryRepo: pageHistoryRepo,
 		spaceRepo:       spaceRepo,
 		groupRepo:       groupRepo,
@@ -170,6 +172,7 @@ func (s *PageService) CreatePage(ctx context.Context, page models.Page) error {
 
 // UpdatePage updates a page's mutable fields and records a history entry inside a transaction.
 func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID string, input UpdatePageInput) (models.Page, error) {
+	var current models.Page
 	pool := database.GetPool()
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -178,18 +181,17 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Fetch current page within transaction so we can merge fields.
-	var current models.Page
 	var contentJSONBytes []byte
 	err = tx.QueryRow(
 		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
-		 FROM pages WHERE id = $1`, pageID,
+		 FROM pages WHERE id = $1 FOR UPDATE`, pageID,
 	).Scan(
 		&current.ID, &current.SlugID, &current.Title, &current.Icon, &current.CoverPhoto,
 		&contentJSONBytes, &current.YDoc, &current.TextContent, &current.Position, &current.IsPublished,
-		&current.ParentPageID, &current.SpaceID, &current.CreatorID, &current.LastUpdatedByID,
+		&current.ParentPageID, &current.SpaceID, &current.WorkspaceID, &current.CreatorID, &current.LastUpdatedByID,
 		&current.CreatedAt, &current.UpdatedAt,
 	)
 	if err != nil {
@@ -254,18 +256,10 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
 	}
 
-	ws, _ := s.spaceRepo.GetByID(ctx, current.SpaceID)
-	if ws.WorkspaceID != "" {
-		recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, ws.WorkspaceID)
-		s.notifier.Notify(ctx, notifeat.NotificationEvent{
-			Type:         notifeat.EventPageUpdated,
-			WorkspaceID:  ws.WorkspaceID,
-			ActorID:      userID,
-			RecipientIDs: recipients,
-			EntityType:   "page",
-			EntityID:     current.ID,
-			Metadata:     map[string]string{"name": current.Title},
-		})
+	// Autosave updates only content, so skip watcher notifications unless
+	// the mutation changed visible page metadata.
+	if input.Title != nil || input.Icon != nil || input.CoverPhoto != nil {
+		s.notifyPageUpdated(ctx, current, userID)
 	}
 
 	return current, nil
@@ -293,7 +287,8 @@ func (s *PageService) DeletePage(ctx context.Context, pageID string, userID stri
 	defer func() { _ = tx.Rollback(ctx) }()
 
 	// Soft-delete all descendants.
-	err = s.softDeletePageAndDescendantsTx(ctx, tx, pageID, userID)
+	deletedPages := make([]models.Page, 0)
+	err = s.softDeletePageAndDescendantsTx(ctx, tx, pageID, userID, &deletedPages)
 	if err != nil {
 		return err
 	}
@@ -302,17 +297,31 @@ func (s *PageService) DeletePage(ctx context.Context, pageID string, userID stri
 		return fmt.Errorf("commit tx: %w", err)
 	}
 
+	for _, deletedPage := range deletedPages {
+		s.notifyPageDeleted(ctx, deletedPage, userID)
+	}
+
 	return nil
 }
 
 // PublishPage sets is_published = true and records history.
 func (s *PageService) PublishPage(ctx context.Context, pageID string, userID string) (models.Page, error) {
-	return s.setPublished(ctx, pageID, userID, true)
+	page, err := s.setPublished(ctx, pageID, userID, true)
+	if err != nil {
+		return models.Page{}, err
+	}
+	s.notifyPageUpdated(ctx, page, userID)
+	return page, nil
 }
 
 // UnpublishPage sets is_published = false and records history.
 func (s *PageService) UnpublishPage(ctx context.Context, pageID string, userID string) (models.Page, error) {
-	return s.setPublished(ctx, pageID, userID, false)
+	page, err := s.setPublished(ctx, pageID, userID, false)
+	if err != nil {
+		return models.Page{}, err
+	}
+	s.notifyPageUpdated(ctx, page, userID)
+	return page, nil
 }
 
 // setPublished toggles is_published and records history in a transaction.
@@ -448,6 +457,8 @@ func (s *PageService) MovePage(ctx context.Context, pageID string, newParentID *
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
 	}
 
+	s.notifyPageUpdated(ctx, page, userID)
+
 	return page, nil
 }
 
@@ -523,6 +534,8 @@ func (s *PageService) RestorePage(ctx context.Context, pageID string, historyID 
 		return models.Page{}, fmt.Errorf("commit tx: %w", err)
 	}
 
+	s.notifyPageUpdated(ctx, page, userID)
+
 	return page, nil
 }
 
@@ -564,6 +577,18 @@ func (s *PageService) GetPageByID(ctx context.Context, id string) (models.Page, 
 			return models.Page{}, ErrPageNotFound
 		}
 		return models.Page{}, fmt.Errorf("getting page by id %q: %w", id, err)
+	}
+	return page, nil
+}
+
+// GetPageBySpaceAndSlug returns a page by its space ID and slug ID.
+func (s *PageService) GetPageBySpaceAndSlug(ctx context.Context, spaceID, slugID string) (models.Page, error) {
+	page, err := s.pageRepo.GetBySpaceAndSlug(ctx, spaceID, slugID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return models.Page{}, ErrPageNotFound
+		}
+		return models.Page{}, fmt.Errorf("getting page by space %q slug %q: %w", spaceID, slugID, err)
 	}
 	return page, nil
 }
@@ -618,6 +643,17 @@ func (s *PageService) RequireRead(ctx context.Context, spaceID, userID string) e
 	return ErrPagePermissionDenied
 }
 
+// CanWrite reports whether a user can write pages in a space.
+func (s *PageService) CanWrite(ctx context.Context, spaceID, userID string) (bool, error) {
+	if err := s.requireWrite(ctx, spaceID, userID); err != nil {
+		if errors.Is(err, ErrPagePermissionDenied) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 // insertHistoryTx inserts a page_history row within an existing transaction.
 func (s *PageService) insertHistoryTx(ctx context.Context, tx pgx.Tx, page models.Page, operation string, userID string) error {
 	historyID := uuid.New().String()
@@ -642,7 +678,7 @@ func (s *PageService) insertHistoryTx(ctx context.Context, tx pgx.Tx, page model
 }
 
 // softDeletePageAndDescendantsTx recursively soft-deletes a page and its descendants within a transaction.
-func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx, pageID string, userID string) error {
+func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx.Tx, pageID string, userID string, deletedPages *[]models.Page) error {
 	// Find all children.
 	rows, err := tx.Query(ctx, `SELECT id FROM pages WHERE parent_page_id = $1 AND deleted_at IS NULL`, pageID)
 	if err != nil {
@@ -664,7 +700,7 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 
 	// Recursively soft-delete children first.
 	for _, childID := range childIDs {
-		if err := s.softDeletePageAndDescendantsTx(ctx, tx, childID, userID); err != nil {
+		if err := s.softDeletePageAndDescendantsTx(ctx, tx, childID, userID, deletedPages); err != nil {
 			return err
 		}
 	}
@@ -675,13 +711,13 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 	err = tx.QueryRow(
 		ctx,
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
-		        text_content, position, is_published, parent_page_id, space_id, creator_id,
+		        text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
 		 FROM pages WHERE id = $1`, pageID,
 	).Scan(
 		&page.ID, &page.SlugID, &page.Title, &page.Icon, &page.CoverPhoto,
 		&contentJSONBytes, &page.YDoc, &page.TextContent, &page.Position, &page.IsPublished,
-		&page.ParentPageID, &page.SpaceID, &page.CreatorID, &page.LastUpdatedByID,
+		&page.ParentPageID, &page.SpaceID, &page.WorkspaceID, &page.CreatorID, &page.LastUpdatedByID,
 		&page.CreatedAt, &page.UpdatedAt,
 	)
 	if err != nil {
@@ -692,6 +728,7 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 	if err := s.insertHistoryTx(ctx, tx, page, "delete", userID); err != nil {
 		return err
 	}
+	*deletedPages = append(*deletedPages, page)
 
 	// Soft-delete the page.
 	_, err = tx.Exec(ctx, `UPDATE pages SET deleted_at = now(), deleted_by_id = $1 WHERE id = $2`, userID, pageID)
@@ -700,6 +737,143 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 	}
 
 	return nil
+}
+
+func (s *PageService) notifyPageUpdated(ctx context.Context, page models.Page, actorID string) {
+	if s.notifier == nil || s.pageWatcherRepo == nil || s.spaceRepo == nil {
+		return
+	}
+	watchers, err := s.pageWatcherRepo.ListByPage(ctx, page.ID)
+	if err != nil || len(watchers) == 0 {
+		return
+	}
+	members, err := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	if err != nil || len(members) == 0 {
+		return
+	}
+	memberSet := makeMembershipSet(members)
+	recipients := filterMemberIDs(memberSet, watchers)
+	if len(recipients) == 0 {
+		return
+	}
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventPageUpdated,
+		WorkspaceID:  page.WorkspaceID,
+		ActorID:      actorID,
+		RecipientIDs: recipients,
+		EntityType:   "page",
+		EntityID:     page.ID,
+		Metadata:     map[string]string{"name": page.Title},
+	})
+}
+
+func (s *PageService) notifyPageDeleted(ctx context.Context, page models.Page, actorID string) {
+	if s.notifier == nil || s.spaceRepo == nil {
+		return
+	}
+	recipients, err := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	if err != nil || len(recipients) == 0 {
+		return
+	}
+	memberSet := makeMembershipSet(recipients)
+	if s.pageWatcherRepo != nil {
+		watchers, err := s.pageWatcherRepo.ListByPage(ctx, page.ID)
+		if err == nil {
+			recipients = appendUniqueStrings(recipients, filterMemberIDs(memberSet, watchers))
+		}
+	}
+	if len(recipients) == 0 {
+		return
+	}
+	s.notifier.Notify(ctx, notifeat.NotificationEvent{
+		Type:         notifeat.EventPageDeleted,
+		WorkspaceID:  page.WorkspaceID,
+		ActorID:      actorID,
+		RecipientIDs: recipients,
+		EntityType:   "page",
+		EntityID:     page.ID,
+		Metadata:     map[string]string{"name": page.Title},
+	})
+}
+
+func makeMembershipSet(memberIDs []string) map[string]struct{} {
+	memberSet := make(map[string]struct{}, len(memberIDs))
+	for _, memberID := range memberIDs {
+		memberSet[memberID] = struct{}{}
+	}
+	return memberSet
+}
+
+func filterMemberIDs(memberSet map[string]struct{}, ids []string) []string {
+	filtered := make([]string, 0, len(ids))
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if _, ok := memberSet[id]; !ok {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		filtered = append(filtered, id)
+	}
+	return filtered
+}
+
+func appendUniqueStrings(base []string, values []string) []string {
+	seen := make(map[string]struct{}, len(base)+len(values))
+	merged := make([]string, 0, len(base)+len(values))
+	for _, value := range base {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		merged = append(merged, value)
+	}
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		merged = append(merged, value)
+	}
+	return merged
+}
+
+// WatchPage toggles the current user's watcher status for a page.
+func (s *PageService) WatchPage(ctx context.Context, pageID, userID string) (bool, error) {
+	if s.pageWatcherRepo == nil {
+		return false, fmt.Errorf("page watchers not available")
+	}
+	page, err := s.pageRepo.GetByID(ctx, pageID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return false, ErrPageNotFound
+		}
+		return false, fmt.Errorf("fetching page %q: %w", pageID, err)
+	}
+	if err := s.RequireRead(ctx, page.SpaceID, userID); err != nil {
+		return false, err
+	}
+	return s.pageWatcherRepo.Toggle(ctx, userID, pageID)
+}
+
+// IsPageWatched returns whether the current user watches the page.
+func (s *PageService) IsPageWatched(ctx context.Context, pageID, userID string) (bool, error) {
+	if s.pageWatcherRepo == nil {
+		return false, nil
+	}
+	page, err := s.pageRepo.GetByID(ctx, pageID)
+	if err != nil {
+		if errors.Is(err, repositories.ErrPageNotFound) {
+			return false, ErrPageNotFound
+		}
+		return false, fmt.Errorf("fetching page %q: %w", pageID, err)
+	}
+	if err := s.RequireRead(ctx, page.SpaceID, userID); err != nil {
+		return false, err
+	}
+	return s.pageWatcherRepo.IsWatching(ctx, userID, pageID)
 }
 
 // pageToBlogPost converts a Page model to a BlogPost response shape.
