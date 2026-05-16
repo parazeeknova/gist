@@ -656,6 +656,7 @@ func TestPageService_UpdateEmitsWatcherNotification(t *testing.T) {
 	watcherID := createTestUser(t, ctx, db, "watcher", "watcher@example.com")
 	w := createTestWorkspace(t, ctx, db, "Test Workspace", "test-workspace-"+uuid.New().String()[:8], ownerID)
 	s := createTestSpace(t, ctx, db, "Test Space", "test-space", w.ID, ownerID)
+	addWorkspaceMember(t, ctx, db, w.ID, watcherID, "member")
 	addSpaceMember(t, ctx, db, s.ID, watcherID, models.SpaceRoleReader)
 	p := createTestPage(t, ctx, db, s.ID, ownerID)
 

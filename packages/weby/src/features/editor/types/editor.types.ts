@@ -12,6 +12,7 @@ export interface PageEditorProps {
   updatedAt?: string;
   textContent?: string;
   onDeleteStart?: () => void;
+  onDeleteSettled?: () => void;
 }
 
 export interface ToolbarProps {

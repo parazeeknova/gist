@@ -50,6 +50,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
         updatedAt={page.updatedAt}
         textContent={page.textContent}
         onDeleteStart={() => setIsDeleting(true)}
+        onDeleteSettled={() => setIsDeleting(false)}
       />
     </div>
   );

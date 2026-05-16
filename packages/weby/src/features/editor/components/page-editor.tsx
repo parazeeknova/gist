@@ -59,10 +59,10 @@ export const PageEditor = ({
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const content = useMemo(() => parseContent(contentJson), [contentJson]);
-  const headings: BlogHeading[] = useMemo(() => extractEditorHeadings(content), [content]);
   const [tocOpen, setTocOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeHeadingId, setActiveHeadingId] = useState<string | null>(null);
+  const [headings, setHeadings] = useState<BlogHeading[]>(() => extractEditorHeadings(content));
 
   const markDirtyRef = useRef<(() => void) | null>(null);
 
@@ -77,6 +77,10 @@ export const PageEditor = ({
     extensions: getEditorExtensions(),
     immediatelyRender: false,
     onUpdate: () => {
+      const liveContent = editor?.getJSON();
+      if (liveContent) {
+        setHeadings(extractEditorHeadings(liveContent));
+      }
       if (editable) {
         markDirtyRef.current?.();
       }
@@ -173,7 +177,18 @@ export const PageEditor = ({
     editor.commands.setContent(content);
   }, [content, contentJson, editor]);
 
+  useEffect(() => {
+    setHeadings(extractEditorHeadings(content));
+  }, [content]);
+
   useEffect(() => () => cleanup(), [cleanup]);
+
+  useEffect(() => {
+    if (!isDeleting) {
+      return;
+    }
+    return () => setIsDeleting(false);
+  }, [isDeleting]);
 
   useEffect(
     () => () => {
@@ -298,6 +313,8 @@ export const PageEditor = ({
             </span>
           )}
           <button
+            aria-label={isFaved ? "Unfavorite page" : "Favorite page"}
+            aria-pressed={isFaved}
             className={`p-0.5 transition-colors ${isFaved ? "text-yellow-400" : t("text-text-dark/40 hover:text-text-dark", "text-text-light/40 hover:text-text-light")}`}
             onClick={() => toggleFav.mutate(pageId)}
             type="button"
@@ -326,6 +343,7 @@ export const PageEditor = ({
               setIsDeleting(true);
               onDeleteStart?.();
             }}
+            onDeleteSettled={() => setIsDeleting(false)}
             onToggleFullWidth={toggleFullWidth}
             isWatching={isWatching}
             onToggleWatch={() =>

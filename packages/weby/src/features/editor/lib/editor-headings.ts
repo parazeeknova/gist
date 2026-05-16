@@ -28,12 +28,33 @@ const collectText = (nodes: EditorNode[]): string => {
 };
 
 export const extractEditorHeadings = (content: unknown): BlogHeading[] => {
-  if (!content || typeof content !== "object" || !("content" in content)) {
+  if (
+    !content ||
+    typeof content !== "object" ||
+    !Array.isArray((content as { content?: unknown }).content)
+  ) {
     return [];
   }
 
   const headings: BlogHeading[] = [];
   const slugCounts = new Map<string, number>();
+  const emptySlugBases = new Map<string, string>();
+
+  const getBaseId = (label: string) => {
+    const slug = slugify(label);
+    if (slug.length > 0) {
+      return slug;
+    }
+
+    const existingBaseId = emptySlugBases.get(label);
+    if (existingBaseId) {
+      return existingBaseId;
+    }
+
+    const fallbackBaseId = `heading-${emptySlugBases.size + 1}`;
+    emptySlugBases.set(label, fallbackBaseId);
+    return fallbackBaseId;
+  };
 
   const walk = (nodes: EditorNode[]): void => {
     for (const node of nodes) {
@@ -48,7 +69,7 @@ export const extractEditorHeadings = (content: unknown): BlogHeading[] => {
           continue;
         }
 
-        const baseId = slugify(label) || `heading-${headings.length + 1}`;
+        const baseId = getBaseId(label);
         const nextCount = (slugCounts.get(baseId) ?? 0) + 1;
         slugCounts.set(baseId, nextCount);
         const id = nextCount === 1 ? baseId : `${baseId}-${nextCount}`;
@@ -62,6 +83,7 @@ export const extractEditorHeadings = (content: unknown): BlogHeading[] => {
     }
   };
 
-  walk((content as { content?: EditorNode[] }).content ?? []);
+  const rootContent = (content as { content: EditorNode[] }).content;
+  walk(rootContent);
   return headings;
 };

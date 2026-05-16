@@ -187,7 +187,7 @@ func (s *PageService) UpdatePage(ctx context.Context, pageID string, userID stri
 		`SELECT id, slug_id, title, icon, cover_photo, content_json, ydoc,
 		        text_content, position, is_published, parent_page_id, space_id, workspace_id, creator_id,
 		        last_updated_by_id, created_at, updated_at
-		 FROM pages WHERE id = $1`, pageID,
+		 FROM pages WHERE id = $1 FOR UPDATE`, pageID,
 	).Scan(
 		&current.ID, &current.SlugID, &current.Title, &current.Icon, &current.CoverPhoto,
 		&contentJSONBytes, &current.YDoc, &current.TextContent, &current.Position, &current.IsPublished,
