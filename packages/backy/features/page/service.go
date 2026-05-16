@@ -740,18 +740,27 @@ func (s *PageService) softDeletePageAndDescendantsTx(ctx context.Context, tx pgx
 }
 
 func (s *PageService) notifyPageUpdated(ctx context.Context, page models.Page, actorID string) {
-	if s.notifier == nil || s.pageWatcherRepo == nil {
+	if s.notifier == nil || s.pageWatcherRepo == nil || s.spaceRepo == nil {
 		return
 	}
 	watchers, err := s.pageWatcherRepo.ListByPage(ctx, page.ID)
 	if err != nil || len(watchers) == 0 {
 		return
 	}
+	members, err := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	if err != nil || len(members) == 0 {
+		return
+	}
+	memberSet := makeMembershipSet(members)
+	recipients := filterMemberIDs(memberSet, watchers)
+	if len(recipients) == 0 {
+		return
+	}
 	s.notifier.Notify(ctx, notifeat.NotificationEvent{
 		Type:         notifeat.EventPageUpdated,
 		WorkspaceID:  page.WorkspaceID,
 		ActorID:      actorID,
-		RecipientIDs: watchers,
+		RecipientIDs: recipients,
 		EntityType:   "page",
 		EntityID:     page.ID,
 		Metadata:     map[string]string{"name": page.Title},
@@ -759,14 +768,18 @@ func (s *PageService) notifyPageUpdated(ctx context.Context, page models.Page, a
 }
 
 func (s *PageService) notifyPageDeleted(ctx context.Context, page models.Page, actorID string) {
-	if s.notifier == nil {
+	if s.notifier == nil || s.spaceRepo == nil {
 		return
 	}
-	recipients, _ := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	recipients, err := s.spaceRepo.ListWorkspaceMemberIDs(ctx, page.WorkspaceID)
+	if err != nil || len(recipients) == 0 {
+		return
+	}
+	memberSet := makeMembershipSet(recipients)
 	if s.pageWatcherRepo != nil {
 		watchers, err := s.pageWatcherRepo.ListByPage(ctx, page.ID)
 		if err == nil {
-			recipients = appendUniqueStrings(recipients, watchers)
+			recipients = appendUniqueStrings(recipients, filterMemberIDs(memberSet, watchers))
 		}
 	}
 	if len(recipients) == 0 {
@@ -781,6 +794,30 @@ func (s *PageService) notifyPageDeleted(ctx context.Context, page models.Page, a
 		EntityID:     page.ID,
 		Metadata:     map[string]string{"name": page.Title},
 	})
+}
+
+func makeMembershipSet(memberIDs []string) map[string]struct{} {
+	memberSet := make(map[string]struct{}, len(memberIDs))
+	for _, memberID := range memberIDs {
+		memberSet[memberID] = struct{}{}
+	}
+	return memberSet
+}
+
+func filterMemberIDs(memberSet map[string]struct{}, ids []string) []string {
+	filtered := make([]string, 0, len(ids))
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if _, ok := memberSet[id]; !ok {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		filtered = append(filtered, id)
+	}
+	return filtered
 }
 
 func appendUniqueStrings(base []string, values []string) []string {

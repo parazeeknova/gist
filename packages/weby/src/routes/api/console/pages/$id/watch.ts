@@ -17,7 +17,8 @@ export const Route = createFileRoute("/api/console/pages/$id/watch")({
         );
         if (!res.ok) {
           const text = await res.text().catch(() => "");
-          return Response.json({ error: text || "failed to toggle watch" }, { status: res.status });
+          console.error("failed to toggle watch", { status: res.status, text });
+          return Response.json({ error: "failed to toggle watch" }, { status: res.status });
         }
         const data = await res.json();
         return Response.json(data);
