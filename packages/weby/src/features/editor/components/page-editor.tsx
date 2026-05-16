@@ -26,6 +26,7 @@ export const PageEditor = ({
   createdAt,
   updatedAt,
   textContent,
+  onDeleteStart,
 }: PageEditorProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
@@ -223,6 +224,7 @@ export const PageEditor = ({
             fullWidth={fullWidth}
             onToggleFullWidth={toggleFullWidth}
             isWatching={isWatching}
+            onDeleteStart={onDeleteStart}
             onToggleWatch={() =>
               watchPage.mutate(pageId, {
                 onSuccess: (data) => {

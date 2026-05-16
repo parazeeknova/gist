@@ -55,8 +55,9 @@ export const usePageChildren = (parentId: string | null) =>
     staleTime: 30 * 1000,
   });
 
-export const useConsolePage = (pageId: string) =>
+export const useConsolePage = (pageId: string, options?: { enabled?: boolean }) =>
   useQuery<ConsolePageDetail>({
+    enabled: (options?.enabled ?? true) && pageId !== "",
     queryFn: ({ signal }) =>
       fetchProtected<ConsolePageDetail>(`/api/console/pages/${pageId}`, { signal }),
     queryKey: ["consolePage", pageId],
@@ -134,7 +135,6 @@ export const useDeletePage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["consolePages"], refetchType: "all" });
       queryClient.invalidateQueries({ queryKey: ["pageTree"], refetchType: "all" });
-      queryClient.removeQueries({ queryKey: ["consolePage"] });
     },
   });
 };

@@ -2,13 +2,15 @@ import { useTheme } from "#/shared/hooks/use-theme";
 import { useConsolePage } from "#/features/console/hooks/use-pages";
 import { useSpaceById } from "#/features/console/hooks/use-spaces";
 import { PageEditor } from "#/features/editor/components/page-editor";
+import { useState } from "react";
 
 interface PageDetailProps {
   pageId: string;
 }
 
 export const PageDetail = ({ pageId }: PageDetailProps) => {
-  const { data: page, isPending, isError } = useConsolePage(pageId);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { data: page, isPending, isError } = useConsolePage(pageId, { enabled: !isDeleting });
   const { data: space } = useSpaceById(page?.spaceId ?? "", { enabled: !!page?.spaceId });
   const { isDarkMode } = useTheme();
 
@@ -47,6 +49,7 @@ export const PageDetail = ({ pageId }: PageDetailProps) => {
         createdAt={page.createdAt}
         updatedAt={page.updatedAt}
         textContent={page.textContent}
+        onDeleteStart={() => setIsDeleting(true)}
       />
     </div>
   );

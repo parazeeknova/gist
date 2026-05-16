@@ -37,6 +37,7 @@ interface EditorMoreMenuProps {
   isWatching: boolean;
   watchPending?: boolean;
   onToggleWatch: () => void;
+  onDeleteStart?: () => void;
 }
 
 const formatDateTime = (iso?: string) => {
@@ -245,6 +246,7 @@ export const EditorMoreMenu = ({
   isWatching,
   watchPending,
   onToggleWatch,
+  onDeleteStart,
 }: EditorMoreMenuProps) => {
   const { isDarkMode } = useTheme();
   const t = (dark: string, light: string) => (isDarkMode ? dark : light);
@@ -292,6 +294,7 @@ export const EditorMoreMenu = ({
 
   const handleDelete = useCallback(() => {
     if (showDeleteConfirm) {
+      onDeleteStart?.();
       deletePage.mutate(_pageId, {
         onSuccess: () => {
           setFlashToast(`deleted ${title}`);
@@ -307,7 +310,7 @@ export const EditorMoreMenu = ({
     } else {
       setShowDeleteConfirm(true);
     }
-  }, [showDeleteConfirm, _pageId, spaceSlug, deletePage, navigate, title]);
+  }, [showDeleteConfirm, _pageId, spaceSlug, deletePage, navigate, title, onDeleteStart]);
 
   useEffect(() => {
     if (!open) {
