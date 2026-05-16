@@ -367,7 +367,7 @@ export const PageEditor = ({
       </div>
 
       {tocOpen && (
-        <div className="fixed inset-0 z-[80]" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-80" role="dialog" aria-modal="true">
           <button
             aria-label="Close table of contents"
             className="absolute inset-0 bg-black/40"
@@ -375,43 +375,44 @@ export const PageEditor = ({
             type="button"
           />
           <div
-            className={`absolute right-0 top-0 flex h-full w-[min(92vw,22rem)] flex-col border-l shadow-2xl ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
+            className={`absolute right-0 top-0 flex h-full w-[min(92vw,18rem)] flex-col border-l shadow-2xl ${t("border-border-dark bg-text-light", "border-border-light bg-white")}`}
           >
             <div
-              className={`flex items-center justify-between border-b px-4 py-3 ${t("border-border-dark", "border-border-light")}`}
+              className={`flex items-center justify-between border-b px-3 py-2 ${t("border-border-dark", "border-border-light")}`}
             >
               <div>
                 <p
-                  className={`text-[12px] uppercase tracking-[0.18em] ${t("text-text-dark/45", "text-text-light/45")}`}
+                  className={`text-[11px] uppercase tracking-[0.18em] ${t("text-text-dark/45", "text-text-light/45")}`}
                 >
                   table of contents
                 </p>
                 <p
-                  className={`text-[11px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
+                  className={`text-[10px] lowercase ${t("text-text-dark/30", "text-text-light/30")}`}
                 >
                   on this page
                 </p>
               </div>
               <button
                 aria-label="Close table of contents"
-                className={`p-1 ${t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
+                className={`p-0.5 ${t("text-text-dark/50 hover:text-text-dark", "text-text-light/50 hover:text-text-light")}`}
                 onClick={() => setTocOpen(false)}
                 type="button"
               >
-                <XIcon size={14} />
+                <XIcon size={12} />
               </button>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
               {headings.length > 0 ? (
                 <BlogTableOfContents
                   activeHeadingId={activeHeadingId}
                   headings={headings}
                   isDarkMode={isDarkMode}
                   onSelect={handleSelectHeading}
+                  compact
                 />
               ) : (
                 <p
-                  className={`text-[13px] lowercase ${t("text-text-dark/35", "text-text-light/35")}`}
+                  className={`text-[11px] lowercase ${t("text-text-dark/35", "text-text-light/35")}`}
                 >
                   no headings yet
                 </p>
