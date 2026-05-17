@@ -51,6 +51,26 @@ var Experiences = []models.ExperienceItem{
 
 var Projects = []models.Project{
 	{
+	    Title: "Palimpsest is a native git GUI written in rust to be blazing fast and light that goes brr",
+	    Desc: "A local-first git visualizer built in Rust with egui. " +
+	        "Commit graph, syntax-highlighted diffs, file tree with git status, " +
+	        "and drag-to-merge all in a ~5MB binary with no Electron, no webview, " +
+	        "no cloud, and no subscription for a picture of your own repo. " +
+	        "Talks directly to libgit2. Named at 2am. No regrets.",
+	    Stack:      "Rust, egui, eframe, git2, libgit2, diffy, similar, syntect, egui-arbor, egui-phosphor",
+	    ReadmeURL:  "https://raw.githubusercontent.com/parazeeknova/palimpsest/refs/heads/main/.github/README.md",
+	    RepoURL:    "https://github.com/parazeeknova/palimpsest",
+	    ProductURL: "https://github.com/parazeeknova/palimpsest/releases",
+	},
+	{
+		Title:      "Lumen is a spatial system for organizing work.",
+		Desc:       "A local-first spatial workspace for free-form kanban, structured tasks, durable offline work, and realtime collaboration with other goodies.",
+		Stack:      "Next.js, Elysia, Elixir, Typescript, Bun, PostgreSQL, Redis, Yjs, Zustand, Tailwind, Tauri, CRDTs, Docker, Playwright, Bun Test, K6 and more",
+		ReadmeURL:  "https://raw.githubusercontent.com/singularityworks-xyz/lumen/refs/heads/origin/.github/README.md",
+		RepoURL:    "https://github.com/singularityworks-xyz/lumen",
+		ProductURL: "https://lumen.itssingularity.com",
+	},
+	{
 		Title: "Zephyr is the last social platform you'll ever need. Open source, cozy, and slightly unhinged. ",
 		Desc: "A social platform that brings your entire " +
 			"internet into one place. Unified feed, communities, real-time chat, " +
@@ -61,14 +81,6 @@ var Projects = []models.Project{
 		ReadmeURL:  "https://raw.githubusercontent.com/zephverse/zephyr/refs/heads/main/.github/README.md",
 		RepoURL:    "https://github.com/zephverse/zephyr",
 		ProductURL: "https://zephyyrr.in",
-	},
-	{
-		Title:      "Lumen is a spatial system for organizing work.",
-		Desc:       "A local-first spatial workspace for free-form kanban, structured tasks, durable offline work, and realtime collaboration with other goodies.",
-		Stack:      "Next.js, Elysia, Elixir, Typescript, Bun, PostgreSQL, Redis, Yjs, Zustand, Tailwind, Tauri, CRDTs, Docker, Playwright, Bun Test, K6 and more",
-		ReadmeURL:  "https://raw.githubusercontent.com/singularityworks-xyz/lumen/refs/heads/origin/.github/README.md",
-		RepoURL:    "https://github.com/singularityworks-xyz/lumen",
-		ProductURL: "https://lumen.itssingularity.com",
 	},
 	{
 		Title:      "Papyrus is a realtime collaborative spreadsheet",
