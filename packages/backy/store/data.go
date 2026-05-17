@@ -51,16 +51,16 @@ var Experiences = []models.ExperienceItem{
 
 var Projects = []models.Project{
 	{
-	    Title: "Palimpsest is a native git GUI written in rust to be blazing fast and light that goes brr",
-	    Desc: "A local-first git visualizer built in Rust with egui. " +
-	        "Commit graph, syntax-highlighted diffs, file tree with git status, " +
-	        "and drag-to-merge all in a ~5MB binary with no Electron, no webview, " +
-	        "no cloud, and no subscription for a picture of your own repo. " +
-	        "Talks directly to libgit2. Named at 2am. No regrets.",
-	    Stack:      "Rust, egui, eframe, git2, libgit2, diffy, similar, syntect, egui-arbor, egui-phosphor",
-	    ReadmeURL:  "https://raw.githubusercontent.com/parazeeknova/palimpsest/refs/heads/main/.github/README.md",
-	    RepoURL:    "https://github.com/parazeeknova/palimpsest",
-	    ProductURL: "https://github.com/parazeeknova/palimpsest/releases",
+		Title: "Palimpsest is a native git GUI written in rust to be blazing fast and light that goes brr",
+		Desc: "A local-first git visualizer built in Rust with egui. " +
+			"Commit graph, syntax-highlighted diffs, file tree with git status, " +
+			"and drag-to-merge all in a ~5MB binary with no Electron, no webview, " +
+			"no cloud, and no subscription for a picture of your own repo. " +
+			"Talks directly to libgit2. Named at 2am. No regrets.",
+		Stack:      "Rust, egui, eframe, git2, libgit2, diffy, similar, syntect, egui-arbor, egui-phosphor",
+		ReadmeURL:  "https://raw.githubusercontent.com/parazeeknova/palimpsest/refs/heads/main/.github/README.md",
+		RepoURL:    "https://github.com/parazeeknova/palimpsest",
+		ProductURL: "https://github.com/parazeeknova/palimpsest/releases",
 	},
 	{
 		Title:      "Lumen is a spatial system for organizing work.",
